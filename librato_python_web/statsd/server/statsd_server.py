@@ -70,7 +70,8 @@ class Server(object):
 
     def __init__(self, librato_user, librato_api_token,
                  pct_threshold=90, debug=False, flush_interval=10000,
-                 no_aggregate_counters=False, expire=0, prefix='', librato_hostname=LIBRATO_HOSTNAME):
+                 no_aggregate_counters=False, expire=0, source_prefix='',
+                 librato_hostname=LIBRATO_HOSTNAME, prefix='statsd'):
         self.buf = 8192
         self.flush_interval = flush_interval
         self.pct_threshold = pct_threshold
@@ -89,10 +90,11 @@ class Server(object):
         self.aliases = {}
         self._sock = None
         self.prefix = prefix
-        if self.prefix:
-            self.source = '{}-{}'.format(self.prefix, self.hostname)
+        if source_prefix:
+            self.source = '{}-{}'.format(source_prefix, self.hostname)
         else:
             self.source = self.hostname
+        self.prefix = prefix
 
     def process(self, data):
         # the data is a sequence of newline-delimited metrics
@@ -270,7 +272,8 @@ class Server(object):
         tags_dict = dict(tags) if tags else {}
         if 'source' not in tags_dict:
             tags_dict['source'] = self.source
-        queue.add('python-web.{}'.format(key), value, time=timestamp, source=self.source, type=metric_type, tags=tags_dict)
+        queue.add('{}.{}'.format(self.prefix, key), value, time=timestamp,
+                  source=self.source, type=metric_type, tags=tags_dict)
 
     def _set_timer(self):
         self._timer = threading.Timer(self.flush_interval / 1000, self.on_timer)
@@ -335,7 +338,8 @@ class ServerDaemon(Daemon):
                         flush_interval=options.flush_interval,
                         no_aggregate_counters=options.no_aggregate_counters,
                         expire=options.expire,
-                        prefix=options.app_id,
+                        source_prefix=options.app_id,
+                        prefix=options.integration,
                         librato_hostname=options.metrics_hostname)
 
         server.serve(options.hostname, options.port)
