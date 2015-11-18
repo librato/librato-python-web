@@ -36,7 +36,7 @@ from librato_python_web.instrumentor.context import add_tag
 
 class ImportTest(unittest.TestCase):
     def setUp(self):
-        logging.basicConfig(level='DEBUG')
+        pass
 
     def tearDown(self):
         pass
