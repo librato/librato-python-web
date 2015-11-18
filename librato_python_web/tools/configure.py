@@ -214,7 +214,7 @@ CHART_SPECS = [
         ]
     },
     {
-        'name': 'Logging Errors',
+        'name': 'Logging Components',
         'y_label': 'epm',
         'chart_type': 'stacked',
         'metrics': [
