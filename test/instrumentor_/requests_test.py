@@ -34,7 +34,7 @@ from librato_python_web.instrumentor.telemetry import StdoutTelemetryReporter
 
 class RequestsTest(unittest.TestCase):
     def setUp(self):
-        logging.basicConfig(level='DEBUG')
+        pass
 
     def tearDown(self):
         pass
