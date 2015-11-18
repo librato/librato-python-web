@@ -37,14 +37,14 @@ logger = logging.getLogger(__name__)
 SPACE_NAME = '{}:Python Django Application'
 PREFIX = 'django.{}'
 
-RESPONSE_TIME_QUERY = sum_(s_("django.web.*.response.latency.mean"))
-THROUGHPUT_QUERY = derive_(sum_(s_("django.web.*.requests.count")))
+RESPONSE_TIME_QUERY = sum_(s_("django.web*response.latency.mean"))
+THROUGHPUT_QUERY = derive_(sum_(s_("django.web*requests.count")))
 ERROR_PERCENTAGE_QUERY = scale_(
     divide_(
         derive_(
             sum_(
-                s_("django.web.*.status.4xx.count", function="sum"),
-                s_("django.web.*.status.5xx.count", function="sum"))),
+                s_("django.web*status.4xx.count", function="sum"),
+                s_("django.web*status.5xx.count", function="sum"))),
         THROUGHPUT_QUERY),
     "100")
 
@@ -89,9 +89,9 @@ CHART_SPECS = [
                                 s_("django.gunicorn.request.duration.count", function="sum"))),
                         sum_(
                             multiply_(
-                                s_("django.wsgi.*.response.latency.mean"),
-                                s_("django.wsgi.*.response.latency.count", function="sum")))),
-                    sum_(s_("django.web.*.response.latency.count", function="sum"))),
+                                s_("django.wsgi*response.latency.mean"),
+                                s_("django.wsgi*response.latency.count", function="sum")))),
+                    sum_(s_("django.web*response.latency.count", function="sum"))),
                 'summary_function': 'sum',
                 'color': '#f04950'
             },
@@ -101,13 +101,13 @@ CHART_SPECS = [
                     subtract_(
                         sum_(
                             multiply_(
-                                s_("django.wsgi.*.response.latency.mean"),
-                                s_("django.wsgi.*.response.latency.count"))),
+                                s_("django.wsgi*response.latency.mean"),
+                                s_("django.wsgi*response.latency.count"))),
                         sum_(
                             multiply_(
-                                s_("django.web.*.response.latency.mean"),
-                                s_("django.web.*.response.latency.count")))),
-                    sum_(s_("django.web.*.response.latency.count", function="sum"))),
+                                s_("django.web*response.latency.mean"),
+                                s_("django.web*response.latency.count")))),
+                    sum_(s_("django.web*response.latency.count", function="sum"))),
                 'summary_function': 'sum',
                 'color': '#2b89ad'
             },
@@ -116,9 +116,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("django.app.*.latency.mean"),
-                            s_("django.app.*.latency.count"))),
-                    sum_(s_("django.web.*.response.latency.count"))),
+                            s_("django.app*latency.mean"),
+                            s_("django.app*latency.count"))),
+                    sum_(s_("django.web*response.latency.count"))),
                 'summary_function': 'sum',
                 'color': '#ff8501'
             },
@@ -127,9 +127,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("django.data.*.latency.mean"),
-                            s_("django.data.*.latency.count"))),
-                    sum_(s_("django.web.*.response.latency.count"))),
+                            s_("django.data*latency.mean"),
+                            s_("django.data*latency.count"))),
+                    sum_(s_("django.web*response.latency.count"))),
                 'summary_function': 'sum',
                 'color': '#a85802'
             },
@@ -138,9 +138,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("django.external.*.response.latency.mean"),
-                            s_("django.external.*.response.latency.count"))),
-                    sum_(s_("django.web.*.response.latency.count"))),
+                            s_("django.external*response.latency.mean"),
+                            s_("django.external*response.latency.count"))),
+                    sum_(s_("django.web*response.latency.count"))),
                 'summary_function': 'sum',
                 'color': '#0880ae'
             },
@@ -149,9 +149,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("django.model.*.latency.mean"),
-                            s_("django.model.*.latency.count"))),
-                    sum_(s_("django.web.*.response.latency.count"))),
+                            s_("django.model*latency.mean"),
+                            s_("django.model*latency.count"))),
+                    sum_(s_("django.web*response.latency.count"))),
                 'summary_function': 'sum',
                 'color': '#d67002'
             }
@@ -189,25 +189,25 @@ CHART_SPECS = [
         'metrics': [
             {
                 'name': '2xx',
-                'composite': derive_(sum_(s_("django.web.*.status.2xx.count"))),
+                'composite': derive_(sum_(s_("django.web*status.2xx.count"))),
                 'summary_function': 'sum',
                 'color': '#0880ae'
             },
             {
                 'name': '3xx',
-                'composite': derive_(sum_(s_("django.web.*.status.3xx.count"))),
+                'composite': derive_(sum_(s_("django.web*status.3xx.count"))),
                 'summary_function': 'sum',
                 'color': '#ff7e63'
             },
             {
                 'name': '4xx',
-                'composite': derive_(sum_(s_("django.web.*.status.4xx.count"))),
+                'composite': derive_(sum_(s_("django.web*status.4xx.count"))),
                 'summary_function': 'sum',
                 'color': '#ff5a37'
             },
             {
                 'name': '5xx',
-                'composite': derive_(sum_(s_("django.web.*.status.5xx.count"))),
+                'composite': derive_(sum_(s_("django.web*status.5xx.count"))),
                 'summary_function': 'sum',
                 'color': '#ff2d01'
             }
