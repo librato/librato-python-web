@@ -34,17 +34,17 @@ from librato.spaces import Api
 
 logger = logging.getLogger(__name__)
 
-SPACE_NAME = '{}:Python Web Application'
-PREFIX = 'python-web.{}'
+SPACE_NAME = '{}:Python Django Application'
+PREFIX = 'django.{}'
 
-RESPONSE_TIME_QUERY = sum_(s_("python-web.web.*.response.latency.mean"))
-THROUGHPUT_QUERY = derive_(sum_(s_("python-web.web.*.requests.count")))
+RESPONSE_TIME_QUERY = sum_(s_("django.web.*.response.latency.mean"))
+THROUGHPUT_QUERY = derive_(sum_(s_("django.web.*.requests.count")))
 ERROR_PERCENTAGE_QUERY = scale_(
     divide_(
         derive_(
             sum_(
-                s_("python-web.web.*.status.4xx.count", function="sum"),
-                s_("python-web.web.*.status.5xx.count", function="sum"))),
+                s_("django.web.*.status.4xx.count", function="sum"),
+                s_("django.web.*.status.5xx.count", function="sum"))),
         THROUGHPUT_QUERY),
     "100")
 
@@ -85,13 +85,13 @@ CHART_SPECS = [
                     subtract_(
                         sum_(
                             multiply_(
-                                s_("python-web.gunicorn.request.duration.mean"),
-                                s_("python-web.gunicorn.request.duration.count", function="sum"))),
+                                s_("django.gunicorn.request.duration.mean"),
+                                s_("django.gunicorn.request.duration.count", function="sum"))),
                         sum_(
                             multiply_(
-                                s_("python-web.wsgi.*.response.latency.mean"),
-                                s_("python-web.wsgi.*.response.latency.count", function="sum")))),
-                    sum_(s_("python-web.web.*.response.latency.count", function="sum"))),
+                                s_("django.wsgi.*.response.latency.mean"),
+                                s_("django.wsgi.*.response.latency.count", function="sum")))),
+                    sum_(s_("django.web.*.response.latency.count", function="sum"))),
                 'summary_function': 'sum',
                 'color': '#f04950'
             },
@@ -101,13 +101,13 @@ CHART_SPECS = [
                     subtract_(
                         sum_(
                             multiply_(
-                                s_("python-web.wsgi.*.response.latency.mean"),
-                                s_("python-web.wsgi.*.response.latency.count"))),
+                                s_("django.wsgi.*.response.latency.mean"),
+                                s_("django.wsgi.*.response.latency.count"))),
                         sum_(
                             multiply_(
-                                s_("python-web.web.*.response.latency.mean"),
-                                s_("python-web.web.*.response.latency.count")))),
-                    sum_(s_("python-web.web.*.response.latency.count", function="sum"))),
+                                s_("django.web.*.response.latency.mean"),
+                                s_("django.web.*.response.latency.count")))),
+                    sum_(s_("django.web.*.response.latency.count", function="sum"))),
                 'summary_function': 'sum',
                 'color': '#2b89ad'
             },
@@ -116,9 +116,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("python-web.app.*.latency.mean"),
-                            s_("python-web.app.*.latency.count"))),
-                    sum_(s_("python-web.web.*.response.latency.count"))),
+                            s_("django.app.*.latency.mean"),
+                            s_("django.app.*.latency.count"))),
+                    sum_(s_("django.web.*.response.latency.count"))),
                 'summary_function': 'sum',
                 'color': '#ff8501'
             },
@@ -127,9 +127,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("python-web.data.*.latency.mean"),
-                            s_("python-web.data.*.latency.count"))),
-                    sum_(s_("python-web.web.*.response.latency.count"))),
+                            s_("django.data.*.latency.mean"),
+                            s_("django.data.*.latency.count"))),
+                    sum_(s_("django.web.*.response.latency.count"))),
                 'summary_function': 'sum',
                 'color': '#a85802'
             },
@@ -138,9 +138,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("python-web.external.*.response.latency.mean"),
-                            s_("python-web.external.*.response.latency.count"))),
-                    sum_(s_("python-web.web.*.response.latency.count"))),
+                            s_("django.external.*.response.latency.mean"),
+                            s_("django.external.*.response.latency.count"))),
+                    sum_(s_("django.web.*.response.latency.count"))),
                 'summary_function': 'sum',
                 'color': '#0880ae'
             },
@@ -149,9 +149,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("python-web.model.*.latency.mean"),
-                            s_("python-web.model.*.latency.count"))),
-                    sum_(s_("python-web.web.*.response.latency.count"))),
+                            s_("django.model.*.latency.mean"),
+                            s_("django.model.*.latency.count"))),
+                    sum_(s_("django.web.*.response.latency.count"))),
                 'summary_function': 'sum',
                 'color': '#d67002'
             }
@@ -189,25 +189,25 @@ CHART_SPECS = [
         'metrics': [
             {
                 'name': '2xx',
-                'composite': derive_(sum_(s_("python-web.web.*.status.2xx.count"))),
+                'composite': derive_(sum_(s_("django.web.*.status.2xx.count"))),
                 'summary_function': 'sum',
                 'color': '#0880ae'
             },
             {
                 'name': '3xx',
-                'composite': derive_(sum_(s_("python-web.web.*.status.3xx.count"))),
+                'composite': derive_(sum_(s_("django.web.*.status.3xx.count"))),
                 'summary_function': 'sum',
                 'color': '#ff7e63'
             },
             {
                 'name': '4xx',
-                'composite': derive_(sum_(s_("python-web.web.*.status.4xx.count"))),
+                'composite': derive_(sum_(s_("django.web.*.status.4xx.count"))),
                 'summary_function': 'sum',
                 'color': '#ff5a37'
             },
             {
                 'name': '5xx',
-                'composite': derive_(sum_(s_("python-web.web.*.status.5xx.count"))),
+                'composite': derive_(sum_(s_("django.web.*.status.5xx.count"))),
                 'summary_function': 'sum',
                 'color': '#ff2d01'
             }
@@ -220,19 +220,19 @@ CHART_SPECS = [
         'metrics': [
             {
                 'name': 'Warnings',
-                'composite': derive_(sum_(s_("python-web.logging.warning.requests.count"))),
+                'composite': derive_(sum_(s_("django.logging.warning.requests.count"))),
                 'summary_function': 'sum',
                 'color': '#d69900'
             },
             {
                 'name': 'Errors',
-                'composite': derive_(sum_(s_("python-web.logging.error.requests.count"))),
+                'composite': derive_(sum_(s_("django.logging.error.requests.count"))),
                 'summary_function': 'sum',
                 'color': '#ff2d01'
             },
             {
                 'name': 'Exceptions',
-                'composite': derive_(sum_(s_("python-web.logging.exception.requests.count"))),
+                'composite': derive_(sum_(s_("django.logging.exception.requests.count"))),
                 'summary_function': 'sum',
                 'color': '#a81d00'
             }
