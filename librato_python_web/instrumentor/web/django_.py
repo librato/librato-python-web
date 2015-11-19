@@ -77,7 +77,6 @@ class AgentMiddleware(object):
         logger.debug('process_exception')
         if self.is_active:
             telemetry.count('web.errors')
-            self.is_active = False
 
 
 _middleware_hook_installed = False
