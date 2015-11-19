@@ -25,13 +25,13 @@
 
 
 # Helper methods to model Librato composite query dsl
-
+METRIC_PREFIX = "XyZZy"
 DUMMY_PREFIX = "DUMMY-PREFIX"
 DEFAULT_PERIOD = 60
 
 
 def s_(metric, source="{}-*".format(DUMMY_PREFIX), period=DEFAULT_PERIOD, function="mean"):
-    return 's("{}", "{}", {{period: "{}", function: "{}"}})'.format(metric, source, period, function)
+    return 's("{}.{}", "{}", {{period: "{}", function: "{}"}})'.format(METRIC_PREFIX, metric, source, period, function)
 
 
 def timeshift_(shift, series):
