@@ -23,10 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import logging
 from librato_python_web.instrumentor import general
-
-logger = logging.getLogger(__name__)
 
 
 def configure(config_dict_or_filename):

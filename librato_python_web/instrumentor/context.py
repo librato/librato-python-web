@@ -46,10 +46,11 @@ Metrics are accumulated individually and as an intersection of the context.
 from collections import defaultdict
 from contextlib import contextmanager
 
-import logging
 import threading
 
-logger = logging.getLogger(__name__)
+from librato_python_web.instrumentor.custom_logging import getCustomLogger
+
+logger = getCustomLogger(__name__)
 
 
 class _globals:
