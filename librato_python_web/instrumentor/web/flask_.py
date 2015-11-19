@@ -167,5 +167,4 @@ class FlaskInstrumentor(BaseInstrumentor):
         )
 
     def run(self):
-        logging.basicConfig(level='DEBUG')
         super(FlaskInstrumentor, self).run()

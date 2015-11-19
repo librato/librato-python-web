@@ -26,7 +26,6 @@
 
 import logging
 
-# logging.basicConfig(level='DEBUG')
 from librato_python_web.instrumentor import context
 
 logger = logging.getLogger(__name__)
