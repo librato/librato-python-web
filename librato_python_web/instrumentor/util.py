@@ -27,14 +27,14 @@
 import base64
 from collections import OrderedDict, defaultdict
 import hashlib
-import logging
 import re
 import time
 from librato_python_web.instrumentor import context
 
 from librato_python_web.instrumentor.instrument import get_module_by_name
+from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
-logger = logging.getLogger(__name__)
+logger = getCustomLogger(__name__)
 
 RE_CLEANSE = re.compile('[^A-Za-z0-9.:\\-_]')
 MAX_NAME_LEN = 48

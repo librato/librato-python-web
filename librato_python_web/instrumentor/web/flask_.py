@@ -26,7 +26,6 @@
 
 """ Flask instrumentation """
 from contextlib import contextmanager
-import logging
 from math import floor
 import threading
 import time
@@ -37,10 +36,11 @@ from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.instrument import context_function_wrapper_factory, function_wrapper_factory
 from librato_python_web.instrumentor.instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.util import Timing
+from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 STATE_NAME = 'web'
 
-logger = logging.getLogger(__name__)
+logger = getCustomLogger(__name__)
 
 
 @contextmanager

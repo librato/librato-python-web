@@ -24,7 +24,6 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import logging
 import time
 from math import floor
 
@@ -35,8 +34,9 @@ from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import default_instrumentation
 from librato_python_web.instrumentor.util import prepend_to_tuple, Timing
 from librato_python_web.instrumentor.instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
-logger = logging.getLogger(__name__)
+logger = getCustomLogger(__name__)
 
 STATE_NAME = 'web'
 

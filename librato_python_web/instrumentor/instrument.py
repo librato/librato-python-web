@@ -24,11 +24,11 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import logging
-
 from librato_python_web.instrumentor import context
+from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
-logger = logging.getLogger(__name__)
+
+logger = getCustomLogger(__name__)
 
 
 def run_instrumentors(instrumentors):
@@ -82,7 +82,7 @@ def is_class_available(fully_qualified_class_name):
     :returns: bool
     """
     return get_module_by_name(fully_qualified_class_name) is not None or \
-           get_class_by_name(fully_qualified_class_name) is not None
+        get_class_by_name(fully_qualified_class_name) is not None
 
 
 def get_module_by_name(fully_qualified_module_name):
