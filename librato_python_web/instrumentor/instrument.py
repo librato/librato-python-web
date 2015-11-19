@@ -27,6 +27,7 @@
 import logging
 
 # logging.basicConfig(level='DEBUG')
+import time
 from librato_python_web.instrumentor import context
 
 logger = logging.getLogger(__name__)
@@ -212,14 +213,70 @@ def function_wrapper_factory(wrapper_function, state=None, enable_if='web', disa
         :param ctx: the context for the call, typically a class def
         :param f: the function to wrap
         """
+
         def wrapper(*args, **keywords):
             if _should_be_instrumented(state, enable_if, disable_if):
                 return wrapper_function(f)(*args, **keywords)
             else:
                 return f(*args, **keywords)
+
         return wrapper
 
     return function_wrapper
+
+
+def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=None):
+    """
+    Generates a function that wraps a function so that it uses the context_manager around it.
+
+    :param generator: the function used to wrap functions provided to the factory
+    :param state: the state associated with the wrapped method
+    :param enable_if: instrumentation is only enabled when this state is present
+    :param disable_if: instrumentation is disabled when this state is present
+    :return: the function wrapper
+    """
+
+    def generator_wrapper(ctx, generator):
+        """
+        Creates a generator that wraps the given generator and instruments it depending on the context when
+        its called.
+        :param ctx: the context for the call, typically a class def
+        :param generator: the generator to wrap
+        """
+
+        def wrapper(*args, **keywords):
+            print 'wrapper instance'
+            # determined at run time, since this depends on the invocation context
+            if _should_be_instrumented(state, enable_if, disable_if):
+                # wrap the initialization
+                elapsed = 0
+                t = time.clock()
+                try:
+                    gen = generator(*args, **keywords)
+                finally:
+                    elapsed += time.clock() - t
+                try:
+                    while True:
+                        # wrap each successive value generation
+                        t = time.clock()
+                        try:
+                            v = gen.next()
+                        finally:
+                            elapsed += time.clock() - t
+                        yield v
+                finally:
+                    # finish metrics (GeneratorExit or otherwise)
+                    print 'record request', elapsed
+                    recorder(elapsed)
+                    # count(type_name + 'requests')
+                    # record(type_name + 'latency', elapsed)
+            else:
+                for x in generator(*args, **keywords):
+                    yield x
+
+        return wrapper
+
+    return generator_wrapper
 
 
 def context_function_wrapper_factory(context_manager, prefix=None, keys=None, state=None, enable_if='web',

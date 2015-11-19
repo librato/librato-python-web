@@ -29,10 +29,10 @@ import time
 from math import floor
 
 from librato_python_web.instrumentor.instrument import instrument_methods, function_wrapper_factory, \
-    context_function_wrapper_factory
+    context_function_wrapper_factory, generator_wrapper_factory
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.telemetry import default_instrumentation
+from librato_python_web.instrumentor.telemetry import default_instrumentation, generate_record_telemetry
 from librato_python_web.instrumentor.util import prepend_to_tuple, Timing
 from librato_python_web.instrumentor.instrumentor import BaseInstrumentor
 
@@ -146,8 +146,8 @@ class DjangoInstrumentor(BaseInstrumentor):
             default_instrumentation('model.django.last.'), state='model'),
         QUERY_SET + '.in_bulk': context_function_wrapper_factory(
             default_instrumentation('model.django.in_bulk.'), state='model'),
-        QUERY_SET + '.iterator': context_function_wrapper_factory(
-            default_instrumentation('model.django.iterator.'), state='model'),
+        QUERY_SET + '.iterator': generator_wrapper_factory(
+            generate_record_telemetry('model.django.iterator.'), state='model'),
         QUERY_SET + '.update_or_create': context_function_wrapper_factory(
             default_instrumentation('model.django.update_or_create.'), state='model'),
         QUERY_SET + '.delete': context_function_wrapper_factory(
