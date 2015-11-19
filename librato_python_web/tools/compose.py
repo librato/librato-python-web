@@ -25,7 +25,7 @@
 
 
 # Helper methods to model Librato composite query dsl
-METRIC_PREFIX = "XyZZy"
+METRIC_PREFIX = "!XyZZy!"
 DUMMY_PREFIX = "DUMMY-PREFIX"
 DEFAULT_PERIOD = 60
 
