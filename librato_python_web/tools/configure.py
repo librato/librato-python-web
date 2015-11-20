@@ -334,7 +334,8 @@ def execute():
 
     agent_config.update_config_file(vars(options))
 
-    _update(options.user, options.api_token, options.app_id, options.integration)
+    if options.create:
+        _update(options.user, options.api_token, options.app_id, options.integration)
 
 if __name__ == '__main__':
     execute()
