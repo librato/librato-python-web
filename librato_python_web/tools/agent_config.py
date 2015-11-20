@@ -70,7 +70,7 @@ defaults = {
     "pidfile": '/var/run/solarwinds-python-statsd.pid',
     "port": 8142,
     "pct": 95,
-    "flush_interval": 10000,
+    "flush_interval": 60000,
     'no_aggregate_counters': False,
     'metrics_hostname': LIBRATO_HOSTNAME,
     'integration': 'django'
@@ -94,7 +94,7 @@ def load_config(args=sys.argv[1:]):
     parser.add_argument('-u', '--user', dest='user', help='librato user email')
     parser.add_argument('--api-token', dest='api_token', help='librato api token')
     parser.add_argument('--flush-interval',
-                        help='how often to send data to librato in milli-seconds (default: 10000)', type=int)
+                        help='how often to send data to librato in milli-seconds (default: 60000)', type=int)
     parser.add_argument('--no-aggregate-counters',
                         help='should statsd report counters as absolute instead of count/sec', action='store_true')
     parser.add_argument('-t', '--pct', help='stats pct threshold (default: 95)', type=int)

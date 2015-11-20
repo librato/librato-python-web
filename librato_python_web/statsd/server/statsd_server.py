@@ -70,7 +70,7 @@ def kill_process(proc_name):
 class Server(object):
 
     def __init__(self, librato_user, librato_api_token,
-                 pct_threshold=90, debug=False, flush_interval=10000,
+                 pct_threshold=90, debug=False, flush_interval=60000,
                  no_aggregate_counters=False, expire=0, source_prefix='',
                  librato_hostname=LIBRATO_HOSTNAME, prefix='statsd'):
         self.buf = 8192
