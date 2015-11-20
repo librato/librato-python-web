@@ -245,7 +245,6 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
         """
 
         def wrapper(*args, **keywords):
-            print 'wrapper instance'
             # determined at run time, since this depends on the invocation context
             if _should_be_instrumented(state, enable_if, disable_if):
                 # wrap the initialization
