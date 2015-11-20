@@ -31,13 +31,17 @@ from librato_python_web.instrumentor.custom_logging import getCustomLogger
 logger = getCustomLogger(__name__)
 
 
-def run_instrumentors(instrumentors):
+def run_instrumentors(instrumentors, libs):
     """
     :param instrumentors:
     :return:
     """
-    for instrumentor in instrumentors:
+    for alias in instrumentors:
+        if libs != '*' and alias not in libs:
+            continue
+
         try:
+            instrumentor = instrumentors[alias]
             for class_name in instrumentor.required_class_names:
                 if not is_class_available(class_name):
                     logger.info('required instrumentor class not available %s', class_name)
