@@ -6,7 +6,6 @@ from librato_python_web.statsd.client import statsd_client
 from librato_python_web.instrumentor.util import AliasGenerator, Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
-
 logger = getCustomLogger(__name__)
 
 
@@ -84,13 +83,21 @@ def default_instrumentation(type_name='resource'):
     def wrapper_func(*args, **keywords):
         Timing.start_timer(type_name)
         try:
-            count(type_name + 'requests')
             yield
         finally:
             elapsed = Timing.stop_timer(type_name)
-            record(type_name + 'latency', elapsed)
+            record_telemetry(type_name, elapsed)
 
     return wrapper_func
+
+
+def record_telemetry(type_name, elapsed):
+    count(type_name + 'requests')
+    record(type_name + 'latency', elapsed)
+
+
+def generate_record_telemetry(type_name):
+    return lambda elapsed: record_telemetry(type_name, elapsed)
 
 
 def increment_count(type_name='resource'):

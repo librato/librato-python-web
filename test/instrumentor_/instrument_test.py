@@ -22,10 +22,14 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
+from collections import defaultdict
+from contextlib import contextmanager
 import unittest
+
+from instrumentor.instrument import generator_wrapper_factory
+from instrumentor.telemetry import TelemetryReporter, generate_record_telemetry
 from librato_python_web.instrumentor import instrument
+from instrumentor import telemetry
 
 
 class A(object):
@@ -39,6 +43,28 @@ class A(object):
 
     def foo(self):
         return 'foo'
+
+
+class TestTelemetryReporter(TelemetryReporter):
+    def __init__(self):
+        super(TestTelemetryReporter, self).__init__()
+        self.counts = defaultdict(int)
+        self.records = {}
+
+    def count(self, metric, incr=1):
+        self.counts[metric] += incr
+
+    def get_count(self, metric):
+        return self.counts[metric]
+
+    def record(self, metric, value):
+        self.records[metric] = value
+
+    def get_record(self, metric):
+        return self.records.get(metric)
+
+    def event(self, type_name, dictionary=None):
+        pass
 
 
 class InstrumentTest(unittest.TestCase):
@@ -64,8 +90,7 @@ class InstrumentTest(unittest.TestCase):
             instrument.replace_method(A, 'foo', original)
         self.assertEqual('foo', a.foo())
 
-    def test_function_wrapper(self):
-        instrument.context_function_wrapper_factory(None)
+    def test_replace_wrapper(self):
         a = A()
         self.assertEqual('foo', a.foo())
 
@@ -76,3 +101,57 @@ class InstrumentTest(unittest.TestCase):
         finally:
             instrument.replace_method(A, 'foo', original)
         self.assertEqual('foo', a.foo())
+
+    def test_function_wrapper(self):
+        state = {
+            'foo': 1
+        }
+
+        @contextmanager
+        def context_wrapper(f):
+            state['before'] = True
+            yield
+            state['after'] = True
+
+        wrapper = instrument.context_function_wrapper_factory(context_wrapper, enable_if=None)
+
+        wrapped = wrapper(None, lambda v: 'bar')
+        ret = wrapped('this is ignored')
+        self.assertTrue(state.get('before'))
+        self.assertTrue(state.get('after'))
+
+    def test_generator_wrapper(self):
+        reporter = TestTelemetryReporter()
+        telemetry.set_reporter(reporter)
+
+        range_max = 10
+
+        def generator():
+            for g in range(range_max):
+                yield g
+
+        factory = generator_wrapper_factory(generate_record_telemetry('test.'), state='model', enable_if=None)
+        wrapped_generator = factory(None, generator)
+
+        i = j = 0
+        for i in wrapped_generator():
+            self.assertEqual(j, i)
+            j += 1
+        self.assertEqual(range_max - 1, i)
+
+        self.assertLess(0, reporter.get_record('test.latency'))
+        self.assertEquals(1, reporter.get_count('test.requests'))
+
+        reporter.record('test.latency', 0)
+
+        wrapped_generator = factory(None, generator)
+
+        def trigger_generator_exit():
+            # trigger the GeneratorExit when this goes out of scope
+            iterator = wrapped_generator()
+            _ = iterator.next()
+
+        trigger_generator_exit()
+
+        self.assertLessEqual(0, reporter.get_record('test.latency'))
+        self.assertEquals(2, reporter.get_count('test.requests'))
