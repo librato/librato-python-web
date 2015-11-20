@@ -38,9 +38,11 @@ def run_instrumentors(instrumentors, libs):
     """
     for alias in instrumentors:
         if libs != '*' and alias not in libs:
+            logger.info("Skipping %s", alias)
             continue
 
         try:
+            logger.info("Instrumenting %s", alias)
             instrumentor = instrumentors[alias]
             for class_name in instrumentor.required_class_names:
                 if not is_class_available(class_name):

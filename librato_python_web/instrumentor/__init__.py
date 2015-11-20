@@ -25,7 +25,6 @@
 
 
 # Top-level module names and the corresponding proxies
-import json
 import os
 import sys
 
@@ -38,7 +37,7 @@ from telemetry import StatsdTelemetryReporter
 
 from .data.elasticsearch import ElasticsearchInstrumentor
 from .data.mysqldb import MysqlInstrumentor
-from .custom_logging import getCustomLogger
+from . import custom_logging
 from .external.requests_ import RequestsInstrumentor
 from .log.logging import LoggingInstrumentor
 from .messaging.pykafka import PykafkaInstrumentor
@@ -47,7 +46,7 @@ from .web.flask_ import FlaskInstrumentor
 
 from .instrument import run_instrumentors, instrument_methods
 
-logger = getCustomLogger(__name__)
+logger = custom_logging.getCustomLogger(__name__)
 
 try:
     _wrapped = {
@@ -68,25 +67,29 @@ try:
     if general.get_option('enabled'):
         config_file = './agent-conf.json'
         if os.path.isfile(config_file):
-            with open(config_file) as conf:
-                agent_conf = json.load(conf)
-                general.configure(json.load(conf))
+            general.configure(config_file)
         else:
-            logger.error("Can't locate configuration file: %s", config_file)
+            logger.error("Can't load configuration file: %s", config_file)
             sys.exit(1)
+
+        log_level = general.get_option("instrumentor.log_level", 30)
+        custom_logging.setDefaultLevel(int(log_level))
 
         if 'LIBRATO_INSTRUMENTATION_PORT' in os.environ:
             general.set_option('statsd.enabled', True)
             general.set_option('statsd.port', int(os.environ.get('LIBRATO_INSTRUMENTATION_PORT')))
 
         if general.get_option('statsd.enabled', False):
+            logger.debug("Using Statsd reporter")
             telemetry.set_reporter(StatsdTelemetryReporter(general.get_option('statsd.port', 8142)))
 
         if general.get_option('config.enabled', False):
+            logger.debug("Using legacy config reporter")
             config.config.set_reporter(LegacyConfigReporter())
 
         libs = general.get_option('libraries', _default_libs)
+        logger.info("Libraries = %s", libs)
         instrument_methods(_wrapped)
         run_instrumentors(_instrumentors, libs)
-except Exception as e:
+except Exception:
     logger.exception("librato_python_web __init__ failure")

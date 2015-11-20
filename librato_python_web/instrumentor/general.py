@@ -23,6 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import json
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
@@ -34,7 +35,7 @@ class _config:
 
 def configure(config_dict_or_filename):
     """
-    TBD Configures the instrumentation using key value pairs.
+    Configures the instrumentation using key value pairs.
 
     The config_dict_or_filename is either a dict or a string filename. If it is a dict, it provides the key-value pairs
     directly. If it is a st, it identifies a path to a JSON file containing key-value pairs.
@@ -50,15 +51,19 @@ def configure(config_dict_or_filename):
     cfg = None
     if isinstance(config_dict_or_filename, basestring):
         # Load JSON file
-        cfg = {}
+        with open(config_dict_or_filename) as conf:
+            cfg = json.load(conf)
     elif isinstance(config_dict_or_filename, dict):
         cfg = config_dict_or_filename
     else:
         raise TypeError('config_dict_or_filename must be a dict or str')
 
-    # TODO: Set the configuration parameters
-    # e.g., what do we want to instrument / uninstrument?
-    logger.warn("TODO: implement general.configure()")
+    for k, v in cfg.iteritems():
+        setattr(_config, k, v)
+
+    if get_option('port'):
+        setattr(_config, 'statsd.enabled', True)
+        setattr(_config, 'statsd.port', _config.port)
 
     # TODO: cache.use_weak_refs
     # TODO: cache.max_keys
