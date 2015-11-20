@@ -38,6 +38,7 @@ python_agent_conf = './agent-conf.json'
 config_options = [
     'daemonize',
     'debug',
+    'create',
     'expire',
     'flush_interval',
     'hostname',
@@ -57,12 +58,13 @@ required_options = [
     ('user', 'Librato user email'),
     ('api_token', 'Librato api token'),
     ('app_id', 'Unique ID for application'),
-    ('integration', 'Librato integration'),
+    ('integration', 'Librato integration (django, flask)'),
     ('metrics_hostname', 'Librato metrics API URL')
 ]
 defaults = {
     "daemonize": False,
     "debug": False,
+    "create": False,
     "expire": 0,
     "hostname": "localhost",
     "pidfile": '/var/run/solarwinds-python-statsd.pid',
@@ -86,6 +88,7 @@ def load_config(args=sys.argv[1:]):
     """ c. Baked in defaults, where appropriate """
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--debug', help='debug mode')
+    parser.add_argument('-c', '--create', help='create librato space (default: false)')
     parser.add_argument('-H', '--hostname', help='hostname to run on (default: localhost')
     parser.add_argument('-p', '--port', help='port to run on (default: 8142)', type=int)
     parser.add_argument('-u', '--user', dest='user', help='librato user email')
@@ -102,7 +105,7 @@ def load_config(args=sys.argv[1:]):
     parser.add_argument('--expire', help='time-to-live for old stats (in secs)', type=int)
     parser.add_argument('--app-id', help='unique id for application')
     parser.add_argument('-M', '--metrics-hostname', help='Librato metrics API URL')
-    parser.add_argument('-I', '--integration', help='Librato metrics API URL')
+    parser.add_argument('-I', '--integration', help='Librato Python integration (django, flask)')
 
     options = parser.parse_args(args)
 

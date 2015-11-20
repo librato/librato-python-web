@@ -35,6 +35,7 @@ import sys
 import socket
 import threading
 import time
+import math
 import logging
 
 from daemon import Daemon
@@ -73,7 +74,7 @@ class Server(object):
                  no_aggregate_counters=False, expire=0, source_prefix='',
                  librato_hostname=LIBRATO_HOSTNAME, prefix='statsd'):
         self.buf = 8192
-        self.flush_interval = flush_interval
+        self.flush_interval = float(flush_interval/1000)
         self.pct_threshold = pct_threshold
 
         self.no_aggregate_counters = no_aggregate_counters
@@ -178,7 +179,7 @@ class Server(object):
         self._set_timer()
 
     def flush(self):
-        ts = int(time.time())
+        ts = int(math.floor(time.time()/self.flush_interval) * self.flush_interval)
         stats = 0
 
         with self.api.new_queue() as queue:
@@ -276,7 +277,7 @@ class Server(object):
                   source=self.source, type=metric_type, tags=tags_dict)
 
     def _set_timer(self):
-        self._timer = threading.Timer(self.flush_interval / 1000, self.on_timer)
+        self._timer = threading.Timer(self.flush_interval, self.on_timer)
         self._timer.daemon = True
         self._timer.start()
 
