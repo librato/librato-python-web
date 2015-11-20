@@ -24,9 +24,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import logging
-
 import time
+
 from librato_python_web.instrumentor import context
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
@@ -84,7 +83,7 @@ def is_class_available(fully_qualified_class_name):
     :returns: bool
     """
     return get_module_by_name(fully_qualified_class_name) is not None or \
-        get_class_by_name(fully_qualified_class_name) is not None
+           get_class_by_name(fully_qualified_class_name) is not None
 
 
 def get_module_by_name(fully_qualified_module_name):
@@ -213,11 +212,13 @@ def function_wrapper_factory(wrapper_function, state=None, enable_if='web', disa
         :param ctx: the context for the call, typically a class def
         :param f: the function to wrap
         """
+
         def wrapper(*args, **keywords):
             if _should_be_instrumented(state, enable_if, disable_if):
                 return wrapper_function(f)(*args, **keywords)
             else:
                 return f(*args, **keywords)
+
         return wrapper
 
     return function_wrapper
