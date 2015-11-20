@@ -34,7 +34,7 @@ from librato_python_web.instrumentor import config as agent_api_config
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.instrument import context_function_wrapper_factory, function_wrapper_factory
-from librato_python_web.instrumentor.instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
@@ -84,7 +84,7 @@ def _before_request():
         context.push_tag('web.route', route)
         context.push_tag('web.method', request.method)
         telemetry.count('web.requests')
-        Timing.start_timer(STATE_NAME)
+        Timing.push_timer()
     except:
         logger.exception('before_request instrumentation failure')
 
@@ -106,10 +106,8 @@ def _teardown_request(e=None):
             telemetry.count('web.errors')
     finally:
         try:
-            elapsed = Timing.stop_timer(STATE_NAME, accumulate=False)
+            elapsed, net_elapsed = Timing.pop_timer()
             telemetry.record('web.response.latency', elapsed)
-            sub_timing = Timing.get_timer(STATE_NAME + Timing.NET_KEY, clear=True)
-            net_elapsed = elapsed - sub_timing
             telemetry.record('app.response.latency', net_elapsed)
             try:
                 context.pop_tag()
@@ -141,11 +139,11 @@ def _flask_app(f):
 
 def _flask_wsgi_call(f):
     def inner_wsgi_call(*args, **keywords):
-        t = time.clock()
+        t = time.time()
         try:
             return f(*args, **keywords)
         finally:
-            elapsed = time.clock() - t
+            elapsed = time.time() - t
             telemetry.record('wsgi.response.latency', elapsed)
 
     return inner_wsgi_call

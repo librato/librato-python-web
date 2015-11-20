@@ -81,11 +81,11 @@ def event(event_type, dictionary=None):
 def default_instrumentation(type_name='resource'):
     @contextmanager
     def wrapper_func(*args, **keywords):
-        Timing.start_timer(type_name)
+        Timing.push_timer()
         try:
             yield
         finally:
-            elapsed = Timing.stop_timer(type_name)
+            elapsed = Timing.pop_timer()
             record_telemetry(type_name, elapsed)
 
     return wrapper_func
