@@ -266,10 +266,7 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
                         yield v
                 finally:
                     # finish metrics (GeneratorExit or otherwise)
-                    print 'record request', elapsed
                     recorder(elapsed)
-                    # count(type_name + 'requests')
-                    # record(type_name + 'latency', elapsed)
             else:
                 for x in generator(*args, **keywords):
                     yield x
