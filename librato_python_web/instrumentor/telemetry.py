@@ -1,12 +1,10 @@
 from contextlib import contextmanager
 from collections import OrderedDict
-import time
 
 from librato_python_web.instrumentor import context
 from librato_python_web.statsd.client import statsd_client
 from librato_python_web.instrumentor.util import AliasGenerator, Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
-
 
 logger = getCustomLogger(__name__)
 
@@ -100,56 +98,6 @@ def record_telemetry(type_name, elapsed):
 
 def generate_record_telemetry(type_name):
     return lambda elapsed: record_telemetry(type_name, elapsed)
-
-
-"""
-class GeneratorWrapper(object):
-    def __init__(self, wrapped, type_name):
-        self.wrapped = wrapped
-        self.elapsed = 0
-        self.type_name = type_name
-
-    def __enter__(self):
-        t = time.clock()
-        self.iterator = self.wrapped()
-        self.elapsed += time.clock()-t
-        print 'enter', self.elapsed, v
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return self.next()  # Python 3
-
-    def next(self):
-        t = time.clock()
-        v = self.iterator()
-        self.elapsed += time.clock()-t
-        print 'next', self.elapsed, v
-        yield v
-
-    def __exit__(self):
-        print 'exit', self.type_name, self.elapsed
-        try:
-            count(self.type_name + 'requests')
-        finally:
-            record(self.type_name + 'latency', self.elapsed)
-
-
-def default_generator_instrumentation(type_name='resource'):
-    @contextmanager
-    def wrapper_func(*args, **keywords):
-        Timing.start_timer(type_name)
-        try:
-            if not keywords.get('additional_work', False):
-                count(type_name + 'requests')
-            yield
-        finally:
-            elapsed = Timing.stop_timer(type_name)
-            record(type_name + 'latency', elapsed)
-
-    return wrapper_func
-"""
 
 
 def increment_count(type_name='resource'):
