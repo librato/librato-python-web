@@ -26,7 +26,6 @@
 
 """ Flask instrumentation """
 from contextlib import contextmanager
-import logging
 from math import floor
 import threading
 import time
@@ -37,10 +36,11 @@ from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.instrument import context_function_wrapper_factory, function_wrapper_factory
 from librato_python_web.instrumentor.instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.util import Timing
+from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
-FLASK = 'web.flask'
+STATE_NAME = 'web'
 
-logger = logging.getLogger(__name__)
+logger = getCustomLogger(__name__)
 
 
 @contextmanager
@@ -80,20 +80,20 @@ def _before_request():
     try:
         from flask import request
         route = request.url_rule.rule if request.url_rule else None
-        context.push_state(FLASK)
+        context.push_state(STATE_NAME)
         context.push_tag('web.route', route)
         context.push_tag('web.method', request.method)
-        telemetry.count('web.flask.requests')
-        Timing.start_timer(FLASK)
+        telemetry.count('web.requests')
+        Timing.start_timer(STATE_NAME)
     except:
         logger.exception('before_request instrumentation failure')
 
 
 def _after_request(response):
     try:
-        context.pop_state(FLASK)
+        context.pop_state(STATE_NAME)
         if response.status_code:
-            telemetry.count('web.flask.status.%ixx' % floor(response.status_code / 100))
+            telemetry.count('web.status.%ixx' % floor(response.status_code / 100))
     except:
         logger.exception('after_request instrumentation failure')
     finally:
@@ -103,14 +103,14 @@ def _after_request(response):
 def _teardown_request(e=None):
     try:
         if e:
-            telemetry.count('web.flask.errors')
+            telemetry.count('web.errors')
     finally:
         try:
-            elapsed = Timing.stop_timer(FLASK, accumulate=False)
-            telemetry.record('web.flask.response.latency', elapsed)
-            sub_timing = Timing.get_timer(FLASK + Timing.NET_KEY, clear=True)
+            elapsed = Timing.stop_timer(STATE_NAME, accumulate=False)
+            telemetry.record('web.response.latency', elapsed)
+            sub_timing = Timing.get_timer(STATE_NAME + Timing.NET_KEY, clear=True)
             net_elapsed = elapsed - sub_timing
-            telemetry.record('app.flask.response.latency', net_elapsed)
+            telemetry.record('app.response.latency', net_elapsed)
             try:
                 context.pop_tag()
                 context.pop_tag()
@@ -146,7 +146,7 @@ def _flask_wsgi_call(f):
             return f(*args, **keywords)
         finally:
             elapsed = time.clock() - t
-            telemetry.record('wsgi.flask.response.latency', elapsed)
+            telemetry.record('wsgi.response.latency', elapsed)
 
     return inner_wsgi_call
 
@@ -167,5 +167,4 @@ class FlaskInstrumentor(BaseInstrumentor):
         )
 
     def run(self):
-        logging.basicConfig(level='DEBUG')
         super(FlaskInstrumentor, self).run()

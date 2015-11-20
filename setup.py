@@ -44,10 +44,10 @@ setup(
 
     # Classifiers
     classifiers=[
-        'Development Status :: 1 - Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2.7'
+        'Programming Language :: Python'
     ],
 
     packages=find_packages(exclude=["*.tests", "*.tests.*",

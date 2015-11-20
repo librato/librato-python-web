@@ -1,13 +1,14 @@
 from contextlib import contextmanager
-import logging
 from collections import OrderedDict
 import time
 
 from librato_python_web.instrumentor import context
 from librato_python_web.statsd.client import statsd_client
 from librato_python_web.instrumentor.util import AliasGenerator, Timing
+from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
-logger = logging.getLogger(__name__)
+
+logger = getCustomLogger(__name__)
 
 
 # noinspection PyClassHasNoInit

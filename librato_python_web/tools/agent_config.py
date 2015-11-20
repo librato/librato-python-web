@@ -51,11 +51,13 @@ config_options = [
     'app_id',
     'restart',
     'stop',
+    'integration'
 ]
 required_options = [
     ('user', 'Librato user email'),
     ('api_token', 'Librato api token'),
     ('app_id', 'Unique ID for application'),
+    ('integration', 'Librato integration'),
     ('metrics_hostname', 'Librato metrics API URL')
 ]
 defaults = {
@@ -68,7 +70,8 @@ defaults = {
     "pct": 95,
     "flush_interval": 10000,
     'no_aggregate_counters': False,
-    'metrics_hostname': LIBRATO_HOSTNAME
+    'metrics_hostname': LIBRATO_HOSTNAME,
+    'integration': 'django'
 }
 
 
@@ -99,6 +102,7 @@ def load_config(args=sys.argv[1:]):
     parser.add_argument('--expire', help='time-to-live for old stats (in secs)', type=int)
     parser.add_argument('--app-id', help='unique id for application')
     parser.add_argument('-M', '--metrics-hostname', help='Librato metrics API URL')
+    parser.add_argument('-I', '--integration', help='Librato metrics API URL')
 
     options = parser.parse_args(args)
 

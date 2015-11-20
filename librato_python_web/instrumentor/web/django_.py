@@ -24,21 +24,21 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import logging
 import time
 from math import floor
 
 from librato_python_web.instrumentor.instrument import instrument_methods, function_wrapper_factory, \
-    context_function_wrapper_factory, generator_wrapper_factory
+    context_function_wrapper_factory
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import default_instrumentation, generate_record_telemetry
 from librato_python_web.instrumentor.util import prepend_to_tuple, Timing
 from librato_python_web.instrumentor.instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
-logger = logging.getLogger(__name__)
+logger = getCustomLogger(__name__)
 
-DJANGO = 'web.django'
+STATE_NAME = 'web'
 
 
 class AgentMiddleware(object):
@@ -47,27 +47,27 @@ class AgentMiddleware(object):
 
     def process_request(self, request):
         self.is_active = True
-        Timing.start_timer(DJANGO)
-        context.push_state(DJANGO)
+        Timing.start_timer(STATE_NAME)
+        context.push_state(STATE_NAME)
         context.push_tag('web.route', request.path)
-        telemetry.count('web.django.requests')
+        telemetry.count('web.requests')
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if self.is_active:
-            telemetry.record('web.django.view.latency', time.clock() - self.is_active)
+            telemetry.record('web.view.latency', time.clock() - self.is_active)
 
     def process_response(self, request, response):
-        elapsed = Timing.stop_timer(DJANGO, accumulate=False)
+        elapsed = Timing.stop_timer(STATE_NAME, accumulate=False)
         if self.is_active:
-            telemetry.record('web.django.response.latency', elapsed)
-            net_elapsed = elapsed - Timing.get_timer(DJANGO + Timing.NET_KEY, clear=True)
-            telemetry.record('app.django.response.latency', net_elapsed)
-            telemetry.count('web.django.status.%ixx' % floor(response.status_code / 100))
+            telemetry.record('web.response.latency', elapsed)
+            net_elapsed = elapsed - Timing.get_timer(STATE_NAME + Timing.NET_KEY, clear=True)
+            telemetry.record('app.response.latency', net_elapsed)
+            telemetry.count('web.status.%ixx' % floor(response.status_code / 100))
             try:
                 context.pop_tag()
             except IndexError:
                 logger.exception('process_response cannot pop context')
-            context.pop_state(DJANGO)
+            context.pop_state(STATE_NAME)
             self.is_active = False
         else:
             logger.warn('process_response without request')
@@ -76,8 +76,7 @@ class AgentMiddleware(object):
     def process_exception(self, request, exception):
         logger.debug('process_exception')
         if self.is_active:
-            telemetry.count('web.django.errors')
-            self.is_active = False
+            telemetry.count('web.errors')
 
 
 _middleware_hook_installed = False
@@ -112,7 +111,7 @@ def _django_wsgi_call(f):
             return f(*args, **keywords)
         finally:
             elapsed = time.clock() - t
-            telemetry.record('wsgi.django.response.latency', elapsed)
+            telemetry.record('wsgi.response.latency', elapsed)
 
     return inner_wsgi_call
 
@@ -120,44 +119,42 @@ def _django_wsgi_call(f):
 class DjangoInstrumentor(BaseInstrumentor):
     settings = None
     required_class_names = ['django.core', 'django.apps']
-    QUERY_SET = 'django.db.models.query.QuerySet'
+    QUERY_SET_CLASS_NAME = 'django.db.models.query.QuerySet'
     _wrapped = {
         'django.core.handlers.wsgi.WSGIHandler.__call__': function_wrapper_factory(_django_wsgi_call, state='wsgi',
                                                                                    enable_if=None),
         'django.conf.LazySettings.__getattr__': django_inject_middleware,
 
-        QUERY_SET + '.aggregate': context_function_wrapper_factory(
-            default_instrumentation('model.django.aggregate.'), state='model'),
-        QUERY_SET + '.count': context_function_wrapper_factory(
-            default_instrumentation('model.django.count.'), state='model'),
-        QUERY_SET + '.bulk_create': context_function_wrapper_factory(
-            default_instrumentation('model.django.bulk_create.'), state='model'),
-        QUERY_SET + '.create': context_function_wrapper_factory(
-            default_instrumentation('model.django.create.'), state='model'),
-        QUERY_SET + '.get': context_function_wrapper_factory(
-            default_instrumentation('model.django.get.'), state='model'),
-        QUERY_SET + '.get_or_create': context_function_wrapper_factory(
-            default_instrumentation('model.django.get_or_create.'), state='model'),
-        QUERY_SET + '.latest': context_function_wrapper_factory(
-            default_instrumentation('model.django.latest.'), state='model'),
-        QUERY_SET + '.first': context_function_wrapper_factory(
-            default_instrumentation('model.django.first.'), state='model'),
-        QUERY_SET + '.last': context_function_wrapper_factory(
-            default_instrumentation('model.django.last.'), state='model'),
-        QUERY_SET + '.in_bulk': context_function_wrapper_factory(
-            default_instrumentation('model.django.in_bulk.'), state='model'),
-        QUERY_SET + '.iterator': generator_wrapper_factory(
-            generate_record_telemetry('model.django.iterator.'), state='model'),
-        QUERY_SET + '.update_or_create': context_function_wrapper_factory(
-            default_instrumentation('model.django.update_or_create.'), state='model'),
-        QUERY_SET + '.delete': context_function_wrapper_factory(
-            default_instrumentation('model.django.delete.'), state='model'),
-        QUERY_SET + '.update': context_function_wrapper_factory(
-            default_instrumentation('model.django.update.'), state='model'),
-        QUERY_SET + '.exists': context_function_wrapper_factory(
-            default_instrumentation('model.django.exists.'), state='model'),
-        # 'django.core.urlresolvers.get_resolver': django_resolve_url,
-        # 'django.apps.registry.Apps.populate': get_urls,
+        QUERY_SET_CLASS_NAME + '.aggregate': context_function_wrapper_factory(
+            default_instrumentation('model.aggregate.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.count': context_function_wrapper_factory(
+            default_instrumentation('model.count.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.bulk_create': context_function_wrapper_factory(
+            default_instrumentation('model.bulk_create.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.create': context_function_wrapper_factory(
+            default_instrumentation('model.create.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.get': context_function_wrapper_factory(
+            default_instrumentation('model.get.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.get_or_create': context_function_wrapper_factory(
+            default_instrumentation('model.get_or_create.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.latest': context_function_wrapper_factory(
+            default_instrumentation('model.latest.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.first': context_function_wrapper_factory(
+            default_instrumentation('model.first.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.last': context_function_wrapper_factory(
+            default_instrumentation('model.last.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.in_bulk': context_function_wrapper_factory(
+            default_instrumentation('model.in_bulk.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.iterator': generator_wrapper_factory(
+            default_instrumentation('model.iterator.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.update_or_create': context_function_wrapper_factory(
+            default_instrumentation('model.update_or_create.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.delete': context_function_wrapper_factory(
+            default_instrumentation('model.delete.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.update': context_function_wrapper_factory(
+            default_instrumentation('model.update.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.exists': context_function_wrapper_factory(
+            default_instrumentation('model.exists.'), state='model'),
     }
 
     def __init__(self):

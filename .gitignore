@@ -57,3 +57,4 @@ target/
 *.iml
 .idea/
 
+/librato_python_web/tools/agent-conf.json

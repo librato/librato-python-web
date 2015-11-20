@@ -23,24 +23,54 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import sys
+import traceback as tb
 
-import unittest
-import logging
+DEBUG = 10
+INFO = 20
+WARNING = 30
+ERROR = 40
+CRITICAL = 50
 
-import requests
-from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.telemetry import StdoutTelemetryReporter
+
+class CustomLogger(object):
+
+    def __init__(self, name, level=WARNING):
+        self._level = level
+        self._name = name
+
+    def _stdout(self, level, fmt, *args, **kwargs):
+        mesg = fmt % args
+        print "[{}] {} - {}".format(level, self._name, mesg)
+
+    def _stderr(self, level, fmt, *args, **kwargs):
+        mesg = fmt % args
+        print >> sys.stderr, "[{}] {} - {}".format(level, self._name, mesg)
+
+    def debug(self, fmt, *args, **kwargs):
+        if self._level <= DEBUG:
+            self._stdout("DEBUG", fmt, args, **kwargs)
+
+    def info(self, fmt, *args, **kwargs):
+        if self._level <= INFO:
+            self._stdout("INFO", fmt, args, **kwargs)
+
+    def warning(self, fmt, *args, **kwargs):
+        if self._level <= WARNING:
+            self._stdout("WARNING", args, **kwargs)
+
+    def error(self, fmt, *args, **kwargs):
+        if self._level <= ERROR:
+            self._stderr("ERROR", args, **kwargs)
+
+    def exception(self, fmt, *args, **kwargs):
+        self._stderr("EXCEPTION", fmt, args, **kwargs)
+        tb.print_exc()
+
+    def critical(self, fmt, *args, **kwargs):
+        if self._level >= CRITICAL:
+            self._stderr("CRITICAL", fmt, args, **kwargs)
 
 
-class RequestsTest(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
-    def test_requests(self):
-        telemetry.set_reporter(StdoutTelemetryReporter())
-
-        result = requests.get('http://www.solarwinds.com')
-        print result
+def getCustomLogger(name):
+    return CustomLogger(name)
