@@ -28,9 +28,9 @@ from librato_python_web.instrumentor.instrument import instrument_methods
 
 
 class BaseInstrumentor(object):
-    def __init__(self, wrapped={}):
+    def __init__(self, wrapped=None):
         super(BaseInstrumentor, self).__init__()
-        self.wrapped = wrapped
+        self.wrapped = wrapped if wrapped is not None else {}
 
     def run(self):
         instrument_methods(self.wrapped)
