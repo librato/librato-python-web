@@ -24,17 +24,17 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import time
-from math import floor
-
 from librato_python_web.instrumentor.instrument import instrument_methods, function_wrapper_factory, \
-    context_function_wrapper_factory
+    context_function_wrapper_factory, generator_wrapper_factory
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.telemetry import default_instrumentation
+from librato_python_web.instrumentor.telemetry import default_instrumentation, generate_record_telemetry
 from librato_python_web.instrumentor.util import prepend_to_tuple, Timing
 from librato_python_web.instrumentor.instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
+
+import time
+from math import floor
 
 logger = getCustomLogger(__name__)
 
@@ -145,8 +145,8 @@ class DjangoInstrumentor(BaseInstrumentor):
             default_instrumentation('model.last.'), state='model'),
         QUERY_SET_CLASS_NAME + '.in_bulk': context_function_wrapper_factory(
             default_instrumentation('model.in_bulk.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.iterator': context_function_wrapper_factory(
-            default_instrumentation('model.iterator.'), state='model'),
+        QUERY_SET_CLASS_NAME + '.iterator': generator_wrapper_factory(
+            generate_record_telemetry('model.iterator.'), state='model'),
         QUERY_SET_CLASS_NAME + '.update_or_create': context_function_wrapper_factory(
             default_instrumentation('model.update_or_create.'), state='model'),
         QUERY_SET_CLASS_NAME + '.delete': context_function_wrapper_factory(
@@ -155,8 +155,6 @@ class DjangoInstrumentor(BaseInstrumentor):
             default_instrumentation('model.update.'), state='model'),
         QUERY_SET_CLASS_NAME + '.exists': context_function_wrapper_factory(
             default_instrumentation('model.exists.'), state='model'),
-        # 'django.core.urlresolvers.get_resolver': django_resolve_url,
-        # 'django.apps.registry.Apps.populate': get_urls,
     }
 
     def __init__(self):
