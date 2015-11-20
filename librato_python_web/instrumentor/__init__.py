@@ -26,6 +26,7 @@
 
 # Top-level module names and the corresponding proxies
 import os
+import sys
 
 import general
 import telemetry
@@ -36,6 +37,7 @@ from telemetry import StatsdTelemetryReporter
 
 from .data.elasticsearch import ElasticsearchInstrumentor
 from .data.mysqldb import MysqlInstrumentor
+from . import custom_logging
 from .external.requests_ import RequestsInstrumentor
 from .log.logging import LoggingInstrumentor
 from .messaging.pykafka import PykafkaInstrumentor
@@ -44,33 +46,50 @@ from .web.flask_ import FlaskInstrumentor
 
 from .instrument import run_instrumentors, instrument_methods
 
+logger = custom_logging.getCustomLogger(__name__)
+
 try:
     _wrapped = {
     }
 
-    _instrumentors = [
-        DjangoInstrumentor,
-        ElasticsearchInstrumentor,
-        FlaskInstrumentor,
-        LoggingInstrumentor,
-        MysqlInstrumentor,
-        PykafkaInstrumentor,
-        RequestsInstrumentor
-    ]
+    _default_libs = '*'
+    _instrumentors = {
+        'django': DjangoInstrumentor,
+        'elasticsearch': ElasticsearchInstrumentor,
+        'flask': FlaskInstrumentor,
+        'logging': LoggingInstrumentor,
+        'mysql': MysqlInstrumentor,
+        'pykafka': PykafkaInstrumentor,
+        'requests': RequestsInstrumentor,
+    }
 
     general.set_option('enabled', os.environ.get('LIBRATO_INSTRUMENT_PYTHON'))
-    if 'LIBRATO_INSTRUMENTATION_PORT' in os.environ:
-        general.set_option('statsd.enabled', True)
-        general.set_option('statsd.port', int(os.environ.get('LIBRATO_INSTRUMENTATION_PORT')))
-
-    if general.get_option('statsd.enabled', False):
-        telemetry.set_reporter(StatsdTelemetryReporter(general.get_option('statsd.port', 8142)))
-
-    if general.get_option('config.enabled', False):
-        config.config.set_reporter(LegacyConfigReporter())
-
     if general.get_option('enabled'):
+        config_file = './agent-conf.json'
+        if os.path.isfile(config_file):
+            general.configure(config_file)
+        else:
+            logger.error("Can't load configuration file: %s", config_file)
+            sys.exit(1)
+
+        log_level = general.get_option("instrumentor.log_level", 30)
+        custom_logging.setDefaultLevel(int(log_level))
+
+        if 'LIBRATO_INSTRUMENTATION_PORT' in os.environ:
+            general.set_option('statsd.enabled', True)
+            general.set_option('statsd.port', int(os.environ.get('LIBRATO_INSTRUMENTATION_PORT')))
+
+        if general.get_option('statsd.enabled', False):
+            logger.debug("Using Statsd reporter")
+            telemetry.set_reporter(StatsdTelemetryReporter(general.get_option('statsd.port', 8142)))
+
+        if general.get_option('config.enabled', False):
+            logger.debug("Using legacy config reporter")
+            config.config.set_reporter(LegacyConfigReporter())
+
+        libs = general.get_option('libraries', _default_libs)
+        logger.info("Libraries = %s", libs)
         instrument_methods(_wrapped)
-        run_instrumentors(_instrumentors)
-except Exception as e:
-    print "librato_python_web __init__ failure", e
+        run_instrumentors(_instrumentors, libs)
+except Exception:
+    logger.exception("librato_python_web __init__ failure")

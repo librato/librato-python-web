@@ -1,5 +1,5 @@
 from librato_python_web.instrumentor.instrument import context_function_wrapper_factory
-from librato_python_web.instrumentor.instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.telemetry import default_instrumentation
 
 

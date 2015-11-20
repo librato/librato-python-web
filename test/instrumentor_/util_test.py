@@ -23,64 +23,39 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import sys
-import traceback as tb
-
-DEBUG = 10
-INFO = 20
-WARNING = 30
-ERROR = 40
-CRITICAL = 50
+import unittest
+import time
+from instrumentor.util import Timing
 
 
-class _globals:
-    _level = WARNING
+class UtilTest(unittest.TestCase):
+    def setUp(self):
+        pass
 
+    def tearDown(self):
+        pass
 
-class CustomLogger(object):
+    def test_historically_named_timing(self):
+        Timing.push_timer()
+        time.sleep(0.1)
+        Timing.push_timer()
+        time.sleep(0.1)
+        self.assertAlmostEqual(0.1, Timing.pop_timer()[0], delta=0.03)
+        self.assertAlmostEqual(0.2, Timing.pop_timer()[0], delta=0.03)
 
-    def __init__(self, name):
-        self._name = name
+    def test_stack_timing(self):
+        times = 10
 
-    def _stdout(self, level, fmt, *args, **kwargs):
-        mesg = fmt % args
-        print "[{}] {} - {}".format(level, self._name, mesg)
+        Timing.push_timer()
+        time.sleep(0.1)
 
-    def _stderr(self, level, fmt, *args, **kwargs):
-        mesg = fmt % args
-        print >> sys.stderr, "[{}] {} - {}".format(level, self._name, mesg)
+        for i in range(times):
+            Timing.push_timer()
+            time.sleep(0.1)
+            t, _ = Timing.pop_timer()
+            self.assertAlmostEqual(0.1, t, delta=0.03)
 
-    def debug(self, fmt, *args, **kwargs):
-        if _globals._level <= DEBUG:
-            self._stdout("DEBUG", fmt, *args, **kwargs)
+        elapsed_time, net_time = Timing.pop_timer()
 
-    def info(self, fmt, *args, **kwargs):
-        if _globals._level <= INFO:
-            self._stdout("INFO", fmt, *args, **kwargs)
-
-    def warning(self, fmt, *args, **kwargs):
-        if _globals._level <= WARNING:
-            self._stdout("WARNING", fmt, *args, **kwargs)
-
-    def warn(self, fmt, *args, **kwargs):
-        return self.warning(fmt, *args, **kwargs)
-
-    def error(self, fmt, *args, **kwargs):
-        if _globals._level <= ERROR:
-            self._stderr("ERROR", fmt, *args, **kwargs)
-
-    def exception(self, fmt, *args, **kwargs):
-        self._stderr("EXCEPTION", fmt, *args, **kwargs)
-        tb.print_exc()
-
-    def critical(self, fmt, *args, **kwargs):
-        if _globals._level >= CRITICAL:
-            self._stderr("CRITICAL", fmt, *args, **kwargs)
-
-
-def setDefaultLevel(level):
-    _globals._level = level
-
-
-def getCustomLogger(name):
-    return CustomLogger(name)
+        self.assertAlmostEqual(0.1 + times*0.1, elapsed_time, delta=0.03)
+        self.assertAlmostEqual(0.1, net_time, delta=0.03)

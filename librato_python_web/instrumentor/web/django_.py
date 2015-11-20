@@ -30,7 +30,7 @@ from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import default_instrumentation, generate_record_telemetry
 from librato_python_web.instrumentor.util import prepend_to_tuple, Timing
-from librato_python_web.instrumentor.instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 import time
@@ -47,20 +47,19 @@ class AgentMiddleware(object):
 
     def process_request(self, request):
         self.is_active = True
-        Timing.start_timer(STATE_NAME)
+        Timing.push_timer()
         context.push_state(STATE_NAME)
         context.push_tag('web.route', request.path)
         telemetry.count('web.requests')
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if self.is_active:
-            telemetry.record('web.view.latency', time.clock() - self.is_active)
+            telemetry.record('web.view.latency', time.time() - self.is_active)
 
     def process_response(self, request, response):
-        elapsed = Timing.stop_timer(STATE_NAME, accumulate=False)
+        elapsed, net_elapsed = Timing.pop_timer()
         if self.is_active:
             telemetry.record('web.response.latency', elapsed)
-            net_elapsed = elapsed - Timing.get_timer(STATE_NAME + Timing.NET_KEY, clear=True)
             telemetry.record('app.response.latency', net_elapsed)
             telemetry.count('web.status.%ixx' % floor(response.status_code / 100))
             try:
@@ -106,11 +105,11 @@ def django_inject_middleware(class_def, original_method):
 
 def _django_wsgi_call(f):
     def inner_wsgi_call(*args, **keywords):
-        t = time.clock()
+        t = time.time()
         try:
             return f(*args, **keywords)
         finally:
-            elapsed = time.clock() - t
+            elapsed = time.time() - t
             telemetry.record('wsgi.response.latency', elapsed)
 
     return inner_wsgi_call

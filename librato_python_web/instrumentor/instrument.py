@@ -32,13 +32,19 @@ from librato_python_web.instrumentor.custom_logging import getCustomLogger
 logger = getCustomLogger(__name__)
 
 
-def run_instrumentors(instrumentors):
+def run_instrumentors(instrumentors, libs):
     """
     :param instrumentors:
     :return:
     """
-    for instrumentor in instrumentors:
+    for alias in instrumentors:
+        if libs != '*' and alias not in libs:
+            logger.info("Skipping %s", alias)
+            continue
+
         try:
+            logger.info("Instrumenting %s", alias)
+            instrumentor = instrumentors[alias]
             for class_name in instrumentor.required_class_names:
                 if not is_class_available(class_name):
                     logger.info('required instrumentor class not available %s', class_name)
@@ -228,7 +234,7 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
     """
     Generates a function that wraps a function so that it uses the context_manager around it.
 
-    :param generator: the function used to wrap functions provided to the factory
+    :param recorder: the function used to wrap functions provided to the factory
     :param state: the state associated with the wrapped method
     :param enable_if: instrumentation is only enabled when this state is present
     :param disable_if: instrumentation is disabled when this state is present
@@ -248,19 +254,19 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
             if _should_be_instrumented(state, enable_if, disable_if):
                 # wrap the initialization
                 elapsed = 0
-                t = time.clock()
+                t = time.time()
                 try:
                     gen = generator(*args, **keywords)
                 finally:
-                    elapsed += time.clock() - t
+                    elapsed += time.time() - t
                 try:
                     while True:
                         # wrap each successive value generation
-                        t = time.clock()
+                        t = time.time()
                         try:
                             v = gen.next()
                         finally:
-                            elapsed += time.clock() - t
+                            elapsed += time.time() - t
                         yield v
                 finally:
                     # finish metrics (GeneratorExit or otherwise)

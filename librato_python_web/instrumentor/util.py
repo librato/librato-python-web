@@ -25,11 +25,10 @@
 
 
 import base64
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 import hashlib
 import re
 import time
-from librato_python_web.instrumentor import context
 
 from librato_python_web.instrumentor.instrument import get_module_by_name
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
@@ -55,6 +54,19 @@ class Timing(object):
         return Timing.context.dict
 
     @staticmethod
+    def _get_timers():
+        """
+        :return:
+        :rtype: list
+        """
+        if not Timing.context:
+            import threading
+            Timing.context = threading.local()
+        if not hasattr(Timing.context, 'timers'):
+            Timing.context.timers = list()
+        return Timing.context.timers
+
+    @staticmethod
     def get_value(name, default=None):
         value = Timing._get_dict().get(name)
         if value is None and default is not None:
@@ -64,41 +76,32 @@ class Timing(object):
             return value
 
     @staticmethod
-    def get_timers():
-        return Timing.get_value('timers', defaultdict(int))
+    def push_timer():
+        """
+        Create a new timing context
+        """
+        # start time and accumulator for children to use
+        Timing._get_timers().append([time.time(), 0])
 
     @staticmethod
-    def start_timer(name='default'):
-        logger.debug('>start_timer %s', name)
-        Timing.get_timers()[name] = time.clock()
+    def pop_timer():
+        """
+        Returns a tuple consisting of elapsed time in this timer and net time spent in this timer, exclusive of
+        children.
 
-    @staticmethod
-    def get_timer(name='default', clear=False):
-        try:
-            return Timing.get_timers()[name]
-        finally:
-            if clear:
-                del Timing.get_timers()[name]
+        Updates parent's time for this child, if applicable.
 
-    @staticmethod
-    def stop_timer(name='default', accumulate=True):
-        timers = Timing.get_timers()
-        logger.debug('<stop_timer %s', name)
-        if name in timers:
-            try:
-                elapsed = time.clock() - timers[name]
-                if accumulate:
-                    for state in context._get_state():
-                        key = state + Timing.NET_KEY
-                        timers[key] += elapsed
-                return elapsed
-            finally:
-                if name in timers:
-                    del timers[name]
-                pass
-        else:
-            logger.error('timer not found %s', name)
-            return 0
+        :return: elapsed time and net time in seconds
+        """
+        # start time and accumulator for children to use
+        timers = Timing._get_timers()
+        start_time, children = timers.pop()
+        elapsed_time = time.time() - start_time
+        net_time = elapsed_time - children
+        if timers:
+            # accumulate as child time
+            timers[-1][1] += elapsed_time
+        return elapsed_time, net_time
 
 
 def prepend_to_tuple(t, value):

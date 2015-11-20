@@ -25,10 +25,9 @@
 
 
 from math import floor
-import time
 
 from librato_python_web.instrumentor.instrument import function_wrapper_factory
-from librato_python_web.instrumentor.instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.util import get_parameter, Timing
@@ -40,7 +39,7 @@ def requests_request_time(f):
         url = get_parameter(1, 'url', *args, **keywords)
         with context.add_all_tags([('external.url', url), ('external.method', method)]):
             telemetry.count('external.http.requests')
-            t = Timing.start_timer('external.requests')
+            t = Timing.push_timer()
             try:
                 a = f(*args, **keywords)
                 telemetry.count('external.http.status.%ixx' % floor(a.status_code / 100))
@@ -49,7 +48,7 @@ def requests_request_time(f):
                 telemetry.count('external.http.errors')
                 raise
             finally:
-                elapsed = Timing.stop_timer('external.requests')
+                elapsed, _ = Timing.pop_timer()
                 telemetry.record('external.http.response.latency', elapsed)
 
     return inner_requests_request_time
