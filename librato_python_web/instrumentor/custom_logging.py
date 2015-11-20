@@ -33,10 +33,13 @@ ERROR = 40
 CRITICAL = 50
 
 
+class _globals:
+    _level = WARNING
+
+
 class CustomLogger(object):
 
-    def __init__(self, name, level=WARNING):
-        self._level = level
+    def __init__(self, name):
         self._name = name
 
     def _stdout(self, level, fmt, *args, **kwargs):
@@ -48,28 +51,35 @@ class CustomLogger(object):
         print >> sys.stderr, "[{}] {} - {}".format(level, self._name, mesg)
 
     def debug(self, fmt, *args, **kwargs):
-        if self._level <= DEBUG:
-            self._stdout("DEBUG", fmt, args, **kwargs)
+        if _globals._level <= DEBUG:
+            self._stdout("DEBUG", fmt, *args, **kwargs)
 
     def info(self, fmt, *args, **kwargs):
-        if self._level <= INFO:
-            self._stdout("INFO", fmt, args, **kwargs)
+        if _globals._level <= INFO:
+            self._stdout("INFO", fmt, *args, **kwargs)
 
     def warning(self, fmt, *args, **kwargs):
-        if self._level <= WARNING:
-            self._stdout("WARNING", args, **kwargs)
+        if _globals._level <= WARNING:
+            self._stdout("WARNING", fmt, *args, **kwargs)
+
+    def warn(self, fmt, *args, **kwargs):
+        return self.warning(fmt, *args, **kwargs)
 
     def error(self, fmt, *args, **kwargs):
-        if self._level <= ERROR:
-            self._stderr("ERROR", args, **kwargs)
+        if _globals._level <= ERROR:
+            self._stderr("ERROR", fmt, *args, **kwargs)
 
     def exception(self, fmt, *args, **kwargs):
-        self._stderr("EXCEPTION", fmt, args, **kwargs)
+        self._stderr("EXCEPTION", fmt, *args, **kwargs)
         tb.print_exc()
 
     def critical(self, fmt, *args, **kwargs):
-        if self._level >= CRITICAL:
-            self._stderr("CRITICAL", fmt, args, **kwargs)
+        if _globals._level >= CRITICAL:
+            self._stderr("CRITICAL", fmt, *args, **kwargs)
+
+
+def setDefaultLevel(level):
+    _globals._level = level
 
 
 def getCustomLogger(name):
