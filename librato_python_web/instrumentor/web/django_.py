@@ -22,13 +22,13 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+from functools import wraps
 
 import time
 from math import floor
 
 from librato_python_web.instrumentor.instrument import instrument_methods, function_wrapper_factory, \
-    generator_wrapper_factory
+    generator_wrapper_factory, unwrap_method
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import generate_record_telemetry
@@ -78,26 +78,17 @@ class AgentMiddleware(object):
             telemetry.count('web.errors')
 
 
-_middleware_hook_installed = False
-
-
 def django_inject_middleware(original_method):
-    """TODO: create one-time wrapper that removes itself after success"""
-    """TODO: eliminate global flag"""
-
+    @wraps(original_method)
     def decorator(*args, **keywords):
+        logger.info('injecting AgentMiddleware into django')
         settings = args[0]
-        global _middleware_hook_installed
-        if not _middleware_hook_installed:
-            logger.info('injecting AgentMiddleware into django')
-            a = original_method(settings, 'MIDDLEWARE_CLASSES')
-            # Capture all calls
-            a = prepend_to_tuple(a, 'librato_python_web.instrumentor.web.django_.AgentMiddleware')
-            settings._wrapped.MIDDLEWARE_CLASSES = a
-            _middleware_hook_installed = True
-            logger.info('new middleware stack: %s', str(a))
-
+        a = original_method(settings, 'MIDDLEWARE_CLASSES')
+        a = prepend_to_tuple(a, 'librato_python_web.instrumentor.web.django_.AgentMiddleware')
+        settings._wrapped.MIDDLEWARE_CLASSES = a
+        logger.info('new middleware stack: %s', str(a))
         a = original_method(*args, **keywords)
+        unwrap_method(decorator)
         return a
 
     return decorator

@@ -22,8 +22,7 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from functools import wraps, update_wrapper
-
+from functools import wraps
 import time
 
 from librato_python_web.instrumentor import context
@@ -131,10 +130,16 @@ def wrap_method(method_owner, method_name, method_wrapper):
     :param method_wrapper:
     """
     original_method = getattr(method_owner, method_name)
-    wrapped_method = method_wrapper(method_owner, original_method)
-    print original_method.__name__
-    update_wrapper(method_wrapper, original_method)
+    wrapped_method = method_wrapper(original_method)
+    wrapped_method.original = (method_owner, method_name, original_method)
     replace_method(method_owner, method_name, wrapped_method)
+
+
+def unwrap_method(method_wrapper):
+    if hasattr(method_wrapper, 'original'):
+        original = method_wrapper.original
+        replace_method(*original)
+        delattr(method_wrapper, 'original')
 
 
 def replace_method(owner, method_name, method):
@@ -165,6 +170,15 @@ def _build_key(mappings, args, keywords):
 
 
 def _eval(args, keywords, expressions):
+    """
+    Returns the value of the given expressions as applied against the args and keywords.
+
+    Expressions are pipe-delimited values which represent alternatives. Numeric values are used a indicies
+    :param args: the array of method arguments
+    :param keywords: the dictionary of keywords
+    :param expressions:
+    :return:
+    """
     final_failure = Exception
     if expressions is None:
         return None
@@ -193,6 +207,7 @@ def _eval(args, keywords, expressions):
                 value = keywords[expression]
             return value
         except (IndexError, KeyError) as e:
+            # fall through to here when missing value causes an error, let loop try other possibilities if any
             final_failure = e
     raise final_failure
 

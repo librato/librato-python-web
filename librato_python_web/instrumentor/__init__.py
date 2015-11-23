@@ -26,15 +26,12 @@
 
 # Top-level module names and the corresponding proxies
 import os
-import sys
 
 import general
 import telemetry
-
 from . import config
 from .config import LegacyConfigReporter
 from .telemetry import StatsdTelemetryReporter
-
 from .data.elasticsearch import ElasticsearchInstrumentor
 from .data.mysqldb import MysqlInstrumentor
 from . import custom_logging
@@ -43,7 +40,6 @@ from .log.logging import LoggingInstrumentor
 from .messaging.pykafka import PykafkaInstrumentor
 from .web.django_ import DjangoInstrumentor
 from .web.flask_ import FlaskInstrumentor
-
 from .instrument import run_instrumentors, instrument_methods
 
 logger = custom_logging.getCustomLogger(__name__)
