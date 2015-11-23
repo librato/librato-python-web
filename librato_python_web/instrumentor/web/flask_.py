@@ -33,7 +33,7 @@ import time
 from librato_python_web.instrumentor import config as agent_api_config
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.instrument import context_function_wrapper_factory, function_wrapper_factory
+from librato_python_web.instrumentor.instrument import contextmanager_wrapper_factory, function_wrapper_factory
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
@@ -57,11 +57,11 @@ def get_fw_version():
     """
     if not FlaskInstrumentor.fw_version:
         try:
-            # Might fail due to setuptools dependency
             import pkg_resources
             FlaskInstrumentor._fw_version = pkg_resources.require("flask")[0].version
             agent_api_config.declare('fw_version', FlaskInstrumentor.fw_version)
         except:
+            # Might fail due to setuptools dependency
             pass
 
 
@@ -120,8 +120,7 @@ def _teardown_request(e=None):
 
 
 def _flask_app(f):
-
-    def inner_flask_app(*args, **keywords):
+    def decorator(*args, **keywords):
         try:
             a = f(*args, **keywords)
             app = args[0]
@@ -133,20 +132,18 @@ def _flask_app(f):
             raise e
         finally:
             pass
-
-    return inner_flask_app
+    return decorator
 
 
 def _flask_wsgi_call(f):
-    def inner_wsgi_call(*args, **keywords):
+    def decorator(*args, **keywords):
         t = time.time()
         try:
             return f(*args, **keywords)
         finally:
             elapsed = time.time() - t
             telemetry.record('wsgi.response.latency', elapsed)
-
-    return inner_wsgi_call
+    return decorator
 
 
 class FlaskInstrumentor(BaseInstrumentor):
@@ -159,7 +156,7 @@ class FlaskInstrumentor(BaseInstrumentor):
         super(FlaskInstrumentor, self).__init__(
             {
                 'flask.app.Flask.__init__': function_wrapper_factory(_flask_app, enable_if=None),
-                'flask.app.Flask.add_url_rule': context_function_wrapper_factory(_flask_add_url_rule, enable_if=None),
+                'flask.app.Flask.add_url_rule': contextmanager_wrapper_factory(_flask_add_url_rule, enable_if=None),
                 'flask.app.Flask.__call__': function_wrapper_factory(_flask_wsgi_call, enable_if=None, state='wsgi'),
             }
         )

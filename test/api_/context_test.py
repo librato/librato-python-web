@@ -24,12 +24,9 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from threading import Thread
 import unittest
-from librato_python_web.api import context
 
 from librato_python_web.api.context import push_tag, pop_tag, add_tag, get_tags, add_all_tags
-from librato_python_web.api.telemetry import worker
 
 
 def run():
@@ -77,37 +74,3 @@ class ImportTest(unittest.TestCase):
             self.assertListEqual([('foo', 1)], get_tags())
         self.assertTrue(visited)
         self.assertListEqual([], get_tags())
-
-    def test_worker(self):
-        @worker(worker_id='id')
-        def foo1():
-            self.assertEquals(['id'], context.get_tags())
-
-        @worker()
-        def foo():
-            self.assertEquals(['foo'], context.get_tags())
-
-        @worker(worker_id='threadId')
-        class MyThread1(Thread):
-            def __init__(self):
-                super(MyThread1, self).__init__()
-
-            def run(self):
-                self.assertEquals(['threadId'], context.get_tags())
-
-        @worker()
-        class MyThread(Thread):
-            def __init__(self):
-                super(MyThread, self).__init__()
-
-            def run(self):
-                self.assertEquals(['MyThread'], context.get_tags())
-
-        foo1()
-        foo()
-
-        t1 = MyThread1()
-        t1.start()
-
-        t = MyThread()
-        t.start()

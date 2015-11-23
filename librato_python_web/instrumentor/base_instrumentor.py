@@ -23,14 +23,25 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from .telemetry import default_instrumentation
 
-from librato_python_web.instrumentor.instrument import instrument_methods
+from librato_python_web.instrumentor.instrument import instrument_methods, contextmanager_wrapper_factory
+
+_default = object()
 
 
 class BaseInstrumentor(object):
-    def __init__(self, wrapped=None):
-        super(BaseInstrumentor, self).__init__()
+    def __init__(self, wrapped=None, state=None):
         self.wrapped = wrapped if wrapped is not None else {}
+        self.state = state
 
     def run(self):
         instrument_methods(self.wrapped)
+
+    def instrument(self, metric_name, mapping=None, state=_default, enable_if=None, disable_if=None):
+        state = self.get_state(state)
+        return contextmanager_wrapper_factory(default_instrumentation(metric_name), mapping, state, enable_if,
+            disable_if)
+
+    def get_state(self, state=_default):
+        return self.state if state == _default else state

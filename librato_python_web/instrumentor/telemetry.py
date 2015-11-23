@@ -146,7 +146,6 @@ class StatsdTelemetryReporter(TelemetryReporter):
         self.client.increment(metric, incr)
 
     def record(self, metric, value):
-        # traceback.print_stack()
         self.client.timing(metric, value * 1000)
 
     def event(self, type_name, dictionary=None):

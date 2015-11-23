@@ -22,19 +22,19 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-from librato_python_web.instrumentor.instrument import instrument_methods, function_wrapper_factory, \
-    context_function_wrapper_factory, generator_wrapper_factory
-from librato_python_web.instrumentor import context as context
-from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.telemetry import default_instrumentation, generate_record_telemetry
-from librato_python_web.instrumentor.util import prepend_to_tuple, Timing
-from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.custom_logging import getCustomLogger
+from functools import wraps
 
 import time
 from math import floor
+
+from librato_python_web.instrumentor.instrument import instrument_methods, function_wrapper_factory, \
+    generator_wrapper_factory, unwrap_method
+from librato_python_web.instrumentor import context as context
+from librato_python_web.instrumentor import telemetry
+from librato_python_web.instrumentor.telemetry import generate_record_telemetry
+from librato_python_web.instrumentor.util import prepend_to_tuple, Timing
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
 
@@ -78,86 +78,51 @@ class AgentMiddleware(object):
             telemetry.count('web.errors')
 
 
-_middleware_hook_installed = False
-
-
-def django_inject_middleware(class_def, original_method):
-    """TODO: create one-time wrapper that removes itself after success"""
-    """TODO: eliminate global flag"""
-
-    def wrapped(*args, **keywords):
+def django_inject_middleware(original_method):
+    @wraps(original_method)
+    def decorator(*args, **keywords):
+        logger.info('injecting AgentMiddleware into django')
         settings = args[0]
-        global _middleware_hook_installed
-        if not _middleware_hook_installed:
-            logger.info('injecting AgentMiddleware into django')
-            a = original_method(settings, 'MIDDLEWARE_CLASSES')
-            # Capture all calls
-            a = prepend_to_tuple(a, 'librato_python_web.instrumentor.web.django_.AgentMiddleware')
-            settings._wrapped.MIDDLEWARE_CLASSES = a
-            _middleware_hook_installed = True
-            logger.info('new middleware stack: %s', str(a))
-
+        a = original_method(settings, 'MIDDLEWARE_CLASSES')
+        a = prepend_to_tuple(a, 'librato_python_web.instrumentor.web.django_.AgentMiddleware')
+        settings._wrapped.MIDDLEWARE_CLASSES = a
+        logger.info('new middleware stack: %s', str(a))
         a = original_method(*args, **keywords)
+        unwrap_method(decorator)
         return a
 
-    return wrapped
+    return decorator
 
 
-def _django_wsgi_call(f):
-    def inner_wsgi_call(*args, **keywords):
-        t = time.time()
+def _django_wsgi_call(original_method):
+    def decorator(*args, **keywords):
+        Timing.push_timer()
         try:
-            return f(*args, **keywords)
+            return original_method(*args, **keywords)
         finally:
-            elapsed = time.time() - t
+            elapsed, net_elapsed = Timing.pop_timer()
             telemetry.record('wsgi.response.latency', elapsed)
 
-    return inner_wsgi_call
+    return decorator
 
 
 class DjangoInstrumentor(BaseInstrumentor):
-    settings = None
     required_class_names = ['django.core', 'django.apps']
-    QUERY_SET_CLASS_NAME = 'django.db.models.query.QuerySet'
     _wrapped = {
         'django.core.handlers.wsgi.WSGIHandler.__call__': function_wrapper_factory(_django_wsgi_call, state='wsgi',
-                                                                                   enable_if=None),
+            enable_if=None),
         'django.conf.LazySettings.__getattr__': django_inject_middleware,
-
-        QUERY_SET_CLASS_NAME + '.aggregate': context_function_wrapper_factory(
-            default_instrumentation('model.aggregate.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.count': context_function_wrapper_factory(
-            default_instrumentation('model.count.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.bulk_create': context_function_wrapper_factory(
-            default_instrumentation('model.bulk_create.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.create': context_function_wrapper_factory(
-            default_instrumentation('model.create.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.get': context_function_wrapper_factory(
-            default_instrumentation('model.get.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.get_or_create': context_function_wrapper_factory(
-            default_instrumentation('model.get_or_create.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.latest': context_function_wrapper_factory(
-            default_instrumentation('model.latest.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.first': context_function_wrapper_factory(
-            default_instrumentation('model.first.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.last': context_function_wrapper_factory(
-            default_instrumentation('model.last.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.in_bulk': context_function_wrapper_factory(
-            default_instrumentation('model.in_bulk.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.iterator': generator_wrapper_factory(
+        'django.db.models.query.QuerySet.iterator': generator_wrapper_factory(
             generate_record_telemetry('model.iterator.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.update_or_create': context_function_wrapper_factory(
-            default_instrumentation('model.update_or_create.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.delete': context_function_wrapper_factory(
-            default_instrumentation('model.delete.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.update': context_function_wrapper_factory(
-            default_instrumentation('model.update.'), state='model'),
-        QUERY_SET_CLASS_NAME + '.exists': context_function_wrapper_factory(
-            default_instrumentation('model.exists.'), state='model'),
     }
+    _query_set_methods = 'aggregate, count, bulk_create, create, get, get_or_create, latest, first, last, in_bulk,' \
+                         'iterator, update_or_create, delete, update, exists'
 
     def __init__(self):
         super(DjangoInstrumentor, self).__init__()
+        for method in [m.strip() for m in self._query_set_methods.split(',')]:
+            self._wrapped['django.db.models.query.QuerySet.%s' % method] = self.instrument('model.%s.' % method,
+                                                                                           state='model')
 
     def run(self):
         try:

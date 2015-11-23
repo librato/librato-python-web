@@ -22,8 +22,7 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
+from functools import wraps
 import time
 
 from librato_python_web.instrumentor import context
@@ -35,7 +34,7 @@ logger = getCustomLogger(__name__)
 def run_instrumentors(instrumentors, libs):
     """
     :param instrumentors:
-    :return:
+    :param libs:
     """
     for alias in instrumentors:
         if libs != '*' and alias not in libs:
@@ -45,17 +44,21 @@ def run_instrumentors(instrumentors, libs):
         try:
             logger.info("Instrumenting %s", alias)
             instrumentor = instrumentors[alias]
-            for class_name in instrumentor.required_class_names:
-                if not is_class_available(class_name):
-                    logger.info('required instrumentor class not available %s', class_name)
-                    break
-            else:
-                # All required classes were available
-                logger.info('running instrumentor: %s', instrumentor.__name__)
-                instrumentor().run()
+            try:
+                for class_name in instrumentor.required_class_names:
+                    if not is_class_available(class_name):
+                        logger.info('required instrumentor class not available %s', class_name)
+                        break
+                else:
+                    # All required classes were available
+                    logger.info('running instrumentor: %s', instrumentor.__name__)
+                    instrumentor().run()
+            except:
+                # if something goes wrong, keep going, don't destroy the app!
+                logger.exception('problem initializing instrumentor: %s', instrumentor)
         except:
             # if something goes wrong, keep going, don't destroy the app!
-            logger.exception('problem initializing instrumentor: %s', instrumentor)
+            logger.exception('problem initializing instrumentor: %s', alias)
 
 
 def instrument_methods(method_wrappers):
@@ -63,7 +66,6 @@ def instrument_methods(method_wrappers):
     Instruments the methods as specified by the method_wrappers dict. Keys indicate the method path and values provide
     the function that wraps the method.
     :param method_wrappers: dictionary of paths to
-    :return:
     """
     for method_path, method_wrapper in method_wrappers.iteritems():
         (fully_qualified_class_name, method_name) = method_path.rsplit('.', 1)
@@ -89,7 +91,7 @@ def is_class_available(fully_qualified_class_name):
     :returns: bool
     """
     return get_module_by_name(fully_qualified_class_name) is not None or \
-           get_class_by_name(fully_qualified_class_name) is not None
+        get_class_by_name(fully_qualified_class_name) is not None
 
 
 def get_module_by_name(fully_qualified_module_name):
@@ -107,10 +109,10 @@ def get_class_by_name(fully_qualified_class_name):
     :type fully_qualified_class_name: str
     :return: the specified class, None if not found
     """
-    (module_name, class_name) = fully_qualified_class_name.rsplit('.', 1) if '.' in fully_qualified_class_name \
+    (module_path, class_name) = fully_qualified_class_name.rsplit('.', 1) if '.' in fully_qualified_class_name \
         else (fully_qualified_class_name, None)
     try:
-        module_def = __import__(module_name, globals(), locals(), [class_name] if class_name else [])
+        module_def = __import__(module_path, globals(), locals(), [class_name] if class_name else [])
         class_def = getattr(module_def, class_name) if module_def and class_name else None
     except ImportError:
         logger.info('%s not found', fully_qualified_class_name)
@@ -119,44 +121,76 @@ def get_class_by_name(fully_qualified_class_name):
     return class_def
 
 
-def wrap_method(class_def, method_name, method_wrapper):
+def wrap_method(method_owner, method_name, method_wrapper):
     """
-    Wrap the method with the method_name on the class_def by the method_wrapper.
+    Wrap the method with the method_name on the class_def using the method_wrapper.
 
-    :param class_def:
-    :param method_name:
-    :param method_wrapper:
+    Records original information on the wrapper method so that method can be "unwrapped" as an "original" attribute on
+    the method_wrapper (see unwrap_method()).
+
+    :param method_owner: the object on which the method is set (e.g., class or module)
+    :param method_name: the name of the attribute to be overridden
+    :param method_wrapper: the function that wraps the method (takes the method as the sole argument)
     """
-    original_method = getattr(class_def, method_name)
-    wrapped_method = method_wrapper(class_def, original_method)
-    replace_method(class_def, method_name, wrapped_method)
+    original_method = getattr(method_owner, method_name)
+    wrapped_method = method_wrapper(original_method)
+    wrapped_method.original = (method_owner, method_name, original_method)
+    replace_method(method_owner, method_name, wrapped_method)
 
 
-def replace_method(class_def, method_name, method):
+def unwrap_method(method_wrapper):
+    """
+    Unwraps the given method presuming that it was set using wrap_method.
+
+    Needs original information on the wrapper method so that method can be "unwrapped" (in "original" attribute).
+
+    :param method_wrapper: the function that wraps the method to be restored
+    """
+    if hasattr(method_wrapper, 'original'):
+        original = method_wrapper.original
+        replace_method(*original)
+        delattr(method_wrapper, 'original')
+
+
+def replace_method(owner, method_name, method):
     """
     Replaces the given method name on the given class_def with the given method.
 
-    :param class_def:
-    :param method_name:
-    :param method:
+    :param owner: the owner of the method (class or module)
+    :param method_name: the method name on the owner
+    :param method: the method to use
     """
-    setattr(class_def, method_name, method)
+    setattr(owner, method_name, method)
 
 
-def _build_key(args, keys, keywords):
+def _build_key(mappings, args, keywords):
+    """
+    :param mappings:
+    :param args:
+    :param keywords:
+    :return: list of key-value pairs for naming
+    """
     values = []
-    for a in keys or sorted(keywords.keys()):
-        value = _eval(args, keywords, a)
+    for key in mappings or []:
+        expression = mappings.get(key)
+        value = _eval(args, keywords, expression)
         if value is not None:
-            values.append(value)
-    if len(values) > 2:
-        logger.error("more than two values in _build_key: %s", str(values))
+            values.append((key, value))
     return values
 
 
 def _eval(args, keywords, expressions):
+    """
+    Returns the value of the given expressions as applied against the args and keywords.
+
+    Expressions are pipe-delimited values which represent alternatives. Numeric values are used a indicies
+    :param args: the array of method arguments
+    :param keywords: the dictionary of keywords
+    :param expressions:
+    :return:
+    """
     final_failure = Exception
-    if not expressions:
+    if expressions is None:
         return None
     for expression in expressions.split('|') if isinstance(expressions, basestring) else [expressions]:
         try:
@@ -183,11 +217,21 @@ def _eval(args, keywords, expressions):
                 value = keywords[expression]
             return value
         except (IndexError, KeyError) as e:
+            # fall through to here when missing value causes an error, let loop try other possibilities if any
             final_failure = e
     raise final_failure
 
 
 def _should_be_instrumented(state, enable_if, disable_if):
+    """
+    Returns False if the method should not be instrumented given the current state. Any value can be None to indicate
+    no change.
+
+    :param state: the new state
+    :param enable_if: enable instrumentation iff this state is present
+    :param disable_if: disable instrumentation iff this state is present
+    :return: True if rules indicate this should be instrumented, false otherwise
+    """
     if enable_if and not context.has_state(enable_if):
         logger.debug('skipping %s instrumentation, lacks enable_if=%s', state, enable_if)
         return False
@@ -212,22 +256,24 @@ def function_wrapper_factory(wrapper_function, state=None, enable_if='web', disa
     :param disable_if: instrumentation is disabled when this state is present
     :return: the function wrapper
     """
-
-    def function_wrapper(ctx, f):
+    def decorator(f):
         """
-        :param ctx: the context for the call, typically a class def
+        Functions are only wrapped when instrumentation is required, based on run-time context
         :param f: the function to wrap
         """
-
+        @wraps(f)
         def wrapper(*args, **keywords):
             if _should_be_instrumented(state, enable_if, disable_if):
-                return wrapper_function(f)(*args, **keywords)
+                try:
+                    context.push_state(state)
+                    return wrapper_function(f)(*args, **keywords)
+                finally:
+                    context.pop_state(state)
             else:
                 return f(*args, **keywords)
 
         return wrapper
-
-    return function_wrapper
+    return decorator
 
 
 def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=None):
@@ -240,33 +286,35 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
     :param disable_if: instrumentation is disabled when this state is present
     :return: the function wrapper
     """
-
-    def generator_wrapper(ctx, generator):
+    def decorator(generator):
         """
         Creates a generator that wraps the given generator and instruments it depending on the context when
         its called.
-        :param ctx: the context for the call, typically a class def
         :param generator: the generator to wrap
         """
-
+        @wraps(generator)
         def wrapper(*args, **keywords):
             # determined at run time, since this depends on the invocation context
             if _should_be_instrumented(state, enable_if, disable_if):
                 # wrap the initialization
                 elapsed = 0
+                context.push_state(state)
                 t = time.time()
                 try:
                     gen = generator(*args, **keywords)
                 finally:
                     elapsed += time.time() - t
+                    context.pop_state(state)
                 try:
                     while True:
                         # wrap each successive value generation
+                        context.push_state(state)
                         t = time.time()
                         try:
                             v = gen.next()
                         finally:
                             elapsed += time.time() - t
+                            context.pop_state(state)
                         yield v
                 finally:
                     # finish metrics (GeneratorExit or otherwise)
@@ -274,55 +322,36 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
             else:
                 for x in generator(*args, **keywords):
                     yield x
-
         return wrapper
+    return decorator
 
-    return generator_wrapper
 
-
-def context_function_wrapper_factory(context_manager, prefix=None, keys=None, state=None, enable_if='web',
-                                     disable_if=None):
+def contextmanager_wrapper_factory(context_manager, mapping=None, state=None, enable_if='web', disable_if=None):
     """
     Generates a function that wraps a function so that it uses the context_manager around it and harvests
     the given prefix, keys, and suffix as context.
 
-    TODO: replace prefix/keys with tags whose name-value pairs are used to generate tags that are pushed/popped
-
     :param context_manager: the contextmanager (optional, in which case context is pushed/popped around the call)
-    :param prefix: the prefix (the key for the context)
-    :param keys: the keys used to look up values from the method target and/or arguments
+    :param mapping: the keys and expression values used to look up values from the method target and/or arguments
     :param state: the state associated with the wrapped method
     :param enable_if: instrumentation is only enabled when this state is present
     :param disable_if: instrumentation is disabled when this state is present
     :return: the function wrapper
     """
-
-    def function_wrapper(ctx, f):
+    def decorator(f):
+        @wraps(f)
         def wrapper(*args, **keywords):
             if _should_be_instrumented(state, enable_if, disable_if):
-                vals = _build_key(args, keys, keywords) if keys else []
-                if prefix:
-                    vals.insert(0, prefix)
+                tag_pairs = _build_key(mapping, args, keywords)
                 try:
-                    if state:
-                        logger.debug('pushing state %s for %s', state, f.__name__)
-                        context.push_state(state)
-                    if len(vals) > 1:
-                        context.push_tag(vals[0], vals[1])
-                    if context_manager:
-                        with context_manager(*args, **keywords):
-                            return f(*args, **keywords)
-                    else:
+                    context.push_state(state)
+                    context.push_tags(tag_pairs)
+                    with context_manager(*args, **keywords):
                         return f(*args, **keywords)
                 finally:
-                    if len(vals) > 1:
-                        context.pop_tag()
-                    if state:
-                        logger.debug('popping state %s for %s', state, f.__name__)
-                        context.pop_state(state)
+                    context.pop_tags(tag_pairs)
+                    context.pop_state(state)
             else:
                 return f(*args, **keywords)
-
         return wrapper
-
-    return function_wrapper
+    return decorator
