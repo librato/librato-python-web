@@ -34,12 +34,12 @@ from librato_python_web.instrumentor.util import get_parameter, Timing
 
 
 def requests_request_time(f):
-    def inner_requests_request_time(*args, **keywords):
+    def decorator(*args, **keywords):
         method = get_parameter(0, 'method', *args, **keywords)
         url = get_parameter(1, 'url', *args, **keywords)
         with context.add_all_tags([('external.url', url), ('external.method', method)]):
             telemetry.count('external.http.requests')
-            t = Timing.push_timer()
+            Timing.push_timer()
             try:
                 a = f(*args, **keywords)
                 telemetry.count('external.http.status.%ixx' % floor(a.status_code / 100))
@@ -51,7 +51,7 @@ def requests_request_time(f):
                 elapsed, _ = Timing.pop_timer()
                 telemetry.record('external.http.response.latency', elapsed)
 
-    return inner_requests_request_time
+    return decorator
 
 
 class RequestsInstrumentor(BaseInstrumentor):

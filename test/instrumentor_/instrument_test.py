@@ -107,6 +107,31 @@ class InstrumentTest(unittest.TestCase):
             'foo': 1
         }
 
+        def function_wrapper(f):
+            def decorator(*args, **kwargs):
+                state['before'] = True
+                decorator_ret = f(*args, **kwargs)
+                state['after'] = True
+                return decorator_ret
+            return decorator
+
+        wrapper = instrument.function_wrapper_factory(function_wrapper, enable_if=None)
+
+        def wrapped_function(v):
+            state['wrapped'] = v
+
+        wrapped = wrapper(wrapped_function)
+        wrapped_value = 1234567
+        ret = wrapped(wrapped_value)
+        self.assertTrue(state.get('before'))
+        self.assertTrue(state.get('after'))
+        self.assertEquals(wrapped_value, state.get('wrapped'))
+
+    def test_contextmanager_wrapper(self):
+        state = {
+            'foo': 1
+        }
+
         @contextmanager
         def context_wrapper(f):
             state['before'] = True
@@ -115,7 +140,7 @@ class InstrumentTest(unittest.TestCase):
 
         wrapper = instrument.context_function_wrapper_factory(context_wrapper, enable_if=None)
 
-        wrapped = wrapper(None, lambda v: 'bar')
+        wrapped = wrapper(lambda v: 'bar')
         ret = wrapped('this is ignored')
         self.assertTrue(state.get('before'))
         self.assertTrue(state.get('after'))
@@ -131,7 +156,7 @@ class InstrumentTest(unittest.TestCase):
                 yield g
 
         factory = generator_wrapper_factory(generate_record_telemetry('test.'), state='model', enable_if=None)
-        wrapped_generator = factory(None, generator)
+        wrapped_generator = factory(generator)
 
         i = j = 0
         for i in wrapped_generator():
@@ -144,7 +169,7 @@ class InstrumentTest(unittest.TestCase):
 
         reporter.record('test.latency', 0)
 
-        wrapped_generator = factory(None, generator)
+        wrapped_generator = factory(generator)
 
         def trigger_generator_exit():
             # trigger the GeneratorExit when this goes out of scope

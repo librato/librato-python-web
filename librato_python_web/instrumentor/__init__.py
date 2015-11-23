@@ -33,7 +33,7 @@ import telemetry
 
 from . import config
 from .config import LegacyConfigReporter
-from telemetry import StatsdTelemetryReporter
+from .telemetry import StatsdTelemetryReporter
 
 from .data.elasticsearch import ElasticsearchInstrumentor
 from .data.mysqldb import MysqlInstrumentor
@@ -69,8 +69,8 @@ try:
         if os.path.isfile(config_file):
             general.configure(config_file)
         else:
-            logger.error("Can't load configuration file: %s", config_file)
-            sys.exit(1)
+            logger.info("Can't load configuration file: %s", config_file)
+            # sys.exit(1)
 
         log_level = general.get_option("instrumentor.log_level", 30)
         custom_logging.setDefaultLevel(int(log_level))
