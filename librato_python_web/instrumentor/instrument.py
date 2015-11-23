@@ -223,6 +223,15 @@ def _eval(args, keywords, expressions):
 
 
 def _should_be_instrumented(state, enable_if, disable_if):
+    """
+    Returns False if the method should not be instrumented given the current state. Any value can be None to indicate
+    no change.
+
+    :param state: the new state
+    :param enable_if: enable instrumentation iff this state is present
+    :param disable_if: disable instrumentation iff this state is present
+    :return: True if rules indicate this should be instrumented, false otherwise
+    """
     if enable_if and not context.has_state(enable_if):
         logger.debug('skipping %s instrumentation, lacks enable_if=%s', state, enable_if)
         return False
@@ -255,7 +264,11 @@ def function_wrapper_factory(wrapper_function, state=None, enable_if='web', disa
         @wraps(f)
         def wrapper(*args, **keywords):
             if _should_be_instrumented(state, enable_if, disable_if):
-                return wrapper_function(f)(*args, **keywords)
+                try:
+                    context.push_state(state)
+                    return wrapper_function(f)(*args, **keywords)
+                finally:
+                    context.pop_state(state)
             else:
                 return f(*args, **keywords)
 
@@ -285,19 +298,23 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
             if _should_be_instrumented(state, enable_if, disable_if):
                 # wrap the initialization
                 elapsed = 0
+                context.push_state(state)
                 t = time.time()
                 try:
                     gen = generator(*args, **keywords)
                 finally:
                     elapsed += time.time() - t
+                    context.pop_state(state)
                 try:
                     while True:
                         # wrap each successive value generation
+                        context.push_state(state)
                         t = time.time()
                         try:
                             v = gen.next()
                         finally:
                             elapsed += time.time() - t
+                            context.pop_state(state)
                         yield v
                 finally:
                     # finish metrics (GeneratorExit or otherwise)
@@ -327,20 +344,13 @@ def contextmanager_wrapper_factory(context_manager, mapping=None, state=None, en
             if _should_be_instrumented(state, enable_if, disable_if):
                 tag_pairs = _build_key(mapping, args, keywords)
                 try:
-                    if state:
-                        logger.debug('pushing state %s for %s', state, f.__name__)
-                        context.push_state(state)
-                    for pair in tag_pairs:
-                        logger.debug('pushing tag pair %s for %s', str(pair), f.__name__)
-                        context.push_tag(pair[0], pair[1])
+                    context.push_state(state)
+                    context.push_tags(tag_pairs)
                     with context_manager(*args, **keywords):
                         return f(*args, **keywords)
                 finally:
-                    for _ in tag_pairs:
-                        context.pop_tag()
-                    if state:
-                        logger.debug('popping state %s for %s', state, f.__name__)
-                        context.pop_state(state)
+                    context.pop_tags(tag_pairs)
+                    context.pop_state(state)
             else:
                 return f(*args, **keywords)
         return wrapper

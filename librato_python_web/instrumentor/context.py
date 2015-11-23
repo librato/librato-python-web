@@ -127,7 +127,7 @@ def add_tag(key, value):
 
 
 @contextmanager
-def add_all_tags(context_list):
+def add_all_tags(tag_pairs):
     """
     Applies the context_list as key-value pairs to the context.
 
@@ -140,19 +140,26 @@ def add_all_tags(context_list):
           # code that creates account goes here...
           # this context includes the key-value pair ('user-operation', 'create-account')
 
-    :param context_list: list of tuples containing key-value pairs
+    :param tag_pairs: list of tuples containing key-value pairs
     """
     # noinspection PyBroadException
     try:
-        for entry in context_list:
-            push_tag(entry[0], entry[1])
+        push_tags(tag_pairs)
         # noinspection PyBroadException
         yield
-        for _ in context_list:
-            pop_tag()
+        pop_tags(tag_pairs)
     except:
         fail()
         raise
+
+
+def push_tags(tag_pairs):
+    """
+    Pushes the given list of key-value pairs onto the context stack.
+    :param tag_pairs: the list of tuples
+    """
+    for pair in tag_pairs:
+        push_tag(pair[0], pair[1])
 
 
 def push_tag(key, value):
@@ -163,8 +170,8 @@ def push_tag(key, value):
     :param value:
     :return:
     """
+    logger.debug('pushing tag pair %s %s', key, value)
     _get_stack().append((key, value))
-    return None
 
 
 def get_tags():
@@ -191,6 +198,15 @@ def get_current():
     return _get_stack()[-1]
 
 
+def pop_tags(tag_pairs):
+    """
+    Pops the tag pairs from the stack. Values are ignored, only count is used.
+    :param tag_pairs: the list of tuples
+    """
+    for _ in tag_pairs:
+        pop_tag()
+
+
 def pop_tag():
     """
     Pops the context entry from the top of the stack and returns it.
@@ -206,7 +222,6 @@ def pop_tag():
     :return: the entry on the top of the stack
     """
     o = _get_stack().pop()
-    # TODO: On empty context, notify listeners (e.g., flush buffers, etc.)
     return o
 
 
@@ -216,7 +231,6 @@ def fail():
 
     Future: notify listeners of outcome so that telemetry writer can perform appropriate actions.
     """
-    # TODO: notify listeners (e.g., flush buffers, etc.)
     _set_stack([])
 
 
@@ -226,28 +240,21 @@ def succeed():
 
     Future: notify listeners of outcome so that telemetry writer can perform appropriate actions.
     """
-    # TODO: notify listeners (e.g., flush buffers, etc.)
     _set_stack([])
 
 
 def push_state(name):
-    _get_state()[name] += 1
-    if '.' in name:
-        name = name.split('.')[0]
+    if name:
+        logger.debug('pushing state %s', name)
         _get_state()[name] += 1
+        if '.' in name:
+            name = name.split('.')[0]
+            _get_state()[name] += 1
 
 
 def pop_state(name):
-    count = _get_state().get(name)
-    if count is None:
-        logger.error('pop_state state does not contain %s', name)
-    elif count > 1:
-        _get_state()[name] = count - 1
-    else:
-        del _get_state()[name]
-
-    if '.' in name:
-        name = name.split('.')[0]
+    if name:
+        logger.debug('popping state %s', name)
         count = _get_state().get(name)
         if count is None:
             logger.error('pop_state state does not contain %s', name)
@@ -255,6 +262,16 @@ def pop_state(name):
             _get_state()[name] = count - 1
         else:
             del _get_state()[name]
+
+        if '.' in name:
+            name = name.split('.')[0]
+            count = _get_state().get(name)
+            if count is None:
+                logger.error('pop_state state does not contain %s', name)
+            elif count > 1:
+                _get_state()[name] = count - 1
+            else:
+                del _get_state()[name]
 
 
 def has_state(name):
