@@ -125,9 +125,12 @@ def wrap_method(method_owner, method_name, method_wrapper):
     """
     Wrap the method with the method_name on the class_def using the method_wrapper.
 
-    :param method_owner:
-    :param method_name:
-    :param method_wrapper:
+    Records original information on the wrapper method so that method can be "unwrapped" as an "original" attribute on
+    the method_wrapper (see unwrap_method()).
+
+    :param method_owner: the object on which the method is set (e.g., class or module)
+    :param method_name: the name of the attribute to be overridden
+    :param method_wrapper: the function that wraps the method (takes the method as the sole argument)
     """
     original_method = getattr(method_owner, method_name)
     wrapped_method = method_wrapper(original_method)
@@ -136,6 +139,13 @@ def wrap_method(method_owner, method_name, method_wrapper):
 
 
 def unwrap_method(method_wrapper):
+    """
+    Unwraps the given method presuming that it was set using wrap_method.
+
+    Needs original information on the wrapper method so that method can be "unwrapped" (in "original" attribute).
+
+    :param method_wrapper: the function that wraps the method to be restored
+    """
     if hasattr(method_wrapper, 'original'):
         original = method_wrapper.original
         replace_method(*original)
