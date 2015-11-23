@@ -273,8 +273,8 @@ class Server(object):
         tags_dict = dict(tags) if tags else {}
         if 'source' not in tags_dict:
             tags_dict['source'] = self.source
-        queue.add('{}.{}'.format(self.prefix, key), value, time=timestamp,
-                  source=self.source, type=metric_type, tags=tags_dict)
+        queue.add('{}.{}'.format(self.prefix, key), value, metric_type, measure_time=timestamp,
+                  source=self.source)
 
     def _set_timer(self):
         self._timer = threading.Timer(self.flush_interval, self.on_timer)
