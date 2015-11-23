@@ -1,6 +1,4 @@
-from librato_python_web.instrumentor.instrument import context_function_wrapper_factory
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.telemetry import default_instrumentation
 
 
 class PykafkaInstrumentor(BaseInstrumentor):
@@ -10,14 +8,12 @@ class PykafkaInstrumentor(BaseInstrumentor):
         super(PykafkaInstrumentor, self).__init__(
             {
                 # Kafka (pykafka)
-                'pykafka.simpleconsumer.SimpleConsumer.consume': context_function_wrapper_factory(
-                    default_instrumentation('messaging.kafka.consume.'),
-                    prefix='resource',
-                    keys=['self._topic._name']),
-                'pykafka.Producer.produce': context_function_wrapper_factory(
-                    default_instrumentation('messaging.kafka.produce.'),
-                    prefix='resource',
-                    keys=['self._topic._name']),
+                'pykafka.simpleconsumer.SimpleConsumer.consume': self.instrument('messaging.kafka.consume.',
+                    mapping={'resource': 'self._topic._name'},
+                ),
+                'pykafka.Producer.produce': self.instrument('messaging.kafka.produce.',
+                    mapping={'resource': 'self._topic._name'},
+                ),
             }
         )
 

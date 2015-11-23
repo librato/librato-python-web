@@ -25,7 +25,7 @@
 
 from .telemetry import default_instrumentation
 
-from librato_python_web.instrumentor.instrument import instrument_methods, context_function_wrapper_factory
+from librato_python_web.instrumentor.instrument import instrument_methods, contextmanager_wrapper_factory
 
 _default = object()
 
@@ -38,9 +38,10 @@ class BaseInstrumentor(object):
     def run(self):
         instrument_methods(self.wrapped)
 
-    def instrument(self, metric_name, state=_default, enable_if=None, disable_if=None):
+    def instrument(self, metric_name, mapping=None, state=_default, enable_if=None, disable_if=None):
         state = self.get_state(state)
-        return context_function_wrapper_factory(default_instrumentation(metric_name), state, enable_if, disable_if)
+        return contextmanager_wrapper_factory(default_instrumentation(metric_name), mapping, state, enable_if,
+            disable_if)
 
     def get_state(self, state=_default):
         return self.state if state == _default else state

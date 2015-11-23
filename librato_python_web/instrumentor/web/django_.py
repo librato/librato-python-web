@@ -24,17 +24,17 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import time
+from math import floor
+
 from librato_python_web.instrumentor.instrument import instrument_methods, function_wrapper_factory, \
-    context_function_wrapper_factory, generator_wrapper_factory
+    generator_wrapper_factory
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.telemetry import default_instrumentation, generate_record_telemetry
+from librato_python_web.instrumentor.telemetry import generate_record_telemetry
 from librato_python_web.instrumentor.util import prepend_to_tuple, Timing
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
-
-import time
-from math import floor
 
 logger = getCustomLogger(__name__)
 
@@ -119,9 +119,8 @@ class DjangoInstrumentor(BaseInstrumentor):
     required_class_names = ['django.core', 'django.apps']
     _wrapped = {
         'django.core.handlers.wsgi.WSGIHandler.__call__': function_wrapper_factory(_django_wsgi_call, state='wsgi',
-                                                                                   enable_if=None),
+            enable_if=None),
         'django.conf.LazySettings.__getattr__': django_inject_middleware,
-
         'django.db.models.query.QuerySet.iterator': generator_wrapper_factory(
             generate_record_telemetry('model.iterator.'), state='model'),
     }

@@ -1,6 +1,4 @@
-from librato_python_web.instrumentor.instrument import context_function_wrapper_factory
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.telemetry import default_instrumentation
 
 
 class MysqlInstrumentor(BaseInstrumentor):
@@ -9,13 +7,8 @@ class MysqlInstrumentor(BaseInstrumentor):
     def __init__(self):
         super(MysqlInstrumentor, self).__init__(
             {
-                'MySQLdb.cursors.Cursor.execute': context_function_wrapper_factory(
-                    default_instrumentation('data.mysql.execute.'),
-                    prefix='resource',
-                    keys=[1],
-                    disable_if='model',
-                    state='data.mysql'
-                ),
+                'MySQLdb.cursors.Cursor.execute': self.instrument('data.mysql.execute.', mapping={'resource': 1},
+                    state='data.mysql', disable_if='model'),
             }
         )
 

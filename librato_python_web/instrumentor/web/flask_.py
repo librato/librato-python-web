@@ -33,7 +33,7 @@ import time
 from librato_python_web.instrumentor import config as agent_api_config
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.instrument import context_function_wrapper_factory, function_wrapper_factory
+from librato_python_web.instrumentor.instrument import contextmanager_wrapper_factory, function_wrapper_factory
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
@@ -156,7 +156,7 @@ class FlaskInstrumentor(BaseInstrumentor):
         super(FlaskInstrumentor, self).__init__(
             {
                 'flask.app.Flask.__init__': function_wrapper_factory(_flask_app, enable_if=None),
-                'flask.app.Flask.add_url_rule': context_function_wrapper_factory(_flask_add_url_rule, enable_if=None),
+                'flask.app.Flask.add_url_rule': contextmanager_wrapper_factory(_flask_add_url_rule, enable_if=None),
                 'flask.app.Flask.__call__': function_wrapper_factory(_flask_wsgi_call, enable_if=None, state='wsgi'),
             }
         )

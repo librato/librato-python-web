@@ -22,7 +22,7 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+from functools import wraps
 
 from math import floor
 
@@ -34,6 +34,7 @@ from librato_python_web.instrumentor.util import get_parameter, Timing
 
 
 def requests_request_time(f):
+    @wraps(f)
     def decorator(*args, **keywords):
         method = get_parameter(0, 'method', *args, **keywords)
         url = get_parameter(1, 'url', *args, **keywords)

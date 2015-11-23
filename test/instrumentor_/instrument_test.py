@@ -25,6 +25,7 @@
 from collections import defaultdict
 from contextlib import contextmanager
 import unittest
+from api import context
 
 from instrumentor.instrument import generator_wrapper_factory
 from instrumentor.telemetry import TelemetryReporter, generate_record_telemetry
@@ -113,6 +114,7 @@ class InstrumentTest(unittest.TestCase):
                 decorator_ret = f(*args, **kwargs)
                 state['after'] = True
                 return decorator_ret
+
             return decorator
 
         wrapper = instrument.function_wrapper_factory(function_wrapper, enable_if=None)
@@ -122,7 +124,7 @@ class InstrumentTest(unittest.TestCase):
 
         wrapped = wrapper(wrapped_function)
         wrapped_value = 1234567
-        ret = wrapped(wrapped_value)
+        wrapped(wrapped_value)
         self.assertTrue(state.get('before'))
         self.assertTrue(state.get('after'))
         self.assertEquals(wrapped_value, state.get('wrapped'))
@@ -133,17 +135,59 @@ class InstrumentTest(unittest.TestCase):
         }
 
         @contextmanager
-        def context_wrapper(f):
+        def context_wrapper(*args, **keywords):
             state['before'] = True
             yield
             state['after'] = True
 
-        wrapper = instrument.context_function_wrapper_factory(context_wrapper, enable_if=None)
+        wrapper = instrument.contextmanager_wrapper_factory(context_wrapper, enable_if=None)
 
         wrapped = wrapper(lambda v: 'bar')
         ret = wrapped('this is ignored')
         self.assertTrue(state.get('before'))
         self.assertTrue(state.get('after'))
+
+        def my_name_is_foo(a, b):
+            return 'foo', a, b
+
+        wrapped = wrapper(my_name_is_foo)
+        ret = wrapped(1, 2)
+        self.assertEqual(('foo', 1, 2), ret)
+        self.assertEqual('my_name_is_foo', wrapped.__name__)
+
+    def test_contextmanager_args(self):
+        state = {
+            'foo': 1
+        }
+
+        @contextmanager
+        def context_wrapper(*args, **keywords):
+            state['before'] = True
+            yield
+            state['after'] = True
+
+        wrapper = instrument.contextmanager_wrapper_factory(context_wrapper, mapping={'x': 0, 'y': 1}, enable_if=None)
+
+        def capture_args(x, y):
+            state['x'] = x
+            state['y'] = y
+            tags = context.get_tags()
+            self.assertNotIn('x', tags)
+            self.assertNotIn('y', tags)
+
+        wrapped = wrapper(capture_args)
+        wrapped(1, 2)
+        self.assertTrue(1, state.get('x'))
+        self.assertTrue(2, state.get('y'))
+        self.assertEqual(0, len(context.get_tags()))
+
+        wrapper = instrument.contextmanager_wrapper_factory(context_wrapper, enable_if=None)
+
+        state.clear()
+        wrapped = wrapper(capture_args)
+        wrapped(1, 2)
+        self.assertEqual(1, state.get('x'))
+        self.assertEqual(2, state.get('y'))
 
     def test_generator_wrapper(self):
         reporter = TestTelemetryReporter()
@@ -164,7 +208,7 @@ class InstrumentTest(unittest.TestCase):
             j += 1
         self.assertEqual(range_max - 1, i)
 
-        self.assertLess(0, reporter.get_record('test.latency'))
+        self.assertLessEqual(0, reporter.get_record('test.latency'))
         self.assertEquals(1, reporter.get_count('test.requests'))
 
         reporter.record('test.latency', 0)

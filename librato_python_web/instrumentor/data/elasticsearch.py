@@ -24,9 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from librato_python_web.instrumentor.instrument import context_function_wrapper_factory
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.telemetry import default_instrumentation
 
 
 class ElasticsearchInstrumentor(BaseInstrumentor):
@@ -35,36 +33,16 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
     def __init__(self):
         super(ElasticsearchInstrumentor, self).__init__(
             {
-                'elasticsearch.client.Elasticsearch.create': context_function_wrapper_factory(
-                    default_instrumentation('data.es.create.'),
-                    prefix='resource',
-                    keys=['2|doc_type'],
-                    disable_if='model',
-                ),
-                'elasticsearch.client.Elasticsearch.get': context_function_wrapper_factory(
-                    default_instrumentation('data.es.get.'),
-                    prefix='resource',
-                    keys=['doc_type'],
-                    disable_if='model',
-                ),
-                'elasticsearch.client.Elasticsearch.index': context_function_wrapper_factory(
-                    default_instrumentation('data.es.index.'),
-                    prefix='resource',
-                    keys=['2|doc_type'],
-                    disable_if='model',
-                ),
-                'elasticsearch.client.Elasticsearch.search': context_function_wrapper_factory(
-                    default_instrumentation('data.es.search.'),
-                    prefix='resource',
-                    keys=['doc_type'],
-                    disable_if='model',
-                ),
-                'elasticsearch.client.Elasticsearch.delete': context_function_wrapper_factory(
-                    default_instrumentation('data.es.delete.'),
-                    prefix='resource',
-                    keys=['doc_type'],
-                    disable_if='model',
-                ),
+                'elasticsearch.client.Elasticsearch.create': self.instrument('data.es.create.',
+                     mapping={'resource': '2|doc_type'}, disable_if='model'),
+                'elasticsearch.client.Elasticsearch.get': self.instrument('data.es.get.',
+                    mapping={'resource': '2|doc_type'}, disable_if='model'),
+                'elasticsearch.client.Elasticsearch.index': self.instrument('data.es.index.',
+                    mapping={'resource': '2|doc_type'}, disable_if='model'),
+                'elasticsearch.client.Elasticsearch.search': self.instrument('data.es.search.',
+                    mapping={'resource': '2|doc_type'}, disable_if='model'),
+                'elasticsearch.client.Elasticsearch.delete': self.instrument('data.es.delete.',
+                    mapping={'resource': '2|doc_type'}, disable_if='model'),
             }
         )
 

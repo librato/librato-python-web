@@ -22,7 +22,7 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+from functools import wraps, update_wrapper
 
 import time
 
@@ -58,7 +58,8 @@ def run_instrumentors(instrumentors, libs):
                 # if something goes wrong, keep going, don't destroy the app!
                 logger.exception('problem initializing instrumentor: %s', instrumentor)
         except:
-            logger.exception('could not instrument: %s', alias)
+            # if something goes wrong, keep going, don't destroy the app!
+            logger.exception('problem initializing instrumentor: %s', alias)
 
 
 def instrument_methods(method_wrappers):
@@ -130,7 +131,9 @@ def wrap_method(method_owner, method_name, method_wrapper):
     :param method_wrapper:
     """
     original_method = getattr(method_owner, method_name)
-    wrapped_method = method_wrapper(original_method)
+    wrapped_method = method_wrapper(method_owner, original_method)
+    print original_method.__name__
+    update_wrapper(method_wrapper, original_method)
     replace_method(method_owner, method_name, wrapped_method)
 
 
@@ -145,20 +148,25 @@ def replace_method(owner, method_name, method):
     setattr(owner, method_name, method)
 
 
-def _build_key(args, keys, keywords):
+def _build_key(mappings, args, keywords):
+    """
+    :param mappings:
+    :param args:
+    :param keywords:
+    :return: list of key-value pairs for naming
+    """
     values = []
-    for a in keys or sorted(keywords.keys()):
-        value = _eval(args, keywords, a)
+    for key in mappings or []:
+        expression = mappings.get(key)
+        value = _eval(args, keywords, expression)
         if value is not None:
-            values.append(value)
-    if len(values) > 2:
-        logger.error("more than two values in _build_key: %s", str(values))
+            values.append((key, value))
     return values
 
 
 def _eval(args, keywords, expressions):
     final_failure = Exception
-    if not expressions:
+    if expressions is None:
         return None
     for expression in expressions.split('|') if isinstance(expressions, basestring) else [expressions]:
         try:
@@ -216,9 +224,10 @@ def function_wrapper_factory(wrapper_function, state=None, enable_if='web', disa
     """
     def decorator(f):
         """
-        Functions are only wrapped when instrumentation is required
+        Functions are only wrapped when instrumentation is required, based on run-time context
         :param f: the function to wrap
         """
+        @wraps(f)
         def wrapper(*args, **keywords):
             if _should_be_instrumented(state, enable_if, disable_if):
                 return wrapper_function(f)(*args, **keywords)
@@ -239,13 +248,13 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
     :param disable_if: instrumentation is disabled when this state is present
     :return: the function wrapper
     """
-
-    def generator_wrapper(generator):
+    def decorator(generator):
         """
         Creates a generator that wraps the given generator and instruments it depending on the context when
         its called.
         :param generator: the generator to wrap
         """
+        @wraps(generator)
         def wrapper(*args, **keywords):
             # determined at run time, since this depends on the invocation context
             if _should_be_instrumented(state, enable_if, disable_if):
@@ -272,44 +281,37 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
                 for x in generator(*args, **keywords):
                     yield x
         return wrapper
-    return generator_wrapper
+    return decorator
 
 
-def context_function_wrapper_factory(context_manager, prefix=None, keys=None, state=None, enable_if='web',
-                                     disable_if=None):
+def contextmanager_wrapper_factory(context_manager, mapping=None, state=None, enable_if='web', disable_if=None):
     """
     Generates a function that wraps a function so that it uses the context_manager around it and harvests
     the given prefix, keys, and suffix as context.
 
-    TODO: replace prefix/keys with tags whose name-value pairs are used to generate tags that are pushed/popped
-
     :param context_manager: the contextmanager (optional, in which case context is pushed/popped around the call)
-    :param prefix: the prefix (the key for the context)
-    :param keys: the keys used to look up values from the method target and/or arguments
+    :param mapping: the keys and expression values used to look up values from the method target and/or arguments
     :param state: the state associated with the wrapped method
     :param enable_if: instrumentation is only enabled when this state is present
     :param disable_if: instrumentation is disabled when this state is present
     :return: the function wrapper
     """
-    def function_wrapper(f):
+    def decorator(f):
+        @wraps(f)
         def wrapper(*args, **keywords):
             if _should_be_instrumented(state, enable_if, disable_if):
-                tag_pairs = _build_key(args, keys, keywords) if keys else []
-                if prefix:
-                    tag_pairs.insert(0, prefix)
+                tag_pairs = _build_key(mapping, args, keywords)
                 try:
                     if state:
                         logger.debug('pushing state %s for %s', state, f.__name__)
                         context.push_state(state)
-                    if len(tag_pairs) > 1:
-                        context.push_tag(tag_pairs[0], tag_pairs[1])
-                    if context_manager:
-                        with context_manager(*args, **keywords):
-                            return f(*args, **keywords)
-                    else:
+                    for pair in tag_pairs:
+                        logger.debug('pushing tag pair %s for %s', str(pair), f.__name__)
+                        context.push_tag(pair[0], pair[1])
+                    with context_manager(*args, **keywords):
                         return f(*args, **keywords)
                 finally:
-                    if len(tag_pairs) > 1:
+                    for _ in tag_pairs:
                         context.pop_tag()
                     if state:
                         logger.debug('popping state %s for %s', state, f.__name__)
@@ -317,4 +319,4 @@ def context_function_wrapper_factory(context_manager, prefix=None, keys=None, st
             else:
                 return f(*args, **keywords)
         return wrapper
-    return function_wrapper
+    return decorator
