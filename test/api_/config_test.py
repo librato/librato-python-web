@@ -26,8 +26,8 @@
 
 import unittest
 
-from librato_python_web.util import config
-from librato_python_web.util.config import ConfigReporter
+from librato_python_web.api import config
+from librato_python_web.instrumentor.config import ConfigReporter
 
 
 class ConfigTest(unittest.TestCase):
