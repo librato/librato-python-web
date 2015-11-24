@@ -28,7 +28,7 @@ import logging
 import logging.config
 import agent_config
 
-from compose import s_, timeshift_, sum_, subtract_, scale_, derive_, divide_, multiply_, DUMMY_PREFIX, METRIC_PREFIX
+from compose import s_, timeshift_, sum_, subtract_, scale_, derive_, divide_, multiply_, DUMMY_PREFIX, METRIC_PREFIX, mean_
 from librato.spaces import Api
 
 
@@ -37,14 +37,13 @@ logger = logging.getLogger(__name__)
 SPACE_NAME = '{}:Python {} Application'
 
 
-RESPONSE_TIME_QUERY = sum_(s_("web*response.latency.mean"))
-THROUGHPUT_QUERY = derive_(sum_(s_("web*requests.count")))
+RESPONSE_TIME_QUERY = mean_(s_("web.response.latency.mean"))
+THROUGHPUT_QUERY = sum_(derive_(s_("web.requests.count")))
 ERROR_PERCENTAGE_QUERY = scale_(
     divide_(
-        derive_(
-            sum_(
-                s_("web.status.4xx.count", function="sum"),
-                s_("web.status.5xx.count", function="sum"))),
+        sum_(
+            derive_(s_("web.status.4xx.count", function="sum")),
+            derive_(s_("web.status.5xx.count", function="sum"))),
         THROUGHPUT_QUERY),
     "100")
 
@@ -85,13 +84,13 @@ CHART_SPECS = [
                     subtract_(
                         sum_(
                             multiply_(
-                                s_("gunicorn.request.duration.mean"),
+                                s_("gunicorn.request.duration.mean", function="mean"),
                                 s_("gunicorn.request.duration.count", function="sum"))),
                         sum_(
                             multiply_(
-                                s_("wsgi.response.latency.mean"),
+                                s_("wsgi.response.latency.mean", function="mean"),
                                 s_("wsgi.response.latency.count", function="sum")))),
-                    sum_(s_("web.response.latency.count", function="sum"))),
+                    THROUGHPUT_QUERY),
                 'summary_function': 'sum',
                 'color': '#f04950'
             },
@@ -101,13 +100,13 @@ CHART_SPECS = [
                     subtract_(
                         sum_(
                             multiply_(
-                                s_("wsgi.response.latency.mean"),
-                                s_("wsgi.response.latency.count"))),
+                                s_("wsgi.response.latency.mean", function="mean"),
+                                s_("wsgi.response.latency.count", function="sum"))),
                         sum_(
                             multiply_(
-                                s_("web.response.latency.mean"),
-                                s_("web.response.latency.count")))),
-                    sum_(s_("web.response.latency.count", function="sum"))),
+                                s_("web.response.latency.mean", function="mean"),
+                                s_("web.response.latency.count", function="sum")))),
+                    THROUGHPUT_QUERY),
                 'summary_function': 'sum',
                 'color': '#2b89ad'
             },
@@ -116,9 +115,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("app.response.latency.mean"),
-                            s_("app.response.latency.count"))),
-                    sum_(s_("web.response.latency.count"))),
+                            s_("app.response.latency.mean", function="mean"),
+                            s_("app.response.latency.count", function="sum"))),
+                    THROUGHPUT_QUERY),
                 'summary_function': 'sum',
                 'color': '#ff8501'
             },
@@ -127,9 +126,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("data.*.latency.mean"),
-                            s_("data.*.latency.count"))),
-                    sum_(s_("web.response.latency.count"))),
+                            s_("data.*.latency.mean", function="mean"),
+                            s_("data.*.latency.count", function="sum"))),
+                    THROUGHPUT_QUERY),
                 'summary_function': 'sum',
                 'color': '#a85802'
             },
@@ -138,9 +137,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("external.*.response.latency.mean"),
-                            s_("external.*.response.latency.count"))),
-                    sum_(s_("web.response.latency.count"))),
+                            s_("external.*.response.latency.mean", function="mean"),
+                            s_("external.*.response.latency.count", function="sum"))),
+                    THROUGHPUT_QUERY),
                 'summary_function': 'sum',
                 'color': '#0880ae'
             },
@@ -149,9 +148,9 @@ CHART_SPECS = [
                 'composite': divide_(
                     sum_(
                         multiply_(
-                            s_("model.*.latency.mean"),
-                            s_("model.*.latency.count"))),
-                    sum_(s_("web.response.latency.count"))),
+                            s_("model.*.latency.mean", function="mean"),
+                            s_("model.*.latency.count", function="sum"))),
+                    THROUGHPUT_QUERY),
                 'summary_function': 'sum',
                 'color': '#d67002'
             }
@@ -189,25 +188,25 @@ CHART_SPECS = [
         'metrics': [
             {
                 'name': '2xx',
-                'composite': derive_(sum_(s_("web.status.2xx.count"))),
+                'composite': sum_(derive_(s_("web.status.2xx.count"))),
                 'summary_function': 'sum',
                 'color': '#0880ae'
             },
             {
                 'name': '3xx',
-                'composite': derive_(sum_(s_("web.status.3xx.count"))),
+                'composite': sum_(derive_(s_("web.status.3xx.count"))),
                 'summary_function': 'sum',
                 'color': '#ff7e63'
             },
             {
                 'name': '4xx',
-                'composite': derive_(sum_(s_("web.status.4xx.count"))),
+                'composite': sum_(derive_(s_("web.status.4xx.count"))),
                 'summary_function': 'sum',
                 'color': '#ff5a37'
             },
             {
                 'name': '5xx',
-                'composite': derive_(sum_(s_("web.status.5xx.count"))),
+                'composite': sum_(derive_(s_("web.status.5xx.count"))),
                 'summary_function': 'sum',
                 'color': '#ff2d01'
             }
@@ -220,21 +219,27 @@ CHART_SPECS = [
         'metrics': [
             {
                 'name': 'Warnings',
-                'composite': derive_(sum_(s_("logging.warning.requests.count"))),
+                'composite': sum_(derive_(s_("logging.warning.requests.count"))),
                 'summary_function': 'sum',
                 'color': '#d69900'
             },
             {
                 'name': 'Errors',
-                'composite': derive_(sum_(s_("logging.error.requests.count"))),
+                'composite': sum_(derive_(s_("logging.error.requests.count"))),
                 'summary_function': 'sum',
                 'color': '#ff2d01'
             },
             {
                 'name': 'Exceptions',
-                'composite': derive_(sum_(s_("logging.exception.requests.count"))),
+                'composite': sum_(derive_(s_("logging.exception.requests.count"))),
                 'summary_function': 'sum',
                 'color': '#a81d00'
+            },
+            {
+                'name': 'Critical',
+                'composite': sum_(derive_(s_("logging.critical.requests.count"))),
+                'summary_function': 'sum',
+                'color': '#f81d00'
             }
         ]
     },

@@ -27,12 +27,19 @@
 # Helper methods to model Librato composite query dsl
 METRIC_PREFIX = "!XyZZy!"
 DUMMY_PREFIX = "DUMMY-PREFIX"
+DYNAMIC_SOURCE = "%"
 DEFAULT_PERIOD = 60
 
 
-def s_(metric, source="{}-*".format(DUMMY_PREFIX), period=DEFAULT_PERIOD, function="mean"):
-    return 's("{}.{}", "{}", {{period: "{}", function: "{}"}})'.format(METRIC_PREFIX, metric, source, period, function)
-
+def s_(metric, source=DYNAMIC_SOURCE, period=None, function=None):
+    if period and function:
+        return 's("{}.{}", "{}", {{period: "{}", function: "{}"}})'.format(METRIC_PREFIX, metric, source, period, function)
+    elif period:
+        return 's("{}.{}", "{}", {{period: "{}"}})'.format(METRIC_PREFIX, metric, source, period)
+    elif function:
+        return 's("{}.{}", "{}", {{function: "{}"}})'.format(METRIC_PREFIX, metric, source, function)
+    else:
+        return 's("{}.{}", "{}")'.format(METRIC_PREFIX, metric, source)
 
 def timeshift_(shift, series):
     return 'timeshift("{}", {})'.format(shift, series)
@@ -60,3 +67,6 @@ def scale_(series, factor):
 
 def derive_(series, detect_reset="true"):
     return 'derive({}, {{detect_reset: "{}"}})'.format(series, detect_reset)
+
+def mean_(*args):
+    return 'mean([{}])'.format(', '.join(args))
