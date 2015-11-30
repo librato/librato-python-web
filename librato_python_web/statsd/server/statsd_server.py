@@ -239,31 +239,39 @@ class Server(object):
                 # Sort all the received values. We need it to extract percentiles
                 v.sort()
                 count = len(v)
-                min = v[0]
-                max = v[-1]
+                min_ = v[0]
+                max_ = v[-1]
 
-                mean = min
-                max_threshold = max
-
-                if count > 1:
-                    thresh_index = int((self.pct_threshold / 100.0) * count)
-                    max_threshold = v[thresh_index - 1]
+                if count == 1:
+                    mean = min_
+                    max_threshold = max_
+                    median = min_
+                    total = min_
+                    sum_squares = min_ * min_
+                else:
+                    index = int(math.floor(count/2))
+                    if count % 2 == 0:
+                        median = (v[index] + v[index-1]) / 2
+                    else:
+                        median = v[index]
+                    index = int((self.pct_threshold / 100.0) * count)
+                    max_threshold = v[index - 1]
                     total = sum(v)
+                    sum_squares = sum([i**2 for i in v])
                     mean = total / count
 
                 del(self.timers[context])
 
                 logger.debug("Sending %s ====> lower=%s, mean=%s, upper=%s, %dpct=%s, count=%s",
-                             context, min, mean, max, self.pct_threshold, max_threshold, count)
+                             context, min_, mean, max_, self.pct_threshold, max_threshold, count)
 
                 prefix = context[0] + "."
-                self._add_to_queue(queue, prefix + "count", count, ts, tags=context[1])
-                self._add_to_queue(queue, prefix + "lower", min, ts, tags=context[1])
-                self._add_to_queue(queue, prefix + "mean", mean, ts, tags=context[1])
-                self._add_to_queue(queue, prefix + "upper", max, ts, tags=context[1])
+                self._add_to_queue(queue, prefix + "median", median, ts, tags=context[1])
                 self._add_to_queue(queue, prefix + "upper_" + str(self.pct_threshold), max_threshold, ts,
                                    tags=context[1])
-
+                self._add_to_queue(queue, prefix + "count", count, ts, tags=context[1])
+                self._add_gauge_to_queue(queue, prefix + "mean", mean, ts, count=count,
+                                         min_=min_, max_=max_, sum_=total, sum_squares=sum_squares, tags=context[1])
                 # we only count this timer as a single stat even though we generated multiple measurements
                 stats += 1
 
@@ -275,6 +283,14 @@ class Server(object):
             tags_dict['source'] = self.source
         queue.add('{}.{}'.format(self.prefix, key), value, metric_type, measure_time=timestamp,
                   source=self.source)
+
+    def _add_gauge_to_queue(self, queue, key, value, timestamp, min_=None, max_=None, count=1,
+                            sum_=None, sum_squares=None, tags=None):
+        tags_dict = dict(tags) if tags else {}
+        if 'source' not in tags_dict:
+            tags_dict['source'] = self.source
+        queue.add('{}.{}'.format(self.prefix, key), None, 'gauge', measure_time=timestamp,
+                  source=self.source, count=count, sum=sum_, max=max_, min=min_, sum_squares=sum_squares)
 
     def _set_timer(self):
         self._timer = threading.Timer(self.flush_interval, self.on_timer)
