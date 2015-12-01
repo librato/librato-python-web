@@ -38,7 +38,7 @@ import time
 import math
 import logging
 
-from daemon import Daemon
+from .daemon import Daemon
 
 import librato
 import librato_python_web.tools.agent_config as config
@@ -175,7 +175,7 @@ class Server(object):
         try:
             self.flush()
         except Exception as e:
-            logger.exception('Error while flushing: %s', e.message)
+            logger.exception('Error while flushing: %s', e)
         self._set_timer()
 
     def flush(self):
@@ -229,7 +229,10 @@ class Server(object):
 
     def _process_timers(self, queue, ts):
         stats = 0
-        for context, (v, t) in self.timers.items():
+
+        # Create a copy of keys since the loop modifies the timers dict
+        for context in list(self.timers):
+            (v, t) = self.timers[context]
             if self.expire > 0 and t + self.expire < ts:
                 logger.debug("Expiring timer %s (age: %s)", context, ts - t)
                 del(self.timers[context])
@@ -303,10 +306,10 @@ class Server(object):
         try:
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self._sock.bind(addr)
-        except socket.error as (code, msg):
+        except socket.error as e:
             # kill my alter ego
-            if code == socket.errno.EADDRINUSE:  # port in use
-                logger.info("%s: attempt to kill, hanging librato-statsd-server", msg)
+            if e.errno == socket.errno.EADDRINUSE:  # port in use
+                logger.info("%s: attempt to kill, hanging librato-statsd-server", e.strerror)
                 kill_process('librato-statsd-server')
             # cause the launcher to restart me
             raise
@@ -328,12 +331,12 @@ class Server(object):
             while True:
                 data, addr = self._sock.recvfrom(self.buf)
                 try:
-                    self.process(data)
+                    self.process(data.decode('UTF-8'))
                 except Exception as error:
-                    logger.error("Bad data from %s: %s", addr, error)
-        except socket.error as (code, msg):
+                    logger.exception("Bad data from %s: %s", addr, error)
+        except socket.error as e:
             # Ignore interrupted system calls from sigterm.
-            if code != socket.errno.EINTR:
+            if e.errno != socket.errno.EINTR:
                 raise
 
     def stop(self):

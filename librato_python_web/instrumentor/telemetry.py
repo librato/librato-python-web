@@ -128,13 +128,13 @@ class StdoutTelemetryReporter(TelemetryReporter):
         super(StdoutTelemetryReporter, self).__init__()
 
     def count(self, metric, incr=1):
-        print metric, context.get_tags(), incr
+        print(metric, context.get_tags(), incr)
 
     def record(self, metric, value):
-        print metric, context.get_tags(), value
+        print(metric, context.get_tags(), value)
 
     def event(self, type_name, dictionary=None):
-        print type_name, context.get_tags(), dictionary
+        print(type_name, context.get_tags(), dictionary)
 
 
 class StatsdTelemetryReporter(TelemetryReporter):

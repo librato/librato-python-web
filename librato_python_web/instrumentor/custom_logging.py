@@ -25,6 +25,7 @@
 
 import sys
 import traceback as tb
+from six import print_
 
 DEBUG = 10
 INFO = 20
@@ -44,11 +45,11 @@ class CustomLogger(object):
 
     def _stdout(self, level, fmt, *args, **kwargs):
         mesg = fmt % args
-        print "[{}] {} - {}".format(level, self._name, mesg)
+        print("[{}] {} - {}".format(level, self._name, mesg))
 
     def _stderr(self, level, fmt, *args, **kwargs):
         mesg = fmt % args
-        print >> sys.stderr, "[{}] {} - {}".format(level, self._name, mesg)
+        print_("[{}] {} - {}".format(level, self._name, mesg), file=sys.stderr)
 
     def debug(self, fmt, *args, **kwargs):
         if _globals._level <= DEBUG:

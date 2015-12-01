@@ -24,6 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from functools import wraps
 import time
+import six
 
 from librato_python_web.instrumentor import context
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
@@ -67,7 +68,7 @@ def instrument_methods(method_wrappers):
     the function that wraps the method.
     :param method_wrappers: dictionary of paths to
     """
-    for method_path, method_wrapper in method_wrappers.iteritems():
+    for method_path, method_wrapper in six.iteritems(method_wrappers):
         (fully_qualified_class_name, method_name) = method_path.rsplit('.', 1)
         try:
             class_def = get_class_by_name(fully_qualified_class_name)
