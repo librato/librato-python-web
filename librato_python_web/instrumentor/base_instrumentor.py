@@ -32,16 +32,24 @@ _default = object()
 
 class BaseInstrumentor(object):
     def __init__(self, wrapped=None, state=None):
-        self.wrapped = wrapped if wrapped is not None else {}
+        self.wrapped = wrapped
         self.state = state
+
+    def set_wrapped(self, wrapped):
+        self.wrapped = wrapped if wrapped is not None else {}
 
     def run(self):
         instrument_methods(self.wrapped)
 
     def instrument(self, metric_name, mapping=None, state=_default, enable_if=None, disable_if=None):
         state = self.get_state(state)
-        return contextmanager_wrapper_factory(default_instrumentation(metric_name), mapping, state, enable_if,
-            disable_if)
+        return contextmanager_wrapper_factory(default_instrumentation(metric_name),
+                                              mapping, state, enable_if, disable_if)
 
     def get_state(self, state=_default):
-        return self.state if state == _default else state
+        try:
+            return self.state if state == _default else state
+        except:
+            return state
+
+
