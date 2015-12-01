@@ -69,8 +69,7 @@ setup(
     },
 
     data_files=[
-        ('lib/python2.7/dist-packages', ['conf/librato_python_web.pth']),
-        ('lib/python2.7/site-packages', ['conf/librato_python_web.pth']),
+        ('lib/site-python', ['conf/librato_python_web.pth']),
     ],
 
     scripts=[

@@ -27,8 +27,8 @@
 # Top-level module names and the corresponding proxies
 import os
 
-import general
-import telemetry
+from . import general
+from . import telemetry
 from . import config
 from .config import LegacyConfigReporter
 from .telemetry import StatsdTelemetryReporter

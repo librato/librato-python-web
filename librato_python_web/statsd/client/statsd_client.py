@@ -136,7 +136,7 @@ class Client(object):
             sampled_data = dict((stat, "%s|#%s" % (value, tags_string))
                                 for stat, value in sampled_data.items())
 
-        [self._send_packet("%s:%s" % (stat, value))
+        [self._send_packet(bytes("%s:%s" % (stat, value), 'UTF-8'))
          for stat, value in sampled_data.items()]
 
     def _send_packet(self, packet):
@@ -161,7 +161,7 @@ class Client(object):
 if __name__ == '__main__':
     host = "127.0.0.1"
     port = 8142
-    print "Sending statsd packets to %s:%d" % (host, port)
+    print("Sending statsd packets to %s:%d" % (host, port))
 
     client = Client(host, port)
 

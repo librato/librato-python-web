@@ -38,7 +38,7 @@ import time
 import math
 import logging
 
-from daemon import Daemon
+from .daemon import Daemon
 
 import librato
 import librato_python_web.tools.agent_config as config
@@ -287,10 +287,10 @@ class Server(object):
         try:
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self._sock.bind(addr)
-        except socket.error as (code, msg):
+        except socket.error as e:
             # kill my alter ego
-            if code == socket.errno.EADDRINUSE:  # port in use
-                logger.info("%s: attempt to kill, hanging librato-statsd-server", msg)
+            if e.errno == socket.errno.EADDRINUSE:  # port in use
+                logger.info("%s: attempt to kill, hanging librato-statsd-server", e.strerror)
                 kill_process('librato-statsd-server')
             # cause the launcher to restart me
             raise
@@ -315,9 +315,9 @@ class Server(object):
                     self.process(data)
                 except Exception as error:
                     logger.error("Bad data from %s: %s", addr, error)
-        except socket.error as (code, msg):
+        except socket.error as e:
             # Ignore interrupted system calls from sigterm.
-            if code != socket.errno.EINTR:
+            if e.errno != socket.errno.EINTR:
                 raise
 
     def stop(self):

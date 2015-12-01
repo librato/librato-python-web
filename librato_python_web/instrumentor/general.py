@@ -24,6 +24,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import json
+import six
+
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
@@ -49,7 +51,7 @@ def configure(config_dict_or_filename):
     :return:
     """
     cfg = None
-    if isinstance(config_dict_or_filename, basestring):
+    if isinstance(config_dict_or_filename, six.string_types):
         # Load JSON file
         with open(config_dict_or_filename) as conf:
             cfg = json.load(conf)
@@ -58,7 +60,7 @@ def configure(config_dict_or_filename):
     else:
         raise TypeError('config_dict_or_filename must be a dict or str')
 
-    for k, v in cfg.iteritems():
+    for k, v in six.iteritems(cfg):
         setattr(_config, k, v)
 
     if get_option('port'):
