@@ -26,10 +26,10 @@
 
 import logging
 import logging.config
-import agent_config
+from . import agent_config
 
-from compose import s_, timeshift_, sum_, subtract_, scale_, derive_, divide_, multiply_, DUMMY_PREFIX, METRIC_PREFIX, mean_
-from librato.spaces import Api
+from .compose import s_, timeshift_, sum_, subtract_, scale_, derive_, divide_, multiply_, DUMMY_PREFIX, METRIC_PREFIX, mean_
+from .librato.spaces import Api
 
 
 logger = logging.getLogger(__name__)
