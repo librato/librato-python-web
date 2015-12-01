@@ -51,11 +51,11 @@ try:
     _default_libs = '*'
     _instrumentors = {
         'django': DjangoInstrumentor,
-        # 'elasticsearch': ElasticsearchInstrumentor,
+        'elasticsearch': ElasticsearchInstrumentor,
         'flask': FlaskInstrumentor,
         'logging': LoggingInstrumentor,
         'mysql': MysqlInstrumentor,
-        # 'pykafka': PykafkaInstrumentor,
+        'pykafka': PykafkaInstrumentor,
         'requests': RequestsInstrumentor,
     }
 
