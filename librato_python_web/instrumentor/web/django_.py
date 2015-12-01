@@ -109,11 +109,11 @@ def _django_wsgi_call(original_method):
 class DjangoInstrumentor(BaseInstrumentor):
     required_class_names = ['django.core', 'django.apps']
     _wrapped = {
-        'django.core.handlers.wsgi.WSGIHandler.__call__': function_wrapper_factory(_django_wsgi_call, state='wsgi',
-            enable_if=None),
+        'django.core.handlers.wsgi.WSGIHandler.__call__':
+            function_wrapper_factory(_django_wsgi_call, state='wsgi', enable_if=None),
         'django.conf.LazySettings.__getattr__': django_inject_middleware,
-        'django.db.models.query.QuerySet.iterator': generator_wrapper_factory(
-            generate_record_telemetry('model.iterator.'), state='model'),
+        'django.db.models.query.QuerySet.iterator':
+            generator_wrapper_factory(generate_record_telemetry('model.iterator.'), state='model'),
     }
     _query_set_methods = 'aggregate, count, bulk_create, create, get, get_or_create, latest, first, last, in_bulk,' \
                          'iterator, update_or_create, delete, update, exists'

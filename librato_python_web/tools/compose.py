@@ -70,3 +70,7 @@ def derive_(series, detect_reset="true"):
 
 def mean_(*args):
     return 'mean([{}])'.format(', '.join(args))
+
+def rate_(metric, source=DYNAMIC_SOURCE, period=DEFAULT_PERIOD, duration=DEFAULT_PERIOD):
+    return 'rate(sum([derive(s("{}.{}", "{}", {{period:"{}"}}), {{detect_reset: "true"}})]), {{duration:"{}"}})'.format(
+        METRIC_PREFIX, metric, source, period, duration)
