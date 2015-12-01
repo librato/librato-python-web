@@ -31,18 +31,19 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
     required_class_names = ['elasticsearch.client.Elasticsearch']
 
     def __init__(self):
-        super(ElasticsearchInstrumentor, self).__init__(
+        super(ElasticsearchInstrumentor, self).__init__()
+        self.set_wrapped(
             {
-                'elasticsearch.client.Elasticsearch.create': self.instrument('data.es.create.',
-                     mapping={'resource': '2|doc_type'}, disable_if='model'),
-                'elasticsearch.client.Elasticsearch.get': self.instrument('data.es.get.',
-                    mapping={'resource': '2|doc_type'}, disable_if='model'),
-                'elasticsearch.client.Elasticsearch.index': self.instrument('data.es.index.',
-                    mapping={'resource': '2|doc_type'}, disable_if='model'),
-                'elasticsearch.client.Elasticsearch.search': self.instrument('data.es.search.',
-                    mapping={'resource': '2|doc_type'}, disable_if='model'),
-                'elasticsearch.client.Elasticsearch.delete': self.instrument('data.es.delete.',
-                    mapping={'resource': '2|doc_type'}, disable_if='model'),
+                'elasticsearch.client.Elasticsearch.create':
+                    self.instrument('data.es.create.', mapping={'resource': '2|doc_type'}, disable_if='model'),
+                'elasticsearch.client.Elasticsearch.get':
+                    self.instrument('data.es.get.', mapping={'resource': '2|doc_type'}, disable_if='model'),
+                'elasticsearch.client.Elasticsearch.index':
+                    self.instrument('data.es.index.', mapping={'resource': '2|doc_type'}, disable_if='model'),
+                'elasticsearch.client.Elasticsearch.search':
+                    self.instrument('data.es.search.', mapping={'resource': '2|doc_type'}, disable_if='model'),
+                'elasticsearch.client.Elasticsearch.delete':
+                    self.instrument('data.es.delete.', mapping={'resource': '2|doc_type'}, disable_if='model'),
             }
         )
 
