@@ -29,6 +29,7 @@ from api import context
 
 from instrumentor.instrument import generator_wrapper_factory
 from instrumentor.telemetry import TelemetryReporter, generate_record_telemetry
+import instrumentor.util
 from librato_python_web.instrumentor import instrument
 from instrumentor import telemetry
 
@@ -76,7 +77,7 @@ class InstrumentTest(unittest.TestCase):
         pass
 
     def test_get_class_by_name(self):
-        a_class = instrument.get_class_by_name('instrument_test.A')
+        a_class = instrumentor.util.get_class_by_name('instrument_test.A')
         self.assertEqual(A, a_class)
 
     def test_replace_method(self):
@@ -85,10 +86,10 @@ class InstrumentTest(unittest.TestCase):
 
         original = a.foo
         try:
-            instrument.replace_method(A, 'foo', lambda v: 'bar')
+            instrumentor.util.replace_method(A, 'foo', lambda v: 'bar')
             self.assertEqual('bar', a.foo())
         finally:
-            instrument.replace_method(A, 'foo', original)
+            instrumentor.util.replace_method(A, 'foo', original)
         self.assertEqual('foo', a.foo())
 
     def test_replace_wrapper(self):
@@ -97,10 +98,10 @@ class InstrumentTest(unittest.TestCase):
 
         original = a.foo
         try:
-            instrument.replace_method(A, 'foo', lambda v: 'bar')
+            instrumentor.util.replace_method(A, 'foo', lambda v: 'bar')
             self.assertEqual('bar', a.foo())
         finally:
-            instrument.replace_method(A, 'foo', original)
+            instrumentor.util.replace_method(A, 'foo', original)
         self.assertEqual('foo', a.foo())
 
     def test_function_wrapper(self):
