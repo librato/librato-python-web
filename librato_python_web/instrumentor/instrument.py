@@ -22,11 +22,11 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from functools import wraps
 import time
 
 from librato_python_web.instrumentor import context
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
+from librato_python_web.instrumentor.util import wraps
 
 logger = getCustomLogger(__name__)
 

@@ -26,6 +26,7 @@
 
 import base64
 from collections import OrderedDict
+import functools
 import hashlib
 import re
 import time
@@ -102,6 +103,18 @@ class Timing(object):
             # accumulate as child time
             timers[-1][1] += elapsed_time
         return elapsed_time, net_time
+
+
+def wraps(wrapped, assigned=functools.WRAPPER_ASSIGNMENTS, updated=functools.WRAPPER_UPDATES):
+    """
+    Safely wraps the given method, avoid problems when attributes are missing (e.g., from native methods).
+    :param wrapped: the method to be wrapped
+    :param assigned: the attributes to assign from the wrapped method to the wrapper
+    :param updated: the attributes to update from the wrapped method to the wrapper
+    :return: the wrapped method
+    """
+    return functools.wraps(wrapped, assigned=filter(lambda a: hasattr(wrapped, a), assigned),
+        updated=filter(lambda a: hasattr(wrapped, a), updated))
 
 
 def prepend_to_tuple(t, value):
