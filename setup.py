@@ -28,7 +28,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="librato-python-web",
-    version="0.1.6",
+    version="0.1.7",
     description=("Librato Python Agent. Copyright (c) 2015 Librato, Inc "
                  "All Rights Reserved"),
 
@@ -44,7 +44,7 @@ setup(
 
     # Classifiers
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python'
@@ -78,8 +78,8 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'librato-config=librato_python_web.tools.configure:execute',
-            'librato-launch=librato_python_web.tools.launch:main',
-            'librato-statsd-server=librato_python_web.statsd.server.statsd_server:run_server'],
+            'librato-config=librato_python_web.librato_config:execute',
+            'librato-launch=librato_python_web.librato_launch:execute',
+            'librato-statsd-server=librato_python_web.librato_statsd_server:execute'],
     }
 )
