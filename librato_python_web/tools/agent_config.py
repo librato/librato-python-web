@@ -105,7 +105,7 @@ def load_config(args=sys.argv[1:]):
     parser.add_argument('--expire', help='time-to-live for old stats (in secs)', type=int)
     parser.add_argument('--app-id', help='unique id for application')
     parser.add_argument('-M', '--metrics-hostname', help='Librato metrics API URL')
-    parser.add_argument('-I', '--integration', help='Librato Python integration (django, flask)')
+    parser.add_argument('-I', '--integration', help='Librato Python integration (django, flask or cherrypy)')
 
     options = parser.parse_args(args)
 
@@ -125,6 +125,7 @@ def load_config(args=sys.argv[1:]):
         if not hasattr(options, key):
             setattr(options, key, defaults.get(key))
 
+    setattr(options, 'integration', getattr(options, 'integration', 'django').lower())
     return options
 
 
