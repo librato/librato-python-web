@@ -23,6 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import sys
 from setuptools import setup, find_packages
 
 
@@ -69,8 +70,8 @@ setup(
     },
 
     data_files=[
-        ('lib/python2.7/dist-packages', ['conf/librato_python_web.pth']),
-        ('lib/python2.7/site-packages', ['conf/librato_python_web.pth']),
+        ('lib/python{}/dist-packages'.format(sys.version[:3]), ['conf/librato_python_web.pth']),
+        ('lib/python{}/site-packages'.format(sys.version[:3]), ['conf/librato_python_web.pth']),
     ],
 
     scripts=[
