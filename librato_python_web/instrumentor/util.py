@@ -32,7 +32,6 @@ import re
 import time
 
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
-from librato_python_web.instrumentor.instrument import logger
 
 logger = getCustomLogger(__name__)
 
