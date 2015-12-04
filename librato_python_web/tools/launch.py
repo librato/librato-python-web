@@ -145,9 +145,12 @@ def main():
             usage(1)
 
         args = sys.argv[2:]
+    elif len(sys.argv) >= 1:
+        if sys.argv[1].startswith('-'):
+            usage()
+        args = sys.argv[1:]
     else:
         usage()
-        args = None
 
     if args:
         logging.basicConfig(level=log_level)
