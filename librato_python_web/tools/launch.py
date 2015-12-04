@@ -31,7 +31,7 @@ import subprocess
 import sys
 from threading import Thread
 from time import sleep
-import agent_config
+from . import agent_config
 import signal
 
 
@@ -99,8 +99,8 @@ def launch_statsd():
 
 
 def usage(code=0):
-    print "Usage: {} [--info | --debug] command ...".format(sys.argv[0])
-    print "       {} --help".format(sys.argv[0])
+    print("Usage: {} [--info | --debug] command ...".format(sys.argv[0]))
+    print("       {} --help".format(sys.argv[0]))
     sys.exit(code)
 
 
@@ -140,7 +140,7 @@ def main():
         elif opt in ['--help', '-h', '--usage', '-?']:
             usage()
         else:
-            print "Unknown option {}".format(opt)
+            print("Unknown option {}".format(opt))
             usage(1)
 
         args = sys.argv[2:]

@@ -34,7 +34,11 @@
 import logging
 import socket
 import random
+import sys
 import time
+import traceback as tb
+
+from six import print_
 
 
 # Sends statistics to the stats daemon over UDP
@@ -143,7 +147,8 @@ class Client(object):
         try:
             self.udp_sock.sendto(bytes(bytearray(packet, "utf-8")), self.addr)
         except:
-            self.log.exception("unexpected error")
+            print_("Error reporting metrics", file=sys.stderr)
+            tb.print_exc()
 
     def __repr__(self):
         return "<pystatsd.statsd.Client addr=%s prefix=%s>" % (self.addr, self.prefix)
@@ -161,7 +166,7 @@ class Client(object):
 if __name__ == '__main__':
     host = "127.0.0.1"
     port = 8142
-    print "Sending statsd packets to %s:%d" % (host, port)
+    print("Sending statsd packets to %s:%d" % (host, port))
 
     client = Client(host, port)
 

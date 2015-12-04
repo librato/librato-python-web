@@ -29,7 +29,7 @@
 import json
 import requests
 from requests.auth import HTTPBasicAuth
-from urllib import urlencode
+from six.moves.urllib.parse import urlencode
 
 SPACES_API_URL = "https://metrics-api.librato.com/v1/spaces"
 

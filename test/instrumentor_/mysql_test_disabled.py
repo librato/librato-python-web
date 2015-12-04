@@ -25,7 +25,6 @@
 
 
 import unittest
-import logging
 
 import MySQLdb
 
@@ -58,11 +57,25 @@ class ImportTest(unittest.TestCase):
             cur.execute("SELECT 1 FROM DUAL")
             cur.execute("SELECT 1 FROM DUAL")
             cur.executemany("SELECT 1 FROM DUAL", [None, None, None, None, None])
+
             # callproc
-            # execute
-            # fetchone
+
+            try:
+                cur.execute("drop procedure usercount")
+            except:
+                pass   # proc might not exist
+
+            cur.execute("create procedure usercount() begin select count(*) from mysql.user; end")
+            cur.callproc("usercount", ())
+
+            print("Fetch all - %s" % cur.fetchall())
+            cur.close()		# To avert an out of sync error
+            cur = conn.cursor()
+
+            cur.callproc("usercount", ())
+            print("Fetch one - %s" % cur.fetchone())
+
             # fetchmany
-            # fetchall
             # nextset???
 
             # tpc extensions???

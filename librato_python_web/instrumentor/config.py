@@ -147,9 +147,9 @@ class StdoutConfigReporter(ConfigReporter):
         This operation is not guaranteed to be synchronous.
         """
         super(StdoutConfigReporter, self).publish()
-        print 'Publishing configuration', self.internal_hash()
+        print('Publishing configuration', self.internal_hash())
         for name, value in self.config.iteritems():
-            print name, value
+            print(name, value)
 
 
 REPORTING_DELAY = 0.1  # 100 milliseconds delay

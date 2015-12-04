@@ -38,7 +38,7 @@ import time
 import math
 import logging
 
-from daemon import Daemon
+from .daemon import Daemon
 
 import librato
 import librato_python_web.tools.agent_config as config
@@ -70,7 +70,7 @@ def kill_process(proc_name):
 class Server(object):
 
     def __init__(self, librato_user, librato_api_token,
-                 pct_threshold=90, debug=False, flush_interval=10000,
+                 pct_threshold=90, debug=False, flush_interval=60000,
                  no_aggregate_counters=False, expire=0, source_prefix='',
                  librato_hostname=LIBRATO_HOSTNAME, prefix='statsd'):
         self.buf = 8192
@@ -175,7 +175,7 @@ class Server(object):
         try:
             self.flush()
         except Exception as e:
-            logger.exception('Error while flushing: %s', e.message)
+            logger.exception('Error while flushing: %s', e)
         self._set_timer()
 
     def flush(self):
@@ -229,7 +229,10 @@ class Server(object):
 
     def _process_timers(self, queue, ts):
         stats = 0
-        for context, (v, t) in self.timers.items():
+
+        # Create a copy of keys since the loop modifies the timers dict
+        for context in list(self.timers):
+            (v, t) = self.timers[context]
             if self.expire > 0 and t + self.expire < ts:
                 logger.debug("Expiring timer %s (age: %s)", context, ts - t)
                 del(self.timers[context])
@@ -239,31 +242,39 @@ class Server(object):
                 # Sort all the received values. We need it to extract percentiles
                 v.sort()
                 count = len(v)
-                min = v[0]
-                max = v[-1]
+                min_ = v[0]
+                max_ = v[-1]
 
-                mean = min
-                max_threshold = max
-
-                if count > 1:
-                    thresh_index = int((self.pct_threshold / 100.0) * count)
-                    max_threshold = v[thresh_index - 1]
+                if count == 1:
+                    mean = min_
+                    max_threshold = max_
+                    median = min_
+                    total = min_
+                    sum_squares = min_ * min_
+                else:
+                    index = int(math.floor(count/2))
+                    if count % 2 == 0:
+                        median = (v[index] + v[index-1]) / 2
+                    else:
+                        median = v[index]
+                    index = int((self.pct_threshold / 100.0) * count)
+                    max_threshold = v[index - 1]
                     total = sum(v)
+                    sum_squares = sum([i**2 for i in v])
                     mean = total / count
 
                 del(self.timers[context])
 
                 logger.debug("Sending %s ====> lower=%s, mean=%s, upper=%s, %dpct=%s, count=%s",
-                             context, min, mean, max, self.pct_threshold, max_threshold, count)
+                             context, min_, mean, max_, self.pct_threshold, max_threshold, count)
 
                 prefix = context[0] + "."
-                self._add_to_queue(queue, prefix + "count", count, ts, tags=context[1])
-                self._add_to_queue(queue, prefix + "lower", min, ts, tags=context[1])
-                self._add_to_queue(queue, prefix + "mean", mean, ts, tags=context[1])
-                self._add_to_queue(queue, prefix + "upper", max, ts, tags=context[1])
+                self._add_to_queue(queue, prefix + "median", median, ts, tags=context[1])
                 self._add_to_queue(queue, prefix + "upper_" + str(self.pct_threshold), max_threshold, ts,
                                    tags=context[1])
-
+                self._add_to_queue(queue, prefix + "count", count, ts, tags=context[1])
+                self._add_gauge_to_queue(queue, prefix + "mean", mean, ts, count=count,
+                                         min_=min_, max_=max_, sum_=total, sum_squares=sum_squares, tags=context[1])
                 # we only count this timer as a single stat even though we generated multiple measurements
                 stats += 1
 
@@ -273,8 +284,16 @@ class Server(object):
         tags_dict = dict(tags) if tags else {}
         if 'source' not in tags_dict:
             tags_dict['source'] = self.source
-        queue.add('{}.{}'.format(self.prefix, key), value, time=timestamp,
-                  source=self.source, type=metric_type, tags=tags_dict)
+        queue.add('{}.{}'.format(self.prefix, key), value, metric_type, measure_time=timestamp,
+                  source=self.source)
+
+    def _add_gauge_to_queue(self, queue, key, value, timestamp, min_=None, max_=None, count=1,
+                            sum_=None, sum_squares=None, tags=None):
+        tags_dict = dict(tags) if tags else {}
+        if 'source' not in tags_dict:
+            tags_dict['source'] = self.source
+        queue.add('{}.{}'.format(self.prefix, key), None, 'gauge', measure_time=timestamp,
+                  source=self.source, count=count, sum=sum_, max=max_, min=min_, sum_squares=sum_squares)
 
     def _set_timer(self):
         self._timer = threading.Timer(self.flush_interval, self.on_timer)
@@ -287,10 +306,10 @@ class Server(object):
         try:
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self._sock.bind(addr)
-        except socket.error as (code, msg):
+        except socket.error as e:
             # kill my alter ego
-            if code == socket.errno.EADDRINUSE:  # port in use
-                logger.info("%s: attempt to kill, hanging librato-statsd-server", msg)
+            if e.errno == socket.errno.EADDRINUSE:  # port in use
+                logger.info("%s: attempt to kill, hanging librato-statsd-server", e.strerror)
                 kill_process('librato-statsd-server')
             # cause the launcher to restart me
             raise
@@ -312,12 +331,12 @@ class Server(object):
             while True:
                 data, addr = self._sock.recvfrom(self.buf)
                 try:
-                    self.process(data)
+                    self.process(data.decode('UTF-8'))
                 except Exception as error:
-                    logger.error("Bad data from %s: %s", addr, error)
-        except socket.error as (code, msg):
+                    logger.exception("Bad data from %s: %s", addr, error)
+        except socket.error as e:
             # Ignore interrupted system calls from sigterm.
-            if code != socket.errno.EINTR:
+            if e.errno != socket.errno.EINTR:
                 raise
 
     def stop(self):
