@@ -25,12 +25,12 @@
 from collections import defaultdict
 from contextlib import contextmanager
 import unittest
-from api import context
+from librato_python_web.api import context
 
-from instrumentor.instrument import generator_wrapper_factory
-from instrumentor.telemetry import TelemetryReporter, generate_record_telemetry
+from librato_python_web.instrumentor.instrument import generator_wrapper_factory
+from librato_python_web.instrumentor.telemetry import TelemetryReporter, generate_record_telemetry
 from librato_python_web.instrumentor import instrument
-from instrumentor import telemetry
+from librato_python_web.instrumentor import telemetry
 
 
 class A(object):

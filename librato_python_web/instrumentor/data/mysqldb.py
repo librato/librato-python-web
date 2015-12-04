@@ -11,6 +11,9 @@ class MysqlInstrumentor(BaseInstrumentor):
                 'MySQLdb.cursors.Cursor.execute':
                     self.instrument('data.mysql.execute.', mapping={'resource': 1},
                                     state='data.mysql', disable_if='model'),
+                'MySQLdb.cursors.Cursor.callproc':
+                    self.instrument('data.mysql.callproc.', mapping={'resource': 1},
+                                    state='data.mysql', disable_if='model'),
             }
         )
 
