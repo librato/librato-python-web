@@ -23,16 +23,17 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-import atexit
-import logging
 import os
-import subprocess
 import sys
+import atexit
+import signal
+import subprocess
+
+import logging
+
 from threading import Thread
 from time import sleep
 from . import agent_config
-import signal
 
 
 STATSD_ARGS = ["librato-statsd-server"]
@@ -145,9 +146,8 @@ def main():
 
         args = sys.argv[2:]
     else:
-        if sys.argv[1].startswith('-'):
-            usage()
-        args = sys.argv[1:]
+        usage()
+        args = None
 
     if args:
         logging.basicConfig(level=log_level)
@@ -157,6 +157,3 @@ def main():
         logging.info("launching: %s", args)
         subprocess.call(args)
         logging.info("finished")
-
-if __name__ == "__main__":
-    main()

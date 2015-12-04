@@ -23,62 +23,11 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from setuptools import setup, find_packages
 
+from librato_python_web.tools.launch import main as launch
 
-setup(
-    name="librato-python-web",
-    version="0.1.7",
-    description=("Librato Python Agent. Copyright (c) 2015 Librato, Inc "
-                 "All Rights Reserved"),
+def execute():
+    launch()
 
-    # The project's main homepage
-    url="https://github.com/librato/librato-python-web",
-
-    # Author details
-    author="Librato, Inc",
-    author_email="support@librato.com",
-
-    # Licensing
-    license='https://github.com/librato/librato-python-web/blob/master/LICENSE',
-
-    # Classifiers
-    classifiers=[
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python'
-    ],
-
-    packages=find_packages(exclude=["*.tests", "*.tests.*",
-                                    "tests.*", "tests",
-                                    "test.*", "test"]),
-
-    install_requires=[
-        'six',
-        'requests',
-        'librato-metrics',
-    ],
-
-    dependency_links=[
-    ],
-
-    include_package_data=True,
-
-    package_data={
-    },
-
-    data_files=[
-        ('lib/site-python', ['conf/librato_python_web.pth']),
-    ],
-
-    scripts=[
-    ],
-
-    entry_points={
-        'console_scripts': [
-            'librato-config=librato_python_web.librato_config:execute',
-            'librato-launch=librato_python_web.librato_launch:execute',
-            'librato-statsd-server=librato_python_web.librato_statsd_server:execute'],
-    }
-)
+if __name__ == '__main__':
+    execute()

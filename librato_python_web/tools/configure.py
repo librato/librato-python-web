@@ -26,8 +26,8 @@
 
 import logging
 import logging.config
-from . import agent_config
 
+from . import agent_config
 from .compose import s_, timeshift_, sum_, subtract_, scale_, derive_, \
     divide_, multiply_, DUMMY_PREFIX, METRIC_PREFIX, mean_, rate_
 from .librato.spaces import Api
@@ -51,7 +51,7 @@ ERROR_PERCENTAGE_QUERY = scale_(
 
 CHART_SPECS = [
     {
-        'name': 'Response Time',
+        'name': '{} Response Time',
         'y_label': 'milliseconds',
         'chart_type': 'line',
         'metrics': [
@@ -76,7 +76,7 @@ CHART_SPECS = [
         ]
     },
     {
-        'name': 'Response Time Components',
+        'name': '{} Response Time Components',
         'y_label': 'milliseconds',
         'chart_type': 'stacked',
         'metrics': [
@@ -151,7 +151,7 @@ CHART_SPECS = [
         ]
     },
     {
-        'name': 'Throughput (rpm)',
+        'name': '{} Throughput (rpm)',
         'y_label': 'rpm',
         'chart_type': 'line',
         'metrics': [
@@ -176,7 +176,7 @@ CHART_SPECS = [
         ]
     },
     {
-        'name': 'Throughput (rpm) by Status Codes',
+        'name': '{} Throughput (rpm) by Status Codes',
         'y_label': 'rpm',
         'chart_type': 'stacked',
         'metrics': [
@@ -207,7 +207,7 @@ CHART_SPECS = [
         ]
     },
     {
-        'name': 'Logging Components',
+        'name': '{} Logging Components',
         'y_label': 'epm',
         'chart_type': 'stacked',
         'metrics': [
@@ -238,7 +238,7 @@ CHART_SPECS = [
         ]
     },
     {
-        'name': 'Error Percentage',
+        'name': '{} Error Percentage',
         'y_label': 'percentage',
         'chart_type': 'line',
         'min_': 0.0,
@@ -313,6 +313,7 @@ def _update(_user, _password, _app_id, _integration):
     space = _create_space(api, SPACE_NAME.format(_app_id, _integration.title()))
 
     for spec in CHART_SPECS:
+        spec['name'] = spec.get('name').format(_integration.title())
         for metrics in spec.get("metrics"):
             metrics["composite"] = metrics["composite"].replace(DUMMY_PREFIX, _app_id)
             metrics["composite"] = metrics["composite"].replace(METRIC_PREFIX, _integration)
@@ -336,5 +337,4 @@ def execute():
     if options.create:
         _update(options.user, options.api_token, options.app_id, options.integration)
 
-if __name__ == '__main__':
-    execute()
+
