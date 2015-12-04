@@ -26,12 +26,13 @@
 
 import base64
 from collections import OrderedDict
+import functools
 import hashlib
 import re
 import time
 
-from librato_python_web.instrumentor.instrument import get_module_by_name
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
+from librato_python_web.instrumentor.instrument import logger
 
 logger = getCustomLogger(__name__)
 
@@ -102,6 +103,18 @@ class Timing(object):
             # accumulate as child time
             timers[-1][1] += elapsed_time
         return elapsed_time, net_time
+
+
+def wraps(wrapped, assigned=functools.WRAPPER_ASSIGNMENTS, updated=functools.WRAPPER_UPDATES):
+    """
+    Safely wraps the given method, avoid problems when attributes are missing (e.g., from native methods).
+    :param wrapped: the method to be wrapped
+    :param assigned: the attributes to assign from the wrapped method to the wrapper
+    :param updated: the attributes to update from the wrapped method to the wrapper
+    :return: the wrapped method
+    """
+    return functools.wraps(wrapped, assigned=filter(lambda a: hasattr(wrapped, a), assigned),
+        updated=filter(lambda a: hasattr(wrapped, a), updated))
 
 
 def prepend_to_tuple(t, value):
@@ -191,3 +204,85 @@ def get_parameter(i, key, *args, **keywords):
 
 def lazy_import(package):
     return get_module_by_name(package)
+
+
+def is_class_available(fully_qualified_class_name):
+    """
+    Return True if the class / module with fully_qualified_class_name is loadable.
+
+    :param fully_qualified_class_name:
+    :type fully_qualified_class_name: str
+    :return: True if class is found, False otherwise
+    :returns: bool
+    """
+    return get_module_by_name(fully_qualified_class_name) is not None or \
+        get_class_by_name(fully_qualified_class_name) is not None
+
+
+def get_module_by_name(fully_qualified_module_name):
+    try:
+        return __import__(fully_qualified_module_name)
+    except ImportError:
+        return None
+
+
+def get_class_by_name(fully_qualified_class_name):
+    """
+    Return the class with fully_qualified_class_name.
+
+    :param fully_qualified_class_name:
+    :type fully_qualified_class_name: str
+    :return: the specified class, None if not found
+    """
+    (module_path, class_name) = fully_qualified_class_name.rsplit('.', 1) if '.' in fully_qualified_class_name \
+        else (fully_qualified_class_name, None)
+    try:
+        module_def = __import__(module_path, globals(), locals(), [class_name] if class_name else [])
+        class_def = getattr(module_def, class_name) if module_def and class_name else None
+    except ImportError:
+        logger.info('%s not found', fully_qualified_class_name)
+        class_def = None
+
+    return class_def
+
+
+def wrap_method(method_owner, method_name, method_wrapper):
+    """
+    Wrap the method with the method_name on the class_def using the method_wrapper.
+
+    Records original information on the wrapper method so that method can be "unwrapped" as an "original" attribute on
+    the method_wrapper (see unwrap_method()).
+
+    :param method_owner: the object on which the method is set (e.g., class or module)
+    :param method_name: the name of the attribute to be overridden
+    :param method_wrapper: the function that wraps the method (takes the method as the sole argument)
+    """
+    original_method = getattr(method_owner, method_name)
+    wrapped_method = method_wrapper(original_method)
+    wrapped_method.original = (method_owner, method_name, original_method)
+    replace_method(method_owner, method_name, wrapped_method)
+
+
+def unwrap_method(method_wrapper):
+    """
+    Unwraps the given method presuming that it was set using wrap_method.
+
+    Needs original information on the wrapper method so that method can be "unwrapped" (in "original" attribute).
+
+    :param method_wrapper: the function that wraps the method to be restored
+    """
+    if hasattr(method_wrapper, 'original'):
+        original = method_wrapper.original
+        replace_method(*original)
+        delattr(method_wrapper, 'original')
+
+
+def replace_method(owner, method_name, method):
+    """
+    Replaces the given method name on the given class_def with the given method.
+
+    :param owner: the owner of the method (class or module)
+    :param method_name: the method name on the owner
+    :param method: the method to use
+    """
+    setattr(owner, method_name, method)

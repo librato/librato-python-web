@@ -22,17 +22,16 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from functools import wraps
-
 import time
 from math import floor
 
 from librato_python_web.instrumentor.instrument import instrument_methods, function_wrapper_factory, \
-    generator_wrapper_factory, unwrap_method
+    generator_wrapper_factory
+from instrumentor.util import unwrap_method
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import generate_record_telemetry
-from librato_python_web.instrumentor.util import prepend_to_tuple, Timing
+from librato_python_web.instrumentor.util import prepend_to_tuple, Timing, wraps
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 

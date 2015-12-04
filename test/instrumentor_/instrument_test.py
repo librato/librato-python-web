@@ -27,6 +27,7 @@ from contextlib import contextmanager
 import unittest
 from librato_python_web.api import context
 
+import librato_python_web.instrumentor.util
 from librato_python_web.instrumentor.instrument import generator_wrapper_factory
 from librato_python_web.instrumentor.telemetry import TelemetryReporter, generate_record_telemetry
 from librato_python_web.instrumentor import instrument
@@ -85,10 +86,10 @@ class InstrumentTest(unittest.TestCase):
 
         original = a.foo
         try:
-            instrument.replace_method(A, 'foo', lambda v: 'bar')
+            instrumentor.util.replace_method(A, 'foo', lambda v: 'bar')
             self.assertEqual('bar', a.foo())
         finally:
-            instrument.replace_method(A, 'foo', original)
+            instrumentor.util.replace_method(A, 'foo', original)
         self.assertEqual('foo', a.foo())
 
     def test_replace_wrapper(self):
@@ -97,10 +98,10 @@ class InstrumentTest(unittest.TestCase):
 
         original = a.foo
         try:
-            instrument.replace_method(A, 'foo', lambda v: 'bar')
+            instrumentor.util.replace_method(A, 'foo', lambda v: 'bar')
             self.assertEqual('bar', a.foo())
         finally:
-            instrument.replace_method(A, 'foo', original)
+            instrumentor.util.replace_method(A, 'foo', original)
         self.assertEqual('foo', a.foo())
 
     def test_function_wrapper(self):

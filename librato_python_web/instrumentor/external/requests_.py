@@ -22,15 +22,13 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from functools import wraps
-
 from math import floor
 
 from librato_python_web.instrumentor.instrument import function_wrapper_factory
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.util import get_parameter, Timing
+from librato_python_web.instrumentor.util import get_parameter, Timing, wraps
 
 
 def requests_request_time(f):
