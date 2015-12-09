@@ -5,12 +5,12 @@ librato-python-web
 
 ## System requirements
 
-* Python 2.7.x, >=2.7.3
+* Python 2.7.x (>=2.7.3) or Python 3.x
 * Django 1.8.6 or later
-* Linux
+* Linux or OSX
 
 ## Verified combinations
-* Python 2.7.3
+* Python 2.7.3 or Python 3.4.3
 * Django 1.8.6
 * Ubuntu 14.04.3 LTS
 
