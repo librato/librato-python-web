@@ -51,6 +51,18 @@ ERROR_PERCENTAGE_QUERY = scale_(
 
 CHART_SPECS = [
     {
+        'name': 'Response Latency 95%',
+        'y_label': 'ms',
+        'chart_type': 'bignumber',
+        'metrics': [
+            {
+                'name': 'Response Latency 95th percentile',
+                'composite': mean_(s_("wsgi.response.latency.upper_95")),
+                'summary_function': 'average',
+            }
+        ]
+    },
+    {
         'name': '{} Response Time',
         'y_label': 'milliseconds',
         'chart_type': 'line',
@@ -91,7 +103,7 @@ CHART_SPECS = [
                                 sum_(s_("wsgi.response.latency.mean", function="mean")),
                                 sum_(s_("wsgi.response.latency.count", function="sum")))),
                     THROUGHPUT_QUERY),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#f04950'
             },
             {
@@ -105,7 +117,7 @@ CHART_SPECS = [
                             sum_(s_("web.response.latency.mean", function="mean")),
                             sum_(s_("web.response.latency.count", function="sum")))),
                     THROUGHPUT_QUERY),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#2b89ad'
             },
             {
@@ -115,7 +127,7 @@ CHART_SPECS = [
                         sum_(s_("app.response.latency.mean", function="mean")),
                         sum_(s_("app.response.latency.count", function="sum"))),
                     THROUGHPUT_QUERY),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#ff8501'
             },
             {
@@ -125,7 +137,7 @@ CHART_SPECS = [
                         sum_(s_("data.*.latency.mean", function="mean")),
                         sum_(s_("data.*.latency.count", function="sum"))),
                     THROUGHPUT_QUERY),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#a85802'
             },
             {
@@ -135,7 +147,7 @@ CHART_SPECS = [
                         sum_(s_("external.*.response.latency.mean", function="mean")),
                         sum_(s_("external.*.response.latency.count", function="sum"))),
                     THROUGHPUT_QUERY),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#0880ae'
             },
             {
@@ -145,10 +157,22 @@ CHART_SPECS = [
                         sum_(s_("model.*.latency.mean", function="mean")),
                         sum_(s_("model.*.latency.count", function="sum"))),
                     THROUGHPUT_QUERY),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#d67002'
             }
         ]
+    },
+    {
+        "name": "Requests per Minute",
+        "chart_type": "bignumber",
+        "y_label": "rpm",
+        "metrics": [
+            {
+                "name": "Requests per minute",
+                "composite": mean_(s_("wsgi.response.latency.count")),
+                "summary_function": "average",
+            }
+        ],
     },
     {
         'name': '{} Throughput (rpm)',
@@ -158,19 +182,19 @@ CHART_SPECS = [
             {
                 'name': 'Current',
                 'composite': THROUGHPUT_RATE,
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#ff8501'
             },
             {
                 'name': '24 hours ago',
                 'composite': timeshift_("1d", THROUGHPUT_RATE),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#0880ae'
             },
             {
                 'name': 'Week ago',
                 'composite': timeshift_("1w", THROUGHPUT_RATE),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#50a3c3'
             }
         ]
@@ -183,25 +207,25 @@ CHART_SPECS = [
             {
                 'name': '2xx',
                 'composite': rate_("web.status.2xx.count"),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#0880ae'
             },
             {
                 'name': '3xx',
                 'composite': rate_("web.status.3xx.count"),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#ff7e63'
             },
             {
                 'name': '4xx',
                 'composite': rate_("web.status.4xx.count"),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#ff5a37'
             },
             {
                 'name': '5xx',
                 'composite': rate_("web.status.5xx.count"),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#ff2d01'
             }
         ]
@@ -214,25 +238,25 @@ CHART_SPECS = [
             {
                 'name': 'Warnings',
                 'composite': rate_("logging.warning.requests.count"),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#d69900'
             },
             {
                 'name': 'Errors',
                 'composite': rate_("logging.error.requests.count"),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#ff2d01'
             },
             {
                 'name': 'Exceptions',
                 'composite': rate_("logging.exception.requests.count"),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#a81d00'
             },
             {
                 'name': 'Critical',
                 'composite': rate_("logging.critical.requests.count"),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#f81d00'
             }
         ]
@@ -247,19 +271,19 @@ CHART_SPECS = [
             {
                 'name': 'Current',
                 'composite': ERROR_PERCENTAGE_QUERY,
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#ff2d01'
             },
             {
                 'name': '24 hours ago',
                 'composite': timeshift_("1d", ERROR_PERCENTAGE_QUERY),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#ff5a37'
             },
             {
                 'name': 'Week ago',
                 'composite': timeshift_("1w", ERROR_PERCENTAGE_QUERY),
-                'summary_function': 'sum',
+                'summary_function': 'average',
                 'color': '#ff7e63'
             }
         ]
