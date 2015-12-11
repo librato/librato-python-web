@@ -38,7 +38,7 @@ def run_instrumentors(instrumentors, libs):
     :param libs:
     """
     for alias in instrumentors:
-        if libs != '*' and alias not in libs:
+        if alias not in libs:
             logger.info("Skipping %s", alias)
             continue
 

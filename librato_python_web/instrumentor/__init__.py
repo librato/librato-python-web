@@ -58,6 +58,7 @@ try:
         'pykafka': PykafkaInstrumentor,
         'requests': RequestsInstrumentor,
     }
+    _web_fxes = ['django', 'flask']
 
     general.set_option('enabled', os.environ.get('LIBRATO_INSTRUMENT_PYTHON'))
     if general.get_option('enabled'):
@@ -83,8 +84,20 @@ try:
             logger.debug("Using legacy config reporter")
             config.config.set_reporter(LegacyConfigReporter())
 
-        libs = general.get_option('libraries', _default_libs)
-        logger.info("Libraries = %s", libs)
+        libs = general.get_option('libraries')
+        logger.info("Specified libraries = %s", libs)
+
+        integration = general.get_option('integration', 'django')
+        logger.info("Integration = %s", integration)
+
+        if not libs:
+            # By default, let us exclude the other web frameworks
+            # The user can pull in multiple frameworks by being explicit
+            libs = [lib for lib in _instrumentors.keys() if lib not in _web_fxes or lib == integration]
+        elif libs == '*':
+            libs = _instrumentors.keys()
+        logger.info("Computed libraries = %s", libs)
+
         instrument_methods(_wrapped)
         run_instrumentors(_instrumentors, libs)
 except Exception:
