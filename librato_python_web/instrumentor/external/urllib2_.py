@@ -85,24 +85,33 @@ def _urllib2_open(f):
         # The type of the returned instance depends on the url
         # but is typically urllib.addinfourl for the baked-in protocols
 
+        if context.has_state('external'):
+            # Avoid double counting nested calls. All metrics will be reported
+            # relative to the outermost operation
+            return f(*args, **keywords)
+
         url = get_parameter(1, 'fullurl', *args, **keywords)
 
-        try:
-            if not isinstance(url, basestring):
-                url = url.get_full_url()
-            scheme = url.split(':')[0] if ':' in url else 'unknown'
-        except AttributeError:
-            scheme = "unknown"
+        if hasattr(url, 'get_full_url'):
+            url = url.get_full_url()
 
+        scheme = url.split(':')[0] if ':' in url else 'unknown'
+
+        Timing.push_timer()
         try:
+            context.push_state('external')
             telemetry.count('external.{}.requests'.format(scheme))
-            a = _wrapped_call('external.{}.response.latency'.format(scheme), f, *args, **keywords)
+            a = f(*args, **keywords)
             if a.getcode():
                 # Not meaningful for ftp etc
                 telemetry.count('external.{}.status.%ixx'.format(scheme) % floor(a.getcode() / 100))
         except:
-            telemetry.count('external.http.errors')
+            telemetry.count('external.{}.errors'.format(scheme))
             raise
+        finally:
+            context.pop_state('external')
+            elapsed, _ = Timing.pop_timer()
+            telemetry.record('external.{}.response.latency'.format(scheme), elapsed)
 
         # Return a wrapped object so we can time subsequent read, readline etc calls
         return _response_wrapper(scheme, a)
