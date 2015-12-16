@@ -36,6 +36,7 @@ from .data.elasticsearch import ElasticsearchInstrumentor
 from .data.mysqldb import MysqlInstrumentor
 from . import custom_logging
 from .external.requests_ import RequestsInstrumentor
+from .external.urllib2_ import Urllib2Instrumentor
 from .log.logging import LoggingInstrumentor
 from .messaging.pykafka import PykafkaInstrumentor
 from .web.django_ import DjangoInstrumentor
@@ -57,6 +58,7 @@ try:
         'mysql': MysqlInstrumentor,
         'pykafka': PykafkaInstrumentor,
         'requests': RequestsInstrumentor,
+        'urllib2': Urllib2Instrumentor,
     }
     _web_fxes = ['django', 'flask']
 
