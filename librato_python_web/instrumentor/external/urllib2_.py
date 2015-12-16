@@ -49,11 +49,17 @@ def _wrapped_call(metric, func, *args, **keywords):
         telemetry.record(metric, elapsed)
 
 
-class _response_wrapper(object):
+class _response_wrapper:
     """ Wraps responses returned by urllib2.open """
+    """ Note: this needs to be an old-style class for the dynamic method assignments """
+    """       for __iter__ and next to work """
     def __init__(self, scheme, target):
         self.target = target
         self.metric_name = 'external.{}.response.latency'.format(scheme)
+
+        if hasattr(target, "__iter__"):
+            self.__iter__ = self.iter_
+            self.next = self.next_
 
     def read(self, *args, **keywords):
         return _wrapped_call(self.metric_name, self.target.read, *args, **keywords)
@@ -78,6 +84,15 @@ class _response_wrapper(object):
 
     def __repr__(self):
         return self.target.__repr__()
+
+    def iter_(self):
+        return self
+
+    def next_(self):
+        line = self.readline()
+        if not line:
+            raise StopIteration
+        return line
 
 
 def _urllib2_open(f):
