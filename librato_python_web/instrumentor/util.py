@@ -284,4 +284,11 @@ def replace_method(owner, method_name, method):
     :param method_name: the method name on the owner
     :param method: the method to use
     """
-    setattr(owner, method_name, method)
+    try:
+        setattr(owner, method_name, method)
+    except TypeError as e:
+        msg = str(e)
+        if "can't set attributes of built-in/extension type" in msg:
+            logger.info(str(e))  # expected problem
+        else:
+            logger.error(str(e))
