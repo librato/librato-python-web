@@ -1,3 +1,4 @@
 Psycopg2
 mysql-python
 requests
+ProxyTypes

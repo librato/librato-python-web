@@ -25,7 +25,8 @@
 
 from .telemetry import default_instrumentation
 
-from librato_python_web.instrumentor.instrument import instrument_methods, contextmanager_wrapper_factory
+from librato_python_web.instrumentor.instrument import instrument_methods, contextmanager_wrapper_factory, \
+    override_classes
 
 _default = object()
 
@@ -33,12 +34,18 @@ _default = object()
 class BaseInstrumentor(object):
     def __init__(self, wrapped=None, state=None):
         self.wrapped = wrapped
+        self.overridden_classes = {}
         self.state = state
+
+    def set_overridden(self, overridden_classes):
+        self.overridden_classes = overridden_classes if overridden_classes is not None else {}
 
     def set_wrapped(self, wrapped):
         self.wrapped = wrapped if wrapped is not None else {}
 
     def run(self):
+        # instrument static resources
+        override_classes(self.overridden_classes, self.wrapped)
         instrument_methods(self.wrapped)
 
     def instrument(self, metric_name, mapping=None, state=_default, enable_if=None, disable_if=None):

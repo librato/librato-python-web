@@ -22,8 +22,11 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import functools
 import time
+from peak.util.proxies import ObjectWrapper
 import six
+import sys
 
 from librato_python_web.instrumentor import context
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
@@ -80,6 +83,63 @@ def instrument_methods(method_wrappers):
         except ImportError:
             logger.debug('could not instrument %s.%s', method_path, method_name)
             logger.info('%s not instrumented because not found', fully_qualified_class_name)
+
+
+def override_classes(overridden_classes, wrapped):
+    """
+    Override static classes by creating a subclass (via type) that contains overridden methods. Typically this is
+    applied to native classes so that their methods can be overridden to wrap returned instances.
+    :param overridden_classes: dict of qualified class names as keys and
+    """
+    for fully_qualified_class_name, targeted_methods in six.iteritems(overridden_classes):
+        try:
+            cls = get_class_by_name(fully_qualified_class_name)
+            if cls:
+                logger.debug('instrumenting class %s', fully_qualified_class_name)
+                wrap_class_methods(cls, targeted_methods, wrapped)
+            else:
+                logger.info('%s not overridden because not found', fully_qualified_class_name)
+        except ImportError:
+            logger.debug('could not override %s', fully_qualified_class_name)
+            logger.info('%s not overridden because not found', fully_qualified_class_name)
+
+
+def wrap_returned_instances(original_method, overrides):
+    """
+    Creates a new method that calls the original_method and, if an instance is returned, creates a proxy wrapper for
+    them that uses the new_methods (other calls are proxied to the original instance).
+    :param original_method: the original method
+    :param overrides: new methods on instances returned from this method
+    :return: the wrapped version of the original method
+    """
+    def decorator(*args, **keywords):
+        """
+        :return: proxied version of instances returned
+        """
+        ret = original_method(*args, **keywords)
+        return OverrideWrapper(ret, {k: functools.partial(v, ret) for k, v in overrides.iteritems()}) \
+            if hasattr(ret, '__class__') else ret
+    return decorator
+
+
+def wrap_class_methods(cls, targeted_methods, rules):
+    overrides = {}
+    for targeted_method, method_config in six.iteritems(targeted_methods):
+        """Each wrapped method is modified to return an wrapped object with methods instrumented according to rules"""
+        original_method = getattr(cls, targeted_method)
+        return_type = method_config.get('returns')
+        if return_type:
+            # Create a custom wrapper based upon the return type of the method
+            return_cls = get_class_by_name(return_type)
+            pf_len = len(return_type)+1
+            return_type_proxy_methods = {k[pf_len:]: v(object.__getattribute__(return_cls, k[pf_len:]))
+                                         for k, v in six.iteritems(rules) if k.startswith(return_type)}
+            overrides[targeted_method] = wrap_returned_instances(original_method, return_type_proxy_methods)
+        else:
+            logger.error('method %s missing returns value', targeted_method)
+    sub_class = type(cls.__name__, (cls,), overrides)
+    sub_class.__module__ = cls.__module__
+    setattr(sys.modules[cls.__module__], cls.__name__, sub_class)
 
 
 def _build_key(mappings, args, keywords):
@@ -175,11 +235,13 @@ def function_wrapper_factory(wrapper_function, state=None, enable_if='web', disa
     :param disable_if: instrumentation is disabled when this state is present
     :return: the function wrapper
     """
+
     def decorator(f):
         """
         Functions are only wrapped when instrumentation is required, based on run-time context
         :param f: the function to wrap
         """
+
         @wraps(f)
         def wrapper(*args, **keywords):
             if _should_be_instrumented(state, enable_if, disable_if):
@@ -192,6 +254,7 @@ def function_wrapper_factory(wrapper_function, state=None, enable_if='web', disa
                 return f(*args, **keywords)
 
         return wrapper
+
     return decorator
 
 
@@ -205,12 +268,14 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
     :param disable_if: instrumentation is disabled when this state is present
     :return: the function wrapper
     """
+
     def decorator(generator):
         """
         Creates a generator that wraps the given generator and instruments it depending on the context when
         its called.
         :param generator: the generator to wrap
         """
+
         @wraps(generator)
         def wrapper(*args, **keywords):
             # determined at run time, since this depends on the invocation context
@@ -241,7 +306,9 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
             else:
                 for x in generator(*args, **keywords):
                     yield x
+
         return wrapper
+
     return decorator
 
 
@@ -257,6 +324,7 @@ def contextmanager_wrapper_factory(context_manager, mapping=None, state=None, en
     :param disable_if: instrumentation is disabled when this state is present
     :return: the function wrapper
     """
+
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **keywords):
@@ -272,5 +340,20 @@ def contextmanager_wrapper_factory(context_manager, mapping=None, state=None, en
                     context.pop_state(state)
             else:
                 return f(*args, **keywords)
+
         return wrapper
+
     return decorator
+
+
+class OverrideWrapper(ObjectWrapper):
+    def __init__(self, subject, instrumented):
+        super(OverrideWrapper, self).__init__(subject)
+        object.__setattr__(self, '__instrumented__', instrumented)
+
+    def __getattr__(self, attr, oga=object.__getattribute__):
+        if not attr.startswith('__'):
+            instrumented = object.__getattribute__(self, '__instrumented__')
+            if attr in instrumented:
+                return instrumented.get(attr)
+        return super(OverrideWrapper, self).__getattr__(attr, oga)

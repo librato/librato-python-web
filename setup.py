@@ -59,6 +59,7 @@ setup(
         'six',
         'requests',
         'librato-metrics',
+        'ProxyTypes',
     ],
 
     dependency_links=[
