@@ -540,7 +540,8 @@ class UtilTest(unittest.TestCase):
         instrumentor = Psycopg2Instrumentor()
         instrumentor.run()
 
-        conn = psycopg2.extensions.connection(LOCAL_DSN)
+        conn = psycopg2.connect(LOCAL_DSN)
+        # conn = psycopg2.extensions.connection(LOCAL_DSN)
         cur = conn.cursor()
 
         self.assertEquals(OverrideWrapper, type(cur))

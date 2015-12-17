@@ -45,6 +45,7 @@ class SqliteTest(unittest.TestCase):
         telemetry_reporter = TestTelemetryReporter()
         telemetry.set_reporter(telemetry_reporter)
 
+        # Not needed when hook is installed
         instrumentor = SqliteInstrumentor()
         instrumentor.run()
 
@@ -89,3 +90,6 @@ class SqliteTest(unittest.TestCase):
         # We can also close the connection if we are done with it.
         # Just be sure any changes have been committed or they will be lost.
         conn.close()
+
+        print telemetry_reporter.counts
+        print telemetry_reporter.records
