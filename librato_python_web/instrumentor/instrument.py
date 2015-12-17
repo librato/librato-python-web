@@ -83,6 +83,8 @@ def instrument_methods(method_wrappers):
         except ImportError:
             logger.debug('could not instrument %s.%s', method_path, method_name)
             logger.info('%s not instrumented because not found', fully_qualified_class_name)
+        except AttributeError:
+            logger.warn('could not instrument %s.%s', method_path, method_name)
 
 
 def override_classes(overridden_classes, wrapped):
@@ -133,7 +135,8 @@ def wrap_class_methods(cls, targeted_methods, rules):
             return_cls = get_class_by_name(return_type)
             pf_len = len(return_type)+1
             return_type_proxy_methods = {k[pf_len:]: v(object.__getattribute__(return_cls, k[pf_len:]))
-                                         for k, v in six.iteritems(rules) if k.startswith(return_type)}
+                                         for k, v in six.iteritems(rules) if k.startswith(return_type) and
+                                         hasattr(return_cls, k[pf_len:])}
             overrides[targeted_method] = wrap_returned_instances(original_method, return_type_proxy_methods)
         else:
             logger.error('method %s missing returns value', targeted_method)
