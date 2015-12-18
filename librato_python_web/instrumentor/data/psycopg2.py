@@ -1,4 +1,6 @@
 import re
+
+from instrumentor.instrument import inner_wrapped_returned_instance
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 
 
@@ -9,11 +11,11 @@ class Psycopg2Instrumentor(BaseInstrumentor):
         super(Psycopg2Instrumentor, self).__init__()
         self.set_overridden(
             {
-                # 'psycopg2': {
-                #     'connect': {
-                #         'returns': 'psycopg2.extensions.connection'
-                #     }
-                # },
+                'psycopg2': {
+                    'connect': {
+                        'returns': 'psycopg2.extensions.connection'
+                    }
+                },
                 'psycopg2.extensions.connection': {
                     'cursor': {
                         'returns': 'psycopg2.extensions.cursor'
@@ -38,18 +40,9 @@ class Psycopg2Instrumentor(BaseInstrumentor):
                      'nextset'.split(',')
             }
 
-        # def wrap_cursor(f):
-        #     def decorator(*args, **keywords):
-        #         print 'pre', f, args, keywords
-        #         try:
-        #             return f(*args, **keywords)
-        #         finally:
-        #             print 'post', f, args, keywords
-        #     return decorator
-        #
-        # wrapped['psycopg2.extensions.connection.cursor'] = proxy_returned_instance(
-        #     get_class_by_name('psycopg2.extensions.connection'), 'cursor', 'psycopg2.extensions.cursor', wrapped
-        # )
+        wrapped['psycopg2.extensions.connection.cursor'] = inner_wrapped_returned_instance(
+            'psycopg2.extensions.cursor', wrapped
+        )
 
         self.set_wrapped(
             wrapped
