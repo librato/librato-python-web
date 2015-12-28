@@ -28,11 +28,11 @@ import inspect
 import unittest
 import sys
 import time
-from instrumentor.util import Timing
 
+from instrumentor.util import Timing
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.data.psycopg2 import Psycopg2Instrumentor
-from librato_python_web.instrumentor.instrument import contextmanager_wrapper_factory, OverrideWrapper
+from instrumentor.instrument import contextmanager_wrapper_factory, OverrideWrapper
 from librato_python_web.instrumentor.telemetry import default_instrumentation
 from instrumentor_.instrument_test import TestTelemetryReporter
 
@@ -46,16 +46,12 @@ def wrap_class(cls, methods=None):
         object.__setattr__(self, '__wrapped__', cls(*args, **kwargs))
 
     def __getattribute__(self, name):
-        print '__getattribute__', name
         if name in {'__wrapped__'} or hasattr(self, name):
-            print 'proxy.__getattribute__', name
             try:
                 return object.__getattribute__(self, name)
             except:
-                print 'no wrapped attr'
                 return None
         else:
-            print 'wrapped.__getattribute__', name
             return getattr(self.__wrapped__, name)
 
     o = {
@@ -69,10 +65,9 @@ def wrap_class(cls, methods=None):
     def wrap(f):
         def decorator2(self, *args, **kwargs):
             try:
-                print 'decorator', f, args, kwargs
                 return f(self.__wrapped__, *args, **kwargs)
             finally:
-                print 'postdump', args, kwargs
+                pass
 
         return decorator2
 
@@ -106,7 +101,7 @@ def wrap_class(cls, methods=None):
                     # print 'property', name, type(value), value
                     # o[name] = property(get_it, set_it, del_it, 'The %s property' % name)
             else:
-                print 'skipping', name
+                pass
 
     t = type(cls.__name__, (object,), o)
     t.__module__ = cls.__module__
@@ -120,7 +115,7 @@ class UtilTest(unittest.TestCase):
     def setUp(self):
         import psycopg2
         self.state = defaultdict(int)
-        self.cached_connection = psycopg2.extensions.connection
+        self.cached = (psycopg2.connect, psycopg2.extensions.connection, psycopg2.extensions.cursor)
 
     def record_state(self, f):
         def update_state(*args, **keywords):
@@ -131,7 +126,7 @@ class UtilTest(unittest.TestCase):
 
     def tearDown(self):
         import psycopg2
-        psycopg2.extensions.connection = self.cached_connection
+        (psycopg2.connect, psycopg2.extensions.connection, psycopg2.extensions.cursor) = self.cached
 
     def test_historically_named_timing(self):
         Timing.push_timer()
@@ -164,7 +159,6 @@ class UtilTest(unittest.TestCase):
                 pass
 
             def foo(*args):
-                print args
                 return 1
 
         ae = AttrEcho()
@@ -301,9 +295,7 @@ class UtilTest(unittest.TestCase):
                 super(MyConnection, self).__init__(*args, **keywords)
 
             def cursor(self, *args, **keywords):
-                print 'before cursor'
                 c = super(MyConnection, self).cursor(*args, **keywords)
-                print 'after cursor'
                 return c
 
         conn = MyConnection(LOCAL_DSN)
@@ -318,9 +310,7 @@ class UtilTest(unittest.TestCase):
                 super(MyConnection, self).__init__(*args, **keywords)
 
             def cursor(self, *args, **keywords):
-                print 'before cursor'
                 c = super(MyConnection, self).cursor(*args, **keywords)
-                print 'after cursor'
                 return c
 
         psycopg2.extensions.connection = MyConnection
@@ -497,7 +487,6 @@ class UtilTest(unittest.TestCase):
 
         def wrap(f, measured_methods, metric_name, state_name, enable_if, disable_if):
             def decorator(*args, **keywords):
-                print args, keywords
                 c = f(*args, **keywords)
                 return MeasureWrapper(c, measured_methods, metric_name, state_name, enable_if, disable_if) \
                     if hasattr(c, '__class__') else c
@@ -531,19 +520,33 @@ class UtilTest(unittest.TestCase):
         self.assertIn('data.psycopg2.execute.latency', telemetry_reporter.records)
         self.assertIn('data.psycopg2.fetchone.latency', telemetry_reporter.records)
 
-    def test_instrument_native_instance(self):
+    def test_instrument_native_connect(self):
         import psycopg2
 
-        telemetry_reporter = TestTelemetryReporter()
-        telemetry.set_reporter(telemetry_reporter)
+        instrumentor = Psycopg2Instrumentor()
+        instrumentor.run()
+
+        conn = psycopg2.connect(LOCAL_DSN)
+        self._instrument_native_instance(conn)
+
+    def test_instrument_native_class(self):
+        import psycopg2
 
         instrumentor = Psycopg2Instrumentor()
         instrumentor.run()
 
         conn = psycopg2.extensions.connection(LOCAL_DSN)
+        self._instrument_native_instance(conn)
+
+    def _instrument_native_instance(self, conn):
+        telemetry_reporter = TestTelemetryReporter()
+        telemetry.set_reporter(telemetry_reporter)
+
         cur = conn.cursor()
 
-        self.assertEquals(OverrideWrapper, type(cur))
+        print type(cur), cur
+        print type(cur.__class__), cur.__class__
+        print 'subject?', hasattr(cur, '__subject__')
         cur.execute("SELECT 1")
         self.assertEqual((1,), cur.fetchone())
         cur.execute("SELECT 1, 2")
@@ -551,3 +554,32 @@ class UtilTest(unittest.TestCase):
 
         self.assertIn('data.psycopg2.execute.latency', telemetry_reporter.records)
         self.assertIn('data.psycopg2.fetchone.latency', telemetry_reporter.records)
+
+    def test_fako(self):
+        class Simple(object):
+            def __init__(self):
+                self.foo = 1
+                self.bar = "barvalue"
+
+            def zap(self, target):
+                return "zapped %s" % target
+
+        class Fako(OverrideWrapper):
+            def __init__(self, subject, instrumented):
+                super(Fako, self).__init__(subject, instrumented)
+
+            def __new__(cls, *args, **kwargs):
+                cls = args[0].__class__
+                t = type(cls.__name__, (Fako,), {'__doc__': cls.__doc__})
+                return object.__new__(t)
+
+        simple = Simple()
+        self.assertEquals(1, simple.foo)
+        self.assertEquals('barvalue', simple.bar)
+        self.assertEquals('zapped me', simple.zap('me'))
+        self.assertEquals(Simple, type(simple))
+
+        simple = Fako(simple, {})
+        self.assertEquals(1, simple.foo)
+        self.assertEquals('barvalue', simple.bar)
+        self.assertEquals('zapped me', simple.zap('me'))

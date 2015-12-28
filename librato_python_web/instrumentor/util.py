@@ -237,7 +237,7 @@ def get_class_by_name(fully_qualified_class_name):
         else (fully_qualified_class_name, None)
     try:
         module_def = __import__(module_path, globals(), locals(), [class_name] if class_name else [])
-        class_def = getattr(module_def, class_name) if module_def and class_name else None
+        class_def = getattr(module_def, class_name) if module_def and class_name else module_def
     except ImportError:
         logger.info('%s not found', fully_qualified_class_name)
         class_def = None

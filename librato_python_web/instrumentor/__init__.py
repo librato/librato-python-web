@@ -31,6 +31,8 @@ from . import general
 from . import telemetry
 from . import config
 from .config import LegacyConfigReporter
+from instrumentor.data.psycopg2 import Psycopg2Instrumentor
+from instrumentor.data.sqlite import SqliteInstrumentor
 from .telemetry import StatsdTelemetryReporter
 from .data.elasticsearch import ElasticsearchInstrumentor
 from .data.mysqldb import MysqlInstrumentor
@@ -57,6 +59,8 @@ try:
         'flask': FlaskInstrumentor,
         'logging': LoggingInstrumentor,
         'mysql': MysqlInstrumentor,
+        'sqlite': SqliteInstrumentor,
+        'psycopg2': Psycopg2Instrumentor,
         'pykafka': PykafkaInstrumentor,
         'requests': RequestsInstrumentor,
         'urllib2': Urllib2Instrumentor,

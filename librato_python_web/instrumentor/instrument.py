@@ -23,6 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import functools
+import inspect
 import time
 from peak.util.proxies import ObjectWrapper
 import six
@@ -83,6 +84,8 @@ def instrument_methods(method_wrappers):
         except ImportError:
             logger.debug('could not instrument %s.%s', method_path, method_name)
             logger.info('%s not instrumented because not found', fully_qualified_class_name)
+        except AttributeError:
+            logger.warn('could not instrument %s.%s', method_path, method_name)
 
 
 def override_classes(overridden_classes, wrapped):
@@ -117,8 +120,9 @@ def wrap_returned_instances(original_method, overrides):
         :return: proxied version of instances returned
         """
         ret = original_method(*args, **keywords)
-        return OverrideWrapper(ret, {k: functools.partial(v, ret) for k, v in overrides.iteritems()}) \
-            if hasattr(ret, '__class__') else ret
+        instrumented = {k: functools.partial(v, ret) for k, v in overrides.iteritems()}
+        return OverrideWrapper(ret, instrumented) if hasattr(ret, '__class__') else ret
+
     return decorator
 
 
@@ -126,20 +130,42 @@ def wrap_class_methods(cls, targeted_methods, rules):
     overrides = {}
     for targeted_method, method_config in six.iteritems(targeted_methods):
         """Each wrapped method is modified to return an wrapped object with methods instrumented according to rules"""
-        original_method = getattr(cls, targeted_method)
         return_type = method_config.get('returns')
         if return_type:
             # Create a custom wrapper based upon the return type of the method
-            return_cls = get_class_by_name(return_type)
-            pf_len = len(return_type)+1
-            return_type_proxy_methods = {k[pf_len:]: v(object.__getattribute__(return_cls, k[pf_len:]))
-                                         for k, v in six.iteritems(rules) if k.startswith(return_type)}
-            overrides[targeted_method] = wrap_returned_instances(original_method, return_type_proxy_methods)
+            overrides[targeted_method] = wrapped_returned_instance(cls, targeted_method, return_type, rules)
         else:
             logger.error('method %s missing returns value', targeted_method)
-    sub_class = type(cls.__name__, (cls,), overrides)
-    sub_class.__module__ = cls.__module__
-    setattr(sys.modules[cls.__module__], cls.__name__, sub_class)
+    if inspect.ismodule(cls):
+        for method_name, method_wrapper in six.iteritems(overrides):
+            setattr(cls, method_name, method_wrapper)
+    else:
+        sub_class = type(cls.__name__, (cls,), overrides)
+        sub_class.__module__ = cls.__module__
+        setattr(sys.modules[cls.__module__], cls.__name__, sub_class)
+
+
+def wrapped_returned_instance(cls, targeted_method, return_type, rules):
+    return_cls = get_class_by_name(return_type)
+    pf_len = len(return_type) + 1
+    return_type_proxy_methods = {k[pf_len:]: v(object.__getattribute__(return_cls, k[pf_len:]))
+                                 for k, v in six.iteritems(rules) if k.startswith(return_type) and
+                                 hasattr(return_cls, k[pf_len:])}
+    original_method = getattr(cls, targeted_method)
+    return wrap_returned_instances(original_method, return_type_proxy_methods)
+
+
+def inner_wrapped_returned_instance(return_type, rules):
+    return_cls = get_class_by_name(return_type)
+    pf_len = len(return_type) + 1
+    return_type_proxy_methods = {k[pf_len:]: v(object.__getattribute__(return_cls, k[pf_len:]))
+                                 for k, v in six.iteritems(rules) if k.startswith(return_type) and
+                                 hasattr(return_cls, k[pf_len:])}
+
+    def decorator(original_method):
+        return wrap_returned_instances(original_method, return_type_proxy_methods)
+
+    return decorator
 
 
 def _build_key(mappings, args, keywords):
@@ -334,7 +360,11 @@ def contextmanager_wrapper_factory(context_manager, mapping=None, state=None, en
                     context.push_state(state)
                     context.push_tags(tag_pairs)
                     with context_manager(*args, **keywords):
-                        return f(*args, **keywords)
+                        if hasattr(f, '__get__'):
+                            self = args[0].__subject__ if hasattr(args[0], '__subject__') else args[0]
+                            return f.__get__(self)(*args[1:], **keywords)
+                        else:
+                            return f(*args, **keywords)
                 finally:
                     context.pop_tags(tag_pairs)
                     context.pop_state(state)
@@ -350,6 +380,12 @@ class OverrideWrapper(ObjectWrapper):
     def __init__(self, subject, instrumented):
         super(OverrideWrapper, self).__init__(subject)
         object.__setattr__(self, '__instrumented__', instrumented)
+
+    def __new__(cls, *args, **kwargs):
+        cls = args[0].__class__
+        t = type(cls.__name__, (OverrideWrapper,), {'__doc__': cls.__doc__, '__isproxy__': True})
+        t.__module__ = cls.__module__
+        return object.__new__(t)
 
     def __getattr__(self, attr, oga=object.__getattribute__):
         if not attr.startswith('__'):
