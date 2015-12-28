@@ -15,4 +15,4 @@
 
 * Launch the test as shown below.
 
-`python -m unittest instrumentor_.mysql_test_disabled`
+`LIBRATO_INSTRUMENT_PYTHON=1 python -m unittest instrumentor_.mysql_test_disabled`
