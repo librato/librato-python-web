@@ -1,5 +1,5 @@
 import re
-from instrumentor.instrument import inner_wrapped_returned_instance
+from librato_python_web.instrumentor.instrument import inner_wrapped_returned_instance
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 
 
@@ -32,7 +32,8 @@ class SqliteInstrumentor(BaseInstrumentor):
             return re.findall('[^(,)]+', e)[1:]
 
         wrapped = {cursor_path % func_name(m): self.instrument('data.sqlite.%s.' % func_name(m),
-                                                               mapping={a: 1 for a in func_args(m)}, state='data.sqlite',
+                                                               mapping={a: 1 for a in func_args(m)},
+                                                               state='data.sqlite',
                                                                disable_if='model') for m in
                    'execute(resource),executemany(resource),fetchone,fetchmany,fetchall'.split(',')}
 

@@ -1,6 +1,6 @@
 import re
 
-from instrumentor.instrument import inner_wrapped_returned_instance
+from librato_python_web.instrumentor.instrument import inner_wrapped_returned_instance
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 
 
