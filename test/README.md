@@ -1,7 +1,17 @@
 ## Testing postgres
-* Install psycopg2
+* Install the prerequisites.
 
 `sudo apt-get install libpq-dev python-dev`
+`pip install postgres`
+
+* Launch a postgres instance using the docker run command below.
+
+`docker run -d --name postgres-test-server -p 5432:5432 -e POSTGRES_DB=test postgres`
+
+* Launch the test as shown.
+
+`LIBRATO_INSTRUMENT_PYTHON=1 python -m unittest instrumentor_.psycopg2_test_disabled`
+
 
 ## Testing mysql
 * Install the prerequisites.
@@ -9,7 +19,7 @@
 `sudo apt-get install libmysqlclient-dev`
 `pip install mysql-python`
 
-* Launch a mysql instance, or use a docker run command below. Remember to edit bind-address in mysql_test.conf to the host's docker IP address.
+* Launch a mysql instance using the docker run command below. Remember to edit bind-address in mysql_test.conf to the host's docker IP address.
 
 `docker run -d --name mysql-test-server -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=test -v $PWD/instrumentor_/mysql_test.cnf  mysql:5.6`
 

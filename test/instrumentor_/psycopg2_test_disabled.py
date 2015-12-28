@@ -27,6 +27,9 @@
 import psycopg2
 import unittest
 
+from librato_python_web.instrumentor import telemetry
+from librato_python_web.instrumentor.telemetry import StdoutTelemetryReporter
+
 
 class Psycopg2est(unittest.TestCase):
     def setUp(self):
@@ -36,8 +39,9 @@ class Psycopg2est(unittest.TestCase):
         pass
 
     def test_psycopg2(self):
+        telemetry.set_reporter(StdoutTelemetryReporter())
         # connect (params impl dependent) dsn data source name, host hostname, database db name
-        conn = psycopg2.connect("dbname=test user=postgres")
+        conn = psycopg2.connect("host=localhost dbname=test user=postgres")
 
         #
         # apilevel
