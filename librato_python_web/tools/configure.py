@@ -231,6 +231,19 @@ CHART_SPECS = [
         ]
     },
     {
+        'name': 'Errors',
+        'y_label': 'epm',
+        'chart_type': 'bignumber',
+        'metrics': [
+            {
+                'name': 'Total Errors per Minute',
+                'composite': sum_(rate_("logging.*.requests.count"),
+                                  rate_("web.status.5xx.count"), rate_("web.status.4xx.count")),
+                'summary_function': 'average',
+            }
+        ]
+    },
+    {
         'name': '{} Logging Components',
         'y_label': 'epm',
         'chart_type': 'stacked',
