@@ -25,7 +25,6 @@
 
 
 import unittest
-import logging
 
 import requests
 from librato_python_web.instrumentor import telemetry
@@ -44,3 +43,6 @@ class RequestsTest(unittest.TestCase):
 
         result = requests.get('http://www.solarwinds.com')
         print result
+
+if __name__ == '__main__':
+    unittest.main()

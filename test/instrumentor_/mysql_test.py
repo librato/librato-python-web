@@ -82,3 +82,6 @@ class ImportTest(unittest.TestCase):
 
             cur.close()
             conn.commit()
+
+if __name__ == '__main__':
+    unittest.main()

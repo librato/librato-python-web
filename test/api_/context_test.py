@@ -74,3 +74,6 @@ class ImportTest(unittest.TestCase):
             self.assertListEqual([('foo', 1)], get_tags())
         self.assertTrue(visited)
         self.assertListEqual([], get_tags())
+
+if __name__ == '__main__':
+    unittest.main()

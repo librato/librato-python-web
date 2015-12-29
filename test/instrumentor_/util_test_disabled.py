@@ -471,7 +471,7 @@ class UtilTest(unittest.TestCase):
                 # initialize all wrapped methods
                 instrumented = {}
                 for m in [m for m in inspect.getmembers(subject) if measured_methods is None or
-                                m[0] in measured_methods]:
+                          m[0] in measured_methods]:
                     name = m[0]
                     factory = contextmanager_wrapper_factory(default_instrumentation(metric_name % name),
                                                              {}, state_name, enable_if, disable_if)
@@ -494,8 +494,8 @@ class UtilTest(unittest.TestCase):
             return decorator
 
         def override_class_methods(cls, method_names, metric_name, state_name, enable_if, disable_if):
-            methods = {m: wrap(getattr(cls, m), ['execute', 'fetchone'], metric_name, state_name, enable_if, disable_if)
-                       for m in method_names}
+            methods = {m: wrap(getattr(cls, m), ['execute', 'fetchone'], metric_name, state_name, enable_if,
+                               disable_if) for m in method_names}
             methods['__isproxy__'] = True  # temporary?
             sub_class = type(cls.__name__, (cls,), methods)
             sub_class.__module__ = cls.__module__
@@ -583,3 +583,6 @@ class UtilTest(unittest.TestCase):
         self.assertEquals(1, simple.foo)
         self.assertEquals('barvalue', simple.bar)
         self.assertEquals('zapped me', simple.zap('me'))
+
+if __name__ == '__main__':
+    unittest.main()

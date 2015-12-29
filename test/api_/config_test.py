@@ -52,3 +52,6 @@ class TestConfigReporter(ConfigReporter):
 
     def get(self, key):
         return self.test_config.get(key)
+
+if __name__ == '__main__':
+    unittest.main()

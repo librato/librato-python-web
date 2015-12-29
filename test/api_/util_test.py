@@ -72,3 +72,6 @@ class UtilTest(unittest.TestCase):
             for i in range(0, 100):
                 aliases.generate_alias('/foo/bar/zap/%s' % i)
         print 'cache', (time.time()-t)/500000
+
+if __name__ == '__main__':
+    unittest.main()

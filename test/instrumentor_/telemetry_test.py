@@ -34,4 +34,3 @@ class TelemetryTest(unittest.TestCase):
 
     def tearDown(self):
         pass
-

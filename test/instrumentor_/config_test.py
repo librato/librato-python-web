@@ -75,3 +75,6 @@ class ConfigTest(unittest.TestCase):
         for i, k in enumerated:
             self.config.declare(k, i)
         self.assertEqual(hash_code, self.config.internal_hash())
+
+if __name__ == '__main__':
+    unittest.main()
