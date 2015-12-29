@@ -54,7 +54,7 @@ class InstrumentTest(unittest.TestCase):
         pass
 
     def test_get_class_by_name(self):
-        a_class = instrument.get_class_by_name('instrument_test.A')
+        a_class = instrument.get_class_by_name('instrumentor_.test_instrument.A')
         self.assertEqual(A, a_class)
 
     def test_replace_method(self):
@@ -202,3 +202,6 @@ class InstrumentTest(unittest.TestCase):
 
         self.assertLessEqual(0, reporter.get_record('test.latency'))
         self.assertEquals(2, reporter.get_count('test.requests'))
+
+if __name__ == '__main__':
+    unittest.main()

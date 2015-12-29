@@ -10,7 +10,7 @@
 
 * Launch the test as shown.
 
-`LIBRATO_INSTRUMENT_PYTHON=1 python -m unittest instrumentor_.psycopg2_test_disabled`
+`LIBRATO_INSTRUMENT_PYTHON=1 python -m unittest instrumentor_.test_psycopg2`
 
 
 ## Testing mysql
@@ -25,4 +25,4 @@
 
 * Launch the test as shown below.
 
-`LIBRATO_INSTRUMENT_PYTHON=1 python -m unittest instrumentor_.mysql_test_disabled`
+`LIBRATO_INSTRUMENT_PYTHON=1 python -m unittest instrumentor_.test_mysql`
