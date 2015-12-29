@@ -48,7 +48,7 @@ class BaseInstrumentor(object):
         override_classes(self.overridden_classes, self.wrapped)
         instrument_methods(self.wrapped)
 
-    def instrument(self, metric_name, mapping=None, state=_default, enable_if=None, disable_if=None):
+    def instrument(self, metric_name, mapping=None, state=_default, enable_if='web', disable_if=None):
         state = self.get_state(state)
         return contextmanager_wrapper_factory(default_instrumentation(metric_name),
                                               mapping, state, enable_if, disable_if)
@@ -58,5 +58,3 @@ class BaseInstrumentor(object):
             return self.state if state == _default else state
         except:
             return state
-
-
