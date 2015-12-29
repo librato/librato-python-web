@@ -26,9 +26,10 @@ from collections import defaultdict
 
 import unittest
 import sqlite3
-from instrumentor import telemetry
-from instrumentor.data.sqlite import SqliteInstrumentor
-from instrumentor_.instrument_test import TestTelemetryReporter
+from librato_python_web.instrumentor import telemetry
+from librato_python_web.instrumentor.data.sqlite import SqliteInstrumentor
+
+from .instrument_test import TestTelemetryReporter
 
 
 class SqliteTest(unittest.TestCase):
@@ -93,3 +94,6 @@ class SqliteTest(unittest.TestCase):
 
         print telemetry_reporter.counts
         print telemetry_reporter.records
+
+if __name__ == '__main__':
+    unittest.main()

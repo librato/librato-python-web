@@ -57,3 +57,6 @@ class Psycopg2est(unittest.TestCase):
         cur.execute("SELECT 1")
 
         conn.commit()
+
+if __name__ == '__main__':
+    unittest.main()
