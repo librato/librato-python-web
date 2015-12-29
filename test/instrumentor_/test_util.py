@@ -29,12 +29,13 @@ import unittest
 import sys
 import time
 
-from instrumentor.util import Timing
+from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.data.psycopg2 import Psycopg2Instrumentor
-from instrumentor.instrument import contextmanager_wrapper_factory, OverrideWrapper
+from librato_python_web.instrumentor.instrument import contextmanager_wrapper_factory, OverrideWrapper
 from librato_python_web.instrumentor.telemetry import default_instrumentation
-from instrumentor_.instrument_test import TestTelemetryReporter
+
+from test_reporter import TestTelemetryReporter
 
 
 def wrap_class(cls, methods=None):

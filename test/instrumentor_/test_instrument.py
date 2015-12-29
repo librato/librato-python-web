@@ -22,15 +22,14 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from collections import defaultdict
 from contextlib import contextmanager
 import unittest
 from librato_python_web.api import context
 
-import librato_python_web.instrumentor.util
+from test_reporter import TestTelemetryReporter
 from librato_python_web.instrumentor.instrument import generator_wrapper_factory
-from librato_python_web.instrumentor.telemetry import TelemetryReporter, generate_record_telemetry
-from librato_python_web.instrumentor import instrument
+from librato_python_web.instrumentor.telemetry import generate_record_telemetry
+from librato_python_web.instrumentor import instrument, util
 from librato_python_web.instrumentor import telemetry
 
 
@@ -45,28 +44,6 @@ class A(object):
 
     def foo(self):
         return 'foo'
-
-
-class TestTelemetryReporter(TelemetryReporter):
-    def __init__(self):
-        super(TestTelemetryReporter, self).__init__()
-        self.counts = defaultdict(int)
-        self.records = {}
-
-    def count(self, metric, incr=1):
-        self.counts[metric] += incr
-
-    def get_count(self, metric):
-        return self.counts[metric]
-
-    def record(self, metric, value):
-        self.records[metric] = value
-
-    def get_record(self, metric):
-        return self.records.get(metric)
-
-    def event(self, type_name, dictionary=None):
-        pass
 
 
 class InstrumentTest(unittest.TestCase):
@@ -86,10 +63,10 @@ class InstrumentTest(unittest.TestCase):
 
         original = a.foo
         try:
-            instrumentor.util.replace_method(A, 'foo', lambda v: 'bar')
+            util.replace_method(A, 'foo', lambda v: 'bar')
             self.assertEqual('bar', a.foo())
         finally:
-            instrumentor.util.replace_method(A, 'foo', original)
+            util.replace_method(A, 'foo', original)
         self.assertEqual('foo', a.foo())
 
     def test_replace_wrapper(self):
@@ -98,10 +75,10 @@ class InstrumentTest(unittest.TestCase):
 
         original = a.foo
         try:
-            instrumentor.util.replace_method(A, 'foo', lambda v: 'bar')
+            util.replace_method(A, 'foo', lambda v: 'bar')
             self.assertEqual('bar', a.foo())
         finally:
-            instrumentor.util.replace_method(A, 'foo', original)
+            util.replace_method(A, 'foo', original)
         self.assertEqual('foo', a.foo())
 
     def test_function_wrapper(self):
@@ -219,7 +196,7 @@ class InstrumentTest(unittest.TestCase):
         def trigger_generator_exit():
             # trigger the GeneratorExit when this goes out of scope
             iterator = wrapped_generator()
-            _ = iterator.next()
+            iterator.next()
 
         trigger_generator_exit()
 

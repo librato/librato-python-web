@@ -29,7 +29,7 @@ import sqlite3
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.data.sqlite import SqliteInstrumentor
 
-from .instrument_test import TestTelemetryReporter
+from test_reporter import TestTelemetryReporter
 
 
 class SqliteTest(unittest.TestCase):
