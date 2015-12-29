@@ -29,8 +29,9 @@ import unittest
 import MySQLdb
 
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.telemetry import StdoutTelemetryReporter
 from librato_python_web.instrumentor.context import add_tag
+
+from test_reporter import TestTelemetryReporter
 
 
 class ImportTest(unittest.TestCase):
@@ -41,7 +42,9 @@ class ImportTest(unittest.TestCase):
         pass
 
     def test_mysql(self):
-        telemetry.set_reporter(StdoutTelemetryReporter())
+        reporter = TestTelemetryReporter()
+        telemetry.set_reporter(reporter)
+
         with add_tag('test-context', 'mysql_test'):
             # connect (params impl dependent) dsn data source name, host hostname, database db name
             conn = MySQLdb.connect(host="127.0.0.1", user="root", passwd="root", db="test")
@@ -68,12 +71,10 @@ class ImportTest(unittest.TestCase):
             cur.execute("create procedure usercount() begin select count(*) from mysql.user; end")
             cur.callproc("usercount", ())
 
-            print("Fetch all - %s" % cur.fetchall())
             cur.close()		# To avert an out of sync error
             cur = conn.cursor()
 
             cur.callproc("usercount", ())
-            print("Fetch one - %s" % cur.fetchone())
 
             # fetchmany
             # nextset???
@@ -82,6 +83,9 @@ class ImportTest(unittest.TestCase):
 
             cur.close()
             conn.commit()
+
+            print reporter.counts
+            print reporter.records
 
 if __name__ == '__main__':
     unittest.main()
