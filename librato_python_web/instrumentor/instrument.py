@@ -25,9 +25,10 @@
 import functools
 import inspect
 import time
+import sys
+
 from peak.util.proxies import ObjectWrapper
 import six
-import sys
 
 from librato_python_web.instrumentor import context
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
@@ -38,8 +39,10 @@ logger = getCustomLogger(__name__)
 
 def run_instrumentors(instrumentors, libs):
     """
-    :param instrumentors:
-    :param libs:
+    Applies instrumentation to the given libs, using the given instrumentors.
+
+    :param libs: list of libraries to be instrumented
+    :param instrumentors: dictionary of instrumentors, where keys are names and values are instances
     """
     for alias in instrumentors:
         if alias not in libs:
@@ -68,38 +71,40 @@ def run_instrumentors(instrumentors, libs):
 
 def instrument_methods(method_wrappers):
     """
-    Instruments the methods as specified by the method_wrappers dict. Keys indicate the method path and values provide
-    the function that wraps the method.
-    :param method_wrappers: dictionary of paths to
+    Instruments the methods as specified by the method_wrappers dict. Key is the method path and value is the function
+    that wraps the method.
+
+    :param method_wrappers: dictionary of qualified method names to wrapper methods
     """
-    for method_path, method_wrapper in six.iteritems(method_wrappers):
-        (fully_qualified_class_name, method_name) = method_path.rsplit('.', 1)
+    for qualified_method_name, method_wrapper in six.iteritems(method_wrappers):
+        (fully_qualified_class_name, method_name) = qualified_method_name.rsplit('.', 1)
         try:
             class_def = get_class_by_name(fully_qualified_class_name)
             if class_def:
-                logger.debug('instrumenting method %s', method_path)
+                logger.debug('instrumenting method %s', qualified_method_name)
                 wrap_method(class_def, method_name, method_wrapper)
             else:
                 logger.info('%s not instrumented because not found', fully_qualified_class_name)
         except ImportError:
-            logger.debug('could not instrument %s.%s', method_path, method_name)
+            logger.debug('could not instrument %s', qualified_method_name)
             logger.info('%s not instrumented because not found', fully_qualified_class_name)
         except AttributeError:
-            logger.warn('could not instrument %s.%s', method_path, method_name)
+            logger.warn('could not instrument %s', qualified_method_name)
 
 
 def override_classes(overridden_classes, wrapped):
     """
     Override static classes by creating a subclass (via type) that contains overridden methods. Typically this is
     applied to native classes so that their methods can be overridden to wrap returned instances.
-    :param overridden_classes: dict of qualified class names as keys and
+
+    :param overridden_classes: dict of qualified class names as keys and list of targeted method names as values
     """
     for fully_qualified_class_name, targeted_methods in six.iteritems(overridden_classes):
         try:
             cls = get_class_by_name(fully_qualified_class_name)
             if cls:
                 logger.debug('instrumenting class %s', fully_qualified_class_name)
-                wrap_class_methods(cls, targeted_methods, wrapped)
+                wrap_methods(cls, targeted_methods, wrapped)
             else:
                 logger.info('%s not overridden because not found', fully_qualified_class_name)
         except ImportError:
@@ -109,67 +114,120 @@ def override_classes(overridden_classes, wrapped):
 
 def wrap_returned_instances(original_method, overrides):
     """
-    Creates a new method that calls the original_method and, if an instance is returned, creates a proxy wrapper for
-    them that uses the new_methods (other calls are proxied to the original instance).
-    :param original_method: the original method
-    :param overrides: new methods on instances returned from this method
+    Returns a new method that calls the original_method and, if an instance is returned, creates a proxy that uses the
+    new_methods (other calls are proxied to the original instance).
+
+    :param original_method: the method that is wrapped to return a wrapped instance
+    :param overrides: dictionary of new methods on instances returned from this method, where keys are method names
+    and values are wrapper methods
     :return: the wrapped version of the original method
     """
+
     def decorator(*args, **keywords):
         """
-        :return: proxied version of instances returned
+        :return: proxied version of instances
         """
         ret = original_method(*args, **keywords)
-        instrumented = {k: functools.partial(v, ret) for k, v in overrides.iteritems()}
-        return OverrideWrapper(ret, instrumented) if hasattr(ret, '__class__') else ret
+        if hasattr(ret, '__class__'):
+            # Partial ensures that wrapper method gets original method as first argument --
+            # partial(func, *args, **keywords)
+            instrumented = {k: functools.partial(v, ret) for k, v in overrides.iteritems()}
+
+            # Create a dynamic proxy for a wrapped instance in which the instrumented methods are
+            return OverrideWrapper(ret, instrumented)
+        else:
+            # Return non-instances unmodified
+            return ret
 
     return decorator
 
 
-def wrap_class_methods(cls, targeted_methods, rules):
+def wrap_methods(target, targeted_methods, rules):
+    """
+    Wraps the target_methods on the target according to the rules.
+
+    The target can be a module or a class.
+
+    The target should not be a native class. To override methods on a native instance, wrap the method(s) that return
+     it using wrap_returned_instances.
+
+    :param target: the class or module whose methods are being overwritten
+    :param targeted_methods: dict of targeted_method names and the configuration dict for the method (the only item of
+       interest is the 'returns' key, which identifies the qualified class type of the returned instance
+    :param rules: dict of qualified method names to wrapper methods
+    """
     overrides = {}
     for targeted_method, method_config in six.iteritems(targeted_methods):
         """Each wrapped method is modified to return an wrapped object with methods instrumented according to rules"""
         return_type = method_config.get('returns')
         if return_type:
             # Create a custom wrapper based upon the return type of the method
-            overrides[targeted_method] = wrapped_returned_instance(cls, targeted_method, return_type, rules)
+            overrides[targeted_method] = wrapped_returned_instance(target, targeted_method, return_type, rules)
         else:
             logger.error('method %s missing returns value', targeted_method)
-    if inspect.ismodule(cls):
+    if inspect.ismodule(target):
         for method_name, method_wrapper in six.iteritems(overrides):
-            setattr(cls, method_name, method_wrapper)
+            setattr(target, method_name, method_wrapper)
     else:
-        sub_class = type(cls.__name__, (cls,), overrides)
-        sub_class.__module__ = cls.__module__
-        setattr(sys.modules[cls.__module__], cls.__name__, sub_class)
+        sub_class = type(target.__name__, (target,), overrides)
+        sub_class.__module__ = target.__module__
+        setattr(sys.modules[target.__module__], target.__name__, sub_class)
 
 
 def wrapped_returned_instance(cls, targeted_method, return_type, rules):
-    return_cls = get_class_by_name(return_type)
-    pf_len = len(return_type) + 1
-    return_type_proxy_methods = {k[pf_len:]: v(object.__getattribute__(return_cls, k[pf_len:]))
-                                 for k, v in six.iteritems(rules) if k.startswith(return_type) and
-                                 hasattr(return_cls, k[pf_len:])}
+    """
+    Returns a method that wraps a method presuming the given return_type. The wrapped method returns an instance so
+    that it returns a proxied instance. The proxy overrides methods specified by the given rules dict, which uses
+    qualified method names as keys and
+
+    :param cls: the method's class
+    :param targeted_method: the method to be wrapped
+    :param return_type: the method's return type
+    :param rules: the rules applied to the return type
+    :return: a wrapped version of targeted_method whose returned value is proxied and applies the given rules
+    """
     original_method = getattr(cls, targeted_method)
-    return wrap_returned_instances(original_method, return_type_proxy_methods)
+    wrapper_methods = get_wrapper_methods_for_type(rules, return_type)
+    return wrap_returned_instances(original_method, wrapper_methods)
 
 
-def inner_wrapped_returned_instance(return_type, rules):
-    return_cls = get_class_by_name(return_type)
-    pf_len = len(return_type) + 1
-    return_type_proxy_methods = {k[pf_len:]: v(object.__getattribute__(return_cls, k[pf_len:]))
-                                 for k, v in six.iteritems(rules) if k.startswith(return_type) and
-                                 hasattr(return_cls, k[pf_len:])}
+def wrap_returned_instance_decorator(return_type, rules):
+    """
+    Returns a decorator that wraps a method presuming the given return_type. The wrapped method returns an instance so
+    that it returns a proxied instance. The proxy overrides methods specified by the given rules dict, which uses
+    qualified method names as keys and
+
+    :param return_type: the type of instance returned by the method
+    :param rules: dictionary of qualified method names to instrumentors
+    :return: decorator that wraps functions returning instances of the given type to return methods according to rules
+    """
+    wrapper_methods = get_wrapper_methods_for_type(rules, return_type)
 
     def decorator(original_method):
-        return wrap_returned_instances(original_method, return_type_proxy_methods)
+        return wrap_returned_instances(original_method, wrapper_methods)
 
     return decorator
 
 
+def get_wrapper_methods_for_type(rules, return_type):
+    """
+    Returns the proxy methods from the rules for the given return type. Presumes that the rules use qualified method
+    names and that the return type can be used to identify them
+    :param rules: dict of qualified method names to wrapper methods
+    :param return_type: qualified name of the return type of interest
+    :return: dict of simple method names to wrapper methods
+    """
+    return_cls = get_class_by_name(return_type)
+    pf_len = len(return_type) + 1  # length of prefix, which facilitates extracting method names
+    # build a dictionary of simple method names to instrumentors for the given type
+    return {k[pf_len:]: v(object.__getattribute__(return_cls, k[pf_len:]))
+            for k, v in six.iteritems(rules) if k.startswith(return_type) and hasattr(return_cls, k[pf_len:])}
+
+
 def _build_key(mappings, args, keywords):
     """
+    Builds a list of key values according to the given mappings
+
     :param mappings:
     :param args:
     :param keywords:
@@ -188,11 +246,15 @@ def _eval(args, keywords, expressions):
     """
     Returns the value of the given expressions as applied against the args and keywords.
 
-    Expressions are pipe-delimited values which represent alternatives. Numeric values are used a indicies
+    Expressions are pipe-delimited values which represent alternatives. Numeric values are used as argument indicies.
+    String values are used as dot-delimited names of a keyword and its nested attributes. In addition to keywords,
+    "self" is a valid keyword value (alias for the first args value). The first expression that evaluates to a valid
+    value is returned.
+
     :param args: the array of method arguments
     :param keywords: the dictionary of keywords
-    :param expressions:
-    :return:
+    :param expressions: the pipe-delimited list of expression values that represent the expression
+    :return: The first valid expression value
     """
     final_failure = Exception
     if expressions is None:
@@ -299,6 +361,7 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
         """
         Creates a generator that wraps the given generator and instruments it depending on the context when
         its called.
+
         :param generator: the generator to wrap
         """
 
@@ -377,19 +440,49 @@ def contextmanager_wrapper_factory(context_manager, mapping=None, state=None, en
 
 
 class OverrideWrapper(ObjectWrapper):
-    def __init__(self, subject, instrumented):
+    """
+    Proxy class for another instance whose methods are selectively overridden by "new" versions. This proxied instance
+    should generally be identical to the original instance, except for overridden methods. The overrides can be wrappers
+    of the original methods that provide intercept, augment or instrument the standard behavior.
+
+    Overrides are stored as an '__overrides__' attribute on the object that is accessed using __setattr__ /
+    __getattribute__.
+    """
+
+    def __init__(self, subject, overrides):
+        """
+        Initializes this wrapper to proxy for the given subject and override the given methods.
+        :param subject: the proxied instance
+        :param overrides: the overridden method descriptions dictionary
+        """
         super(OverrideWrapper, self).__init__(subject)
-        object.__setattr__(self, '__instrumented__', instrumented)
+        object.__setattr__(self, '__overrides__', overrides)
 
     def __new__(cls, *args, **kwargs):
-        cls = args[0].__class__
-        t = type(cls.__name__, (OverrideWrapper,), {'__doc__': cls.__doc__, '__isproxy__': True})
-        t.__module__ = cls.__module__
+        """
+        A new object synthesized to look like the wrapped type but actually a subclass of OverrideWrapper.
+        :param cls: this given class
+        :param args: unnamed arguments (expect subject instance and overrides dict -- see __init__)
+        :param kwargs: dictionary of keyworded arguments
+        :return: the new instance
+        """
+        instance_cls = args[0].__class__  # Note: We want the instance to look like the first argument, this class
+        t = type(instance_cls.__name__, (cls,), {'__doc__': instance_cls.__doc__, '__isproxy__': True})
+        t.__module__ = instance_cls.__module__
         return object.__new__(t)
 
-    def __getattr__(self, attr, oga=object.__getattribute__):
+    def __getattr__(self, attr):
+        """
+        Intercepts requests for attributes (which include methods) so that overridden methods can be supplied instead of
+        the wrapped method.
+        Note that simply replacing the methods as a part of the type definition would not work, since the default
+        behavior is to call the override method on the proxied subject, not the .
+        :param attr: the requested attribute
+        :return: the (possibly overridden) attribute value
+        """
+        # Note: An optimized mechanism for this would be welcomed, this is not as efficient as we would like.
         if not attr.startswith('__'):
-            instrumented = object.__getattribute__(self, '__instrumented__')
-            if attr in instrumented:
-                return instrumented.get(attr)
-        return super(OverrideWrapper, self).__getattr__(attr, oga)
+            overrides = object.__getattribute__(self, '__overrides__')
+            if attr in overrides:
+                return overrides.get(attr)
+        return super(OverrideWrapper, self).__getattr__(attr)

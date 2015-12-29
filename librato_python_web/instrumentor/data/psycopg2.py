@@ -1,6 +1,6 @@
 import re
 
-from librato_python_web.instrumentor.instrument import inner_wrapped_returned_instance
+from librato_python_web.instrumentor.instrument import wrap_returned_instance_decorator
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 
 
@@ -40,7 +40,7 @@ class Psycopg2Instrumentor(BaseInstrumentor):
                      'nextset'.split(',')
             }
 
-        wrapped['psycopg2.extensions.connection.cursor'] = inner_wrapped_returned_instance(
+        wrapped['psycopg2.extensions.connection.cursor'] = wrap_returned_instance_decorator(
             'psycopg2.extensions.cursor', wrapped
         )
 

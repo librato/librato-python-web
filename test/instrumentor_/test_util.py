@@ -545,9 +545,6 @@ class UtilTest(unittest.TestCase):
 
         cur = conn.cursor()
 
-        print type(cur), cur
-        print type(cur.__class__), cur.__class__
-        print 'subject?', hasattr(cur, '__subject__')
         cur.execute("SELECT 1")
         self.assertEqual((1,), cur.fetchone())
         cur.execute("SELECT 1, 2")
@@ -566,8 +563,8 @@ class UtilTest(unittest.TestCase):
                 return "zapped %s" % target
 
         class Fako(OverrideWrapper):
-            def __init__(self, subject, instrumented):
-                super(Fako, self).__init__(subject, instrumented)
+            def __init__(self, subject, overrides):
+                super(Fako, self).__init__(subject, overrides)
 
             def __new__(cls, *args, **kwargs):
                 cls = args[0].__class__

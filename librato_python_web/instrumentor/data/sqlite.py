@@ -1,5 +1,5 @@
 import re
-from librato_python_web.instrumentor.instrument import inner_wrapped_returned_instance
+from librato_python_web.instrumentor.instrument import wrap_returned_instance_decorator
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 
 
@@ -37,7 +37,7 @@ class SqliteInstrumentor(BaseInstrumentor):
                                                                disable_if='model') for m in
                    'execute(resource),executemany(resource),fetchone,fetchmany,fetchall'.split(',')}
 
-        wrapped['sqlite3.Connection.cursor'] = inner_wrapped_returned_instance(
+        wrapped['sqlite3.Connection.cursor'] = wrap_returned_instance_decorator(
             'sqlite3.Cursor', wrapped
         )
 
