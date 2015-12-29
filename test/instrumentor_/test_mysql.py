@@ -29,63 +29,84 @@ import unittest
 import MySQLdb
 
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.context import add_tag
+from librato_python_web.instrumentor.context import add_tag, push_state, pop_state
 
 from test_reporter import TestTelemetryReporter
 
 
-class ImportTest(unittest.TestCase):
+class MysqlTest(unittest.TestCase):
     def setUp(self):
         pass
 
     def tearDown(self):
         pass
 
+    def run_queries(self):
+        # connect (params impl dependent) dsn data source name, host hostname, database db name
+        conn = MySQLdb.connect(host="127.0.0.1", user="root", passwd="root", db="test")
+
+        # Exception logging (see types: https://www.python.org/dev/peps/pep-0249/#exceptions)
+        cur = conn.cursor()
+        cur.execute("SELECT 1 FROM DUAL")
+        cur.execute("SELECT 1 FROM DUAL")
+        cur.execute("SELECT 1 FROM DUAL")
+        cur.execute("SELECT 1 FROM DUAL")
+        cur.execute("SELECT 1 FROM DUAL")
+        cur.execute("SELECT 1 FROM DUAL")
+        cur.execute("SELECT 1 FROM DUAL")
+        cur.execute("SELECT 1 FROM DUAL")
+        cur.executemany("SELECT 1 FROM DUAL", [None, None, None, None, None])
+
+        # callproc
+
+        try:
+            cur.execute("drop procedure usercount")
+        except:
+            pass   # proc might not exist
+
+        cur.execute("create procedure usercount() begin select count(*) from mysql.user; end")
+        cur.callproc("usercount", ())
+
+        cur.close()		# To avert an out of sync error
+        cur = conn.cursor()
+
+        cur.callproc("usercount", ())
+
+        # fetchmany
+        # nextset???
+
+        # tpc extensions???
+
+        cur.close()
+
     def test_mysql(self):
         reporter = TestTelemetryReporter()
         telemetry.set_reporter(reporter)
 
         with add_tag('test-context', 'mysql_test'):
-            # connect (params impl dependent) dsn data source name, host hostname, database db name
-            conn = MySQLdb.connect(host="127.0.0.1", user="root", passwd="root", db="test")
-
-            # Exception logging (see types: https://www.python.org/dev/peps/pep-0249/#exceptions)
-            cur = conn.cursor()
-            cur.execute("SELECT 1 FROM DUAL")
-            cur.execute("SELECT 1 FROM DUAL")
-            cur.execute("SELECT 1 FROM DUAL")
-            cur.execute("SELECT 1 FROM DUAL")
-            cur.execute("SELECT 1 FROM DUAL")
-            cur.execute("SELECT 1 FROM DUAL")
-            cur.execute("SELECT 1 FROM DUAL")
-            cur.execute("SELECT 1 FROM DUAL")
-            cur.executemany("SELECT 1 FROM DUAL", [None, None, None, None, None])
-
-            # callproc
-
             try:
-                cur.execute("drop procedure usercount")
-            except:
-                pass   # proc might not exist
+                push_state('web')
+                self.run_queries()
+            finally:
+                pop_state('web')
 
-            cur.execute("create procedure usercount() begin select count(*) from mysql.user; end")
-            cur.callproc("usercount", ())
+        self.assertTrue(reporter.counts)
+        self.assertTrue(reporter.records)
 
-            cur.close()		# To avert an out of sync error
-            cur = conn.cursor()
+        print reporter.counts
+        print reporter.records
 
-            cur.callproc("usercount", ())
+    def test_mysql_nostate(self):
+        reporter = TestTelemetryReporter()
+        telemetry.set_reporter(reporter)
 
-            # fetchmany
-            # nextset???
+        with add_tag('test-context', 'mysql_test'):
+            self.run_queries()
 
-            # tpc extensions???
-
-            cur.close()
-            conn.commit()
-
-            print reporter.counts
-            print reporter.records
+        self.assertFalse(reporter.counts)
+        self.assertFalse(reporter.records)
+        print reporter.counts
+        print reporter.records
 
 if __name__ == '__main__':
     unittest.main()

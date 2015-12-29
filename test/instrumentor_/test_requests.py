@@ -28,7 +28,9 @@ import unittest
 
 import requests
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.telemetry import StdoutTelemetryReporter
+from librato_python_web.instrumentor.context import push_state, pop_state
+
+from test_reporter import TestTelemetryReporter
 
 
 class RequestsTest(unittest.TestCase):
@@ -38,11 +40,35 @@ class RequestsTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_requests(self):
-        telemetry.set_reporter(StdoutTelemetryReporter())
+    def call_requests(self):
+        requests.get('http://www.solarwinds.com')
 
-        result = requests.get('http://www.solarwinds.com')
-        print result
+    def test_requests(self):
+        reporter = TestTelemetryReporter()
+        telemetry.set_reporter(reporter)
+
+        try:
+            push_state('web')
+            self.call_requests()
+        finally:
+            pop_state('web')
+
+        self.assertTrue(reporter.counts)
+        self.assertTrue(reporter.records)
+
+        print reporter.counts
+        print reporter.records
+
+    def test_requests_nostate(self):
+        reporter = TestTelemetryReporter()
+        telemetry.set_reporter(reporter)
+
+        self.call_requests()
+
+        self.assertFalse(reporter.counts)
+        self.assertFalse(reporter.records)
+        print reporter.counts
+        print reporter.records
 
 if __name__ == '__main__':
     unittest.main()
