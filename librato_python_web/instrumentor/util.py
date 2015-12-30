@@ -117,14 +117,14 @@ def wraps(wrapped, assigned=functools.WRAPPER_ASSIGNMENTS, updated=functools.WRA
 
 
 def prepend_to_tuple(t, value):
+    """
+    Creates a new version of tuple t with the given value prepended to it.
+    :param t: the given tuple
+    :param value: the given value
+    :return: the new tuple
+    """
     l = list(t)
     l.insert(0, value)
-    return tuple(l)
-
-
-def append_to_tuple(t, value):
-    l = list(t)
-    l.extend([value])
     return tuple(l)
 
 
@@ -161,25 +161,6 @@ class AliasGenerator(object):
         self.cache.clear()
 
 
-def is_safe_name(name):
-    return len(RE_CLEANSE.findall(name)) == 0
-
-
-def safe_name(name):
-    return RE_CLEANSE.sub('_', name)
-
-
-def pseudo_base64(val):
-    """
-    Generates a "Librato-safe" version of the base-64 encoding.
-
-    :param val: the string to encode
-    :type val: basestring
-    :return: the safe version
-    """
-    return safe_name(base64.b64encode(val))
-
-
 def debounce(delay):
     from threading import Timer
 
@@ -198,11 +179,16 @@ def debounce(delay):
 
 
 def get_parameter(i, key, *args, **keywords):
+    """
+    Returns the given argument or, if that's missing, the given keyword.
+
+    :param i: the args position
+    :param key: the name of the keyword
+    :param args: list of arguments
+    :param keywords: dict of keyword names
+    :return: the value, or None if not present
+    """
     return args[i] if len(args) > i else keywords.get(key)
-
-
-def lazy_import(package):
-    return get_module_by_name(package)
 
 
 def is_class_available(fully_qualified_class_name):
@@ -219,6 +205,12 @@ def is_class_available(fully_qualified_class_name):
 
 
 def get_module_by_name(fully_qualified_module_name):
+    """
+    Returns a reference to the given module.
+
+    :param fully_qualified_module_name: fully qualified name of the module
+    :return: the module, or None if not found
+    """
     try:
         return __import__(fully_qualified_module_name)
     except ImportError:
