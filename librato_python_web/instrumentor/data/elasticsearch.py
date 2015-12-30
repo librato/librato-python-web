@@ -24,7 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, default_context_wrapper_factory
 
 
 class ElasticsearchInstrumentor(BaseInstrumentor):
@@ -35,15 +35,20 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
         self.set_wrapped(
             {
                 'elasticsearch.client.Elasticsearch.create':
-                    self.instrument('data.es.create.', mapping={'resource': '2|doc_type'}, disable_if='model'),
+                    default_context_wrapper_factory('data.es.create.', mapping={'resource': '2|doc_type'},
+                                                    state='data.elasticsearch', disable_if='model'),
                 'elasticsearch.client.Elasticsearch.get':
-                    self.instrument('data.es.get.', mapping={'resource': '2|doc_type'}, disable_if='model'),
+                    default_context_wrapper_factory('data.es.get.', mapping={'resource': '2|doc_type'},
+                                                    state='data.elasticsearch', disable_if='model'),
                 'elasticsearch.client.Elasticsearch.index':
-                    self.instrument('data.es.index.', mapping={'resource': '2|doc_type'}, disable_if='model'),
+                    default_context_wrapper_factory('data.es.index.', mapping={'resource': '2|doc_type'},
+                                                    state='data.elasticsearch', disable_if='model'),
                 'elasticsearch.client.Elasticsearch.search':
-                    self.instrument('data.es.search.', mapping={'resource': '2|doc_type'}, disable_if='model'),
+                    default_context_wrapper_factory('data.es.search.', mapping={'resource': '2|doc_type'},
+                                                    state='data.elasticsearch', disable_if='model'),
                 'elasticsearch.client.Elasticsearch.delete':
-                    self.instrument('data.es.delete.', mapping={'resource': '2|doc_type'}, disable_if='model'),
+                    default_context_wrapper_factory('data.es.delete.', mapping={'resource': '2|doc_type'},
+                                                    state='data.elasticsearch', disable_if='model'),
             }
         )
 

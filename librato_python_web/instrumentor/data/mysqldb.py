@@ -1,4 +1,4 @@
-from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, default_context_wrapper_factory
 
 
 class MysqlInstrumentor(BaseInstrumentor):
@@ -9,11 +9,11 @@ class MysqlInstrumentor(BaseInstrumentor):
         self.set_wrapped(
             {
                 'MySQLdb.cursors.Cursor.execute':
-                    self.instrument('data.mysql.execute.', mapping={'resource': 1},
-                                    state='data.mysql', disable_if='model'),
+                    default_context_wrapper_factory('data.mysql.execute.', mapping={'resource': 1},
+                                                    state='data.mysql', disable_if='model'),
                 'MySQLdb.cursors.Cursor.callproc':
-                    self.instrument('data.mysql.callproc.', mapping={'resource': 1},
-                                    state='data.mysql', disable_if='model'),
+                    default_context_wrapper_factory('data.mysql.callproc.', mapping={'resource': 1},
+                                                    state='data.mysql', disable_if='model'),
             }
         )
 

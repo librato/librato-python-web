@@ -1,6 +1,6 @@
 import re
 from librato_python_web.instrumentor.instrument import wrap_returned_instance_decorator
-from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, default_context_wrapper_factory
 
 
 class SqliteInstrumentor(BaseInstrumentor):
@@ -31,10 +31,10 @@ class SqliteInstrumentor(BaseInstrumentor):
         def func_args(e):
             return re.findall('[^(,)]+', e)[1:]
 
-        wrapped = {cursor_path % func_name(m): self.instrument('data.sqlite.%s.' % func_name(m),
-                                                               mapping={a: 1 for a in func_args(m)},
-                                                               state='data.sqlite',
-                                                               disable_if='model') for m in
+        wrapped = {cursor_path % func_name(m): default_context_wrapper_factory('data.sqlite.%s.' % func_name(m),
+                                                                               mapping={a: 1 for a in func_args(m)},
+                                                                               state='data.sqlite',
+                                                                               disable_if='model') for m in
                    'execute(resource),executemany(resource),fetchone,fetchmany,fetchall'.split(',')}
 
         wrapped['sqlite3.Connection.cursor'] = wrap_returned_instance_decorator(
