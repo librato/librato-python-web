@@ -27,15 +27,12 @@
 from abc import abstractmethod
 
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.context import add_tag, push_state, pop_state
+from librato_python_web.instrumentor.context import push_state, pop_state
 
 from test_reporter import TestTelemetryReporter
 
 
-class BaseDataTest(object):
-    """
-    Base class for data tests
-    """
+class BaseExternalTest(object):
     def setUp(self):
         self.reporter = TestTelemetryReporter()
         telemetry.set_reporter(self.reporter)
@@ -43,8 +40,18 @@ class BaseDataTest(object):
     def tearDown(self):
         telemetry.set_reporter(None)
 
+    def iterate_lines(self, src, min_lines, min_chars):
+        t_len = 0
+        t_lines = 0
+        for l in src:
+            t_lines += 1
+            t_len += len(l)
+
+        self.assertGreaterEqual(t_len, min_chars)
+        self.assertGreaterEqual(t_lines, min_lines)
+
     @abstractmethod
-    def run_queries(self):
+    def make_requests(self):
         """
         Override this
         """
@@ -52,14 +59,13 @@ class BaseDataTest(object):
 
     def test_web_state(self):
         """
-        Metrics should get reported in web state
+        Metrics should be reported in web state
         """
-        with add_tag('test-context', 'data_test'):
-            try:
-                push_state('web')
-                self.run_queries()
-            finally:
-                pop_state('web')
+        try:
+            push_state('web')
+            self.make_requests()
+        finally:
+            pop_state('web')
 
         self.assertTrue(self.reporter.counts)
         self.assertTrue(self.reporter.records)
@@ -68,24 +74,22 @@ class BaseDataTest(object):
         """
         Metrics shouldn't get reported in web state if also in model state
         """
-        with add_tag('test-context', 'data_test'):
-            try:
-                push_state('web')
-                push_state('model')
-                self.run_queries()
-            finally:
-                pop_state('web')
-                pop_state('model')
+        try:
+            push_state('web')
+            push_state('model')
+            self.make_requests()
+        finally:
+            pop_state('model')
+            pop_state('web')
 
         self.assertFalse(self.reporter.counts)
         self.assertFalse(self.reporter.records)
 
-    def test_nostate(self):
+    def test_requests_nostate(self):
         """
-        Metrics shouldn't get reported outside a web state
+        Metrics shouldn't get reported with no state
         """
-        with add_tag('test-context', 'data_test'):
-            self.run_queries()
+        self.make_requests()
 
         self.assertFalse(self.reporter.counts)
         self.assertFalse(self.reporter.records)

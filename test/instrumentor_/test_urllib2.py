@@ -25,31 +25,33 @@
 
 
 import unittest
-import requests
+import urllib2
 
 from externaltest_base import BaseExternalTest
 
 
-class RequestsTest(BaseExternalTest, unittest.TestCase):
+class Urllib2Test(BaseExternalTest, unittest.TestCase):
     def make_requests(self):
-        # HTTP get
-        r = requests.get("http://www.python.org")
-        self.assertGreater(len(r.text), 10000)
+        # HTTP
+        r = urllib2.urlopen("http://www.python.org")
 
-        # HTTP get raw
-        r = requests.get("http://www.python.org", stream=True)
+        self.assertEqual(r.getcode(), 200)
 
-        self.assertEqual(r.status_code, 200)
-
-        raw = r.raw
-
-        data = raw.read(100)
+        data = r.read(100)
         self.assertEqual(len(data), 100)
 
-        data = raw.readline()
+        data = r.readline()
         self.assertGreater(len(data), 1)
 
-        self.iterate_lines(r.raw, 1000, 10000)
+        self.iterate_lines(r, 1000, 10000)
+
+        # File
+        r = urllib2.urlopen("file:///etc/hosts")
+        self.iterate_lines(r, 1, 10)
+
+        # FTP
+        r = urllib2.urlopen("ftp://speedtest.tele2.net/")
+        self.iterate_lines(r, 10, 100)
 
 
 if __name__ == '__main__':
