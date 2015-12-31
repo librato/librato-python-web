@@ -32,6 +32,10 @@ class TestTelemetryReporter(TelemetryReporter):
         self.counts = defaultdict(int)
         self.records = {}
 
+    def reset(self):
+        self.counts = defaultdict(int)
+        self.records = {}
+
     def count(self, metric, incr=1):
         self.counts[metric] += incr
 

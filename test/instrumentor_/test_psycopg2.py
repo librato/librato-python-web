@@ -27,18 +27,10 @@
 import psycopg2
 import unittest
 
-from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.context import add_tag, push_state, pop_state
-from test_reporter import TestTelemetryReporter
+from datatest_base import BaseDataTest
 
 
-class Psycopg2est(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
+class Psycopg2Test(BaseDataTest, unittest.TestCase):
     def run_queries(self):
         # connect (params impl dependent) dsn data source name, host hostname, database db name
         conn = psycopg2.connect("host=localhost dbname=test user=postgres")
@@ -76,36 +68,6 @@ class Psycopg2est(unittest.TestCase):
 
         cur.close()
         conn.commit()
-
-    def test_psycopg2(self):
-        reporter = TestTelemetryReporter()
-        telemetry.set_reporter(reporter)
-
-        with add_tag('test-context', 'postgres_test'):
-            try:
-                push_state('web')
-                self.run_queries()
-            finally:
-                pop_state('web')
-
-        self.assertTrue(reporter.counts)
-        self.assertTrue(reporter.records)
-
-        print reporter.counts
-        print reporter.records
-
-    def test_psycopg2_nostate(self):
-        reporter = TestTelemetryReporter()
-        telemetry.set_reporter(reporter)
-
-        with add_tag('test-context', 'mysql_test'):
-            self.run_queries()
-
-        self.assertFalse(reporter.counts)
-        self.assertFalse(reporter.records)
-
-        print reporter.counts
-        print reporter.records
 
 if __name__ == '__main__':
     unittest.main()

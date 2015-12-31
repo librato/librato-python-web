@@ -26,22 +26,16 @@
 
 import unittest
 
+from datatest_base import BaseDataTest
 import MySQLdb
 
-from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.context import add_tag, push_state, pop_state
 
-from test_reporter import TestTelemetryReporter
-
-
-class MysqlTest(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
+class MysqlTest(BaseDataTest, unittest.TestCase):
     def run_queries(self):
+        """
+        MySQL related queries
+        """
+
         # connect (params impl dependent) dsn data source name, host hostname, database db name
         conn = MySQLdb.connect(host="127.0.0.1", user="root", passwd="root", db="test")
 
@@ -79,34 +73,6 @@ class MysqlTest(unittest.TestCase):
 
         cur.close()
 
-    def test_mysql(self):
-        reporter = TestTelemetryReporter()
-        telemetry.set_reporter(reporter)
-
-        with add_tag('test-context', 'mysql_test'):
-            try:
-                push_state('web')
-                self.run_queries()
-            finally:
-                pop_state('web')
-
-        self.assertTrue(reporter.counts)
-        self.assertTrue(reporter.records)
-
-        print reporter.counts
-        print reporter.records
-
-    def test_mysql_nostate(self):
-        reporter = TestTelemetryReporter()
-        telemetry.set_reporter(reporter)
-
-        with add_tag('test-context', 'mysql_test'):
-            self.run_queries()
-
-        self.assertFalse(reporter.counts)
-        self.assertFalse(reporter.records)
-        print reporter.counts
-        print reporter.records
 
 if __name__ == '__main__':
     unittest.main()

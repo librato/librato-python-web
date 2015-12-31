@@ -22,32 +22,15 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from collections import defaultdict
 
+from datatest_base import BaseDataTest
 import unittest
 import sqlite3
-from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.context import push_state, pop_state
 # from librato_python_web.instrumentor.data.sqlite import SqliteInstrumentor
 
-from test_reporter import TestTelemetryReporter
 
-
-class SqliteTest(unittest.TestCase):
-    def setUp(self):
-        import sqlite3
-        self.state = defaultdict(int)
-        self.cached_connection = sqlite3.Connection
-
-    def tearDown(self):
-        import sqlite3
-        sqlite3.Connection = self.cached_connection
-
+class SqliteTest(BaseDataTest, unittest.TestCase):
     def run_queries(self):
-        # Not needed when hook is installed
-        # instrumentor = SqliteInstrumentor()
-        # instrumentor.run()
-
         # connect to in-memory
         conn = sqlite3.connect(":memory:")
 
@@ -90,32 +73,6 @@ class SqliteTest(unittest.TestCase):
         # Just be sure any changes have been committed or they will be lost.
         conn.close()
 
-    def test_sqllite(self):
-        reporter = TestTelemetryReporter()
-        telemetry.set_reporter(reporter)
-
-        try:
-            push_state('web')
-            self.run_queries()
-        finally:
-            pop_state('web')
-
-        self.assertTrue(reporter.counts)
-        self.assertTrue(reporter.records)
-
-        print reporter.counts
-        print reporter.records
-
-    def test_sqllite_nostate(self):
-        reporter = TestTelemetryReporter()
-        telemetry.set_reporter(reporter)
-
-        self.run_queries()
-
-        self.assertFalse(reporter.counts)
-        self.assertFalse(reporter.records)
-        print reporter.counts
-        print reporter.records
 
 if __name__ == '__main__':
     unittest.main()
