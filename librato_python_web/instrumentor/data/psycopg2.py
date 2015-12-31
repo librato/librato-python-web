@@ -1,7 +1,7 @@
 import re
 
 from librato_python_web.instrumentor.instrument import wrap_returned_instance_decorator
-from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, default_context_wrapper_factory
 
 
 class Psycopg2Instrumentor(BaseInstrumentor):
@@ -34,8 +34,9 @@ class Psycopg2Instrumentor(BaseInstrumentor):
 
         wrapped = {
             cursor_path % func_name(m):
-                self.instrument('data.psycopg2.%s.' % func_name(m), mapping={a: 1 for a in func_args(m)},
-                                state='data.postgres', disable_if='model')
+                default_context_wrapper_factory('data.psycopg2.%s.' % func_name(m),
+                                                mapping={a: 1 for a in func_args(m)},
+                                                state='data.postgres', disable_if='model')
             for m in 'callproc(resource),execute(resource),executemany(resource),fetchone,fetchmany,fetchall,'
                      'nextset'.split(',')
             }

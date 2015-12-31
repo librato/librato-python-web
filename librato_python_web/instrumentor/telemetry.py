@@ -78,7 +78,12 @@ def event(event_type, dictionary=None):
     _global.reporter.event(event_type, dictionary)
 
 
-def default_instrumentation(type_name='resource'):
+def telemetry_context_manager(type_name='resource'):
+    """
+    Records count and latency metrics for wrapped block
+
+    :param type_name: prefixes used to generate metric names
+    """
     @contextmanager
     def decorator(*args, **keywords):
         Timing.push_timer()

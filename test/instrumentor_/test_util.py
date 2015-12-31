@@ -33,7 +33,7 @@ from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.data.psycopg2 import Psycopg2Instrumentor
 from librato_python_web.instrumentor.instrument import contextmanager_wrapper_factory, OverrideWrapper
-from librato_python_web.instrumentor.telemetry import default_instrumentation
+from librato_python_web.instrumentor.telemetry import telemetry_context_manager
 
 from test_reporter import TestTelemetryReporter
 
@@ -117,13 +117,6 @@ class UtilTest(unittest.TestCase):
         import psycopg2
         self.state = defaultdict(int)
         self.cached = (psycopg2.connect, psycopg2.extensions.connection, psycopg2.extensions.cursor)
-
-    def record_state(self, f):
-        def update_state(*args, **keywords):
-            self.state[f.__name__] += 1
-            return f(*args, **keywords)
-
-        return update_state
 
     def tearDown(self):
         import psycopg2
@@ -474,7 +467,7 @@ class UtilTest(unittest.TestCase):
                 for m in [m for m in inspect.getmembers(subject) if measured_methods is None or
                           m[0] in measured_methods]:
                     name = m[0]
-                    factory = contextmanager_wrapper_factory(default_instrumentation(metric_name % name),
+                    factory = contextmanager_wrapper_factory(telemetry_context_manager(metric_name % name),
                                                              {}, state_name, enable_if, disable_if)
                     instrumented[name] = factory(m[1])
                 object.__setattr__(self, '__instrumented__', instrumented)

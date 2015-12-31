@@ -23,19 +23,24 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from .telemetry import default_instrumentation
+from .telemetry import telemetry_context_manager
 
 from librato_python_web.instrumentor.instrument import instrument_methods, contextmanager_wrapper_factory, \
     override_classes
 
-_default = object()
+
+def default_context_wrapper_factory(metric_name, state, mapping=None, enable_if='web', disable_if=None):
+    """
+    Use this default wrapper to record latency and count metrics for a code block or function
+    """
+    return contextmanager_wrapper_factory(telemetry_context_manager(metric_name), mapping, state, enable_if,
+                                          disable_if)
 
 
 class BaseInstrumentor(object):
     def __init__(self, wrapped=None, state=None):
         self.wrapped = wrapped
         self.overridden_classes = {}
-        self.state = state
 
     def set_overridden(self, overridden_classes):
         self.overridden_classes = overridden_classes if overridden_classes is not None else {}
@@ -47,14 +52,3 @@ class BaseInstrumentor(object):
         # instrument static resources
         override_classes(self.overridden_classes, self.wrapped)
         instrument_methods(self.wrapped)
-
-    def instrument(self, metric_name, mapping=None, state=_default, enable_if='web', disable_if=None):
-        state = self.get_state(state)
-        return contextmanager_wrapper_factory(default_instrumentation(metric_name),
-                                              mapping, state, enable_if, disable_if)
-
-    def get_state(self, state=_default):
-        try:
-            return self.state if state == _default else state
-        except:
-            return state

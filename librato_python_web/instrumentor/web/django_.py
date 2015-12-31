@@ -31,7 +31,7 @@ from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import generate_record_telemetry
 from librato_python_web.instrumentor.util import prepend_to_tuple, Timing, wraps, unwrap_method
-from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, default_context_wrapper_factory
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
@@ -119,8 +119,9 @@ class DjangoInstrumentor(BaseInstrumentor):
     def __init__(self):
         super(DjangoInstrumentor, self).__init__()
         for method in [m.strip() for m in self._query_set_methods.split(',')]:
-            self._wrapped['django.db.models.query.QuerySet.%s' % method] = self.instrument('model.%s.' % method,
-                                                                                           state='model')
+            self._wrapped['django.db.models.query.QuerySet.%s' % method] = default_context_wrapper_factory(
+                'model.%s.' % method,
+                state='model')
 
     def run(self):
         try:
