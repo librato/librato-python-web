@@ -19,15 +19,15 @@ class HelloTests(TestCase):
     def tearDown(self):
         telemetry.set_reporter(None)
 
-    def test_metrics_reported(self):
-        r = self.client.get('/hello/')
+    def test_state(self):
+        r = self.client.get('/state/')
 
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(self.reporter.counts)
-        self.assertTrue(self.reporter.records)
+        states = r.json()
 
-        print self.reporter.counts
-        print self.reporter.records
+        self.assertEqual(len(states), 1)
+        self.assertIn('web', states)
+        self.assertEquals(states['web'], 1)
 
 if __name__ == '__main__':
     unittest.main()
