@@ -35,6 +35,27 @@ class HelloTests(DjangoTestCase):
 
         self.verify_counters({'web.status.3xx': 1, 'web.requests': 1, 'logging.warning.requests': 1})
 
+    def test_notfound(self):
+        r = self.client.get('/hello/notfound/')
+
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.content, "Verify this text!")
+
+        expected_gauge_metrics = ['app.response.latency', 'web.view.latency', 'web.response.latency']
+        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+
+        self.verify_counters({'web.status.4xx': 1, 'web.requests': 1})
+
+    def test_error(self):
+        r = self.client.get('/hello/error/')
+
+        self.assertEqual(r.status_code, 500)
+
+        expected_gauge_metrics = ['app.response.latency', 'web.view.latency', 'web.response.latency']
+        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+
+        self.verify_counters({'web.status.5xx': 1, 'web.requests': 1})
+
 
 if __name__ == '__main__':
     unittest.main()
