@@ -1,24 +1,9 @@
 
-import os
 import unittest
-import django
-from django.test import SimpleTestCase as TestCase
-
-from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
-
-os.environ['DJANGO_SETTINGS_MODULE'] = 'test_site.settings'
-django.setup()
+from test_case import DjangoTestCase
 
 
-class HelloTests(TestCase):
-    def setUp(self):
-        self.reporter = TestTelemetryReporter()
-        telemetry.set_reporter(self.reporter)
-
-    def tearDown(self):
-        telemetry.set_reporter(None)
-
+class StateTests(DjangoTestCase):
     def test_state(self):
         r = self.client.get('/state/')
 

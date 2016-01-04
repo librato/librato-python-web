@@ -1,33 +1,40 @@
 
-import os
 import unittest
-import django
-from django.test import SimpleTestCase as TestCase
-
-from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
-
-os.environ['DJANGO_SETTINGS_MODULE'] = 'test_site.settings'
-django.setup()
+from test_case import DjangoTestCase
 
 
-class HelloTests(TestCase):
-    def setUp(self):
-        self.reporter = TestTelemetryReporter()
-        telemetry.set_reporter(self.reporter)
-
-    def tearDown(self):
-        telemetry.set_reporter(None)
-
-    def test_metrics_reported(self):
+class HelloTests(DjangoTestCase):
+    def test_once(self):
         r = self.client.get('/hello/')
 
+        expected_gauge_metrics = ['app.response.latency', 'web.view.latency', 'web.response.latency']
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(self.reporter.counts)
-        self.assertTrue(self.reporter.records)
+        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
 
-        print self.reporter.counts
-        print self.reporter.records
+        self.verify_counters({'web.status.2xx': 1, 'web.requests': 1})
+
+    def test_twice(self):
+        r = self.client.get('/hello/')
+        self.assertEqual(r.status_code, 200)
+
+        r = self.client.get('/hello/')
+        self.assertEqual(r.status_code, 200)
+
+        expected_gauge_metrics = ['app.response.latency', 'web.view.latency', 'web.response.latency']
+        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        self.verify_counters({'web.status.2xx': 2, 'web.requests': 2})
+
+    def test_redirect(self):
+        # Excluding the trailing will redirect
+        r = self.client.get('/hello')
+
+        self.assertEqual(r.status_code, 301)
+
+        expected_gauge_metrics = ['app.response.latency', 'web.response.latency']
+        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+
+        self.verify_counters({'web.status.3xx': 1, 'web.requests': 1, 'logging.warning.requests': 1})
+
 
 if __name__ == '__main__':
     unittest.main()

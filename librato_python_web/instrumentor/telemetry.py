@@ -156,6 +156,15 @@ class TestTelemetryReporter(TelemetryReporter):
     def event(self, type_name, dictionary=None):
         pass
 
+    def get_counter_names(self):
+        return self.counts.keys()
+
+    def get_counter_value(self, metric):
+        return self.counts[metric] if metric in self.counts else None
+
+    def get_gauge_names(self):
+        return self.records.keys()
+
 
 class StdoutTelemetryReporter(TelemetryReporter):
     def __init__(self):
