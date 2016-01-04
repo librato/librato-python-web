@@ -31,6 +31,9 @@ import MySQLdb
 
 
 class MysqlTest(BaseDataTest, unittest.TestCase):
+    expected_web_state_counts = {'data.mysql.execute.requests': 15, 'data.mysql.callproc.requests': 2}
+    expected_web_state_gauges = ['data.mysql.execute.latency', 'data.mysql.callproc.latency']
+
     def run_queries(self):
         """
         MySQL related queries

@@ -31,6 +31,9 @@ from datatest_base import BaseDataTest
 
 
 class Psycopg2Test(BaseDataTest, unittest.TestCase):
+    expected_web_state_counts = {'data.psycopg2.execute.requests': 5, 'data.psycopg2.callproc.requests': 2}
+    expected_web_state_gauges = ['data.psycopg2.callproc.latency', 'data.psycopg2.execute.latency']
+
     def run_queries(self):
         # connect (params impl dependent) dsn data source name, host hostname, database db name
         conn = psycopg2.connect("host=localhost dbname=test user=postgres")

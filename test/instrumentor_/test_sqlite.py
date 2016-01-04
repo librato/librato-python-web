@@ -30,6 +30,17 @@ import sqlite3
 
 
 class SqliteTest(BaseDataTest, unittest.TestCase):
+    expected_web_state_counts = {
+        'data.sqlite.executemany.requests': 1,
+        'data.sqlite.fetchone.requests': 1,
+        'data.sqlite.execute.requests': 4
+    }
+    expected_web_state_gauges = [
+        'data.sqlite.executemany.latency',
+        'data.sqlite.fetchone.latency',
+        'data.sqlite.execute.latency',
+    ]
+
     def run_queries(self):
         # connect to in-memory
         conn = sqlite3.connect(":memory:")

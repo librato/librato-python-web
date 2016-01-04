@@ -60,8 +60,8 @@ class BaseDataTest(object):
             finally:
                 pop_state('web')
 
-        self.assertTrue(self.reporter.counts)
-        self.assertTrue(self.reporter.records)
+        self.assertEqual(self.reporter.counts, self.expected_web_state_counts)
+        self.assertItemsEqual(self.reporter.records.keys(), self.expected_web_state_gauges)
 
     def test_model_state(self):
         """
