@@ -17,8 +17,3 @@ class DjangoTestCase(TestCase):
 
     def tearDown(self):
         telemetry.set_reporter(None)
-
-    def verify_counters(self, expected_counters):
-        self.assertItemsEqual(self.reporter.get_counter_names(), expected_counters.keys())
-        for k, v in expected_counters.iteritems():
-            self.assertEqual(self.reporter.get_counter_value(k), v)

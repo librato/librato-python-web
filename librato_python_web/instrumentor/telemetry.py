@@ -165,6 +165,9 @@ class TestTelemetryReporter(TelemetryReporter):
     def get_gauge_names(self):
         return self.records.keys()
 
+    def get_gauge_value(self, metric):
+        return self.records[metric] if metric in self.records else None
+
 
 class StdoutTelemetryReporter(TelemetryReporter):
     def __init__(self):
