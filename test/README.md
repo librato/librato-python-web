@@ -26,3 +26,10 @@
 * Launch the test as shown below.
 
 `LIBRATO_INSTRUMENT_PYTHON=1 python -m unittest instrumentor_.test_mysql`
+
+## Testing flask
+* Additionally set the LIBRATO_INTEGRATION env var to enable flask integration. E.g.
+```
+cd flask_
+LIBRATO_INSTRUMENT_PYTHON=1 LIBRATO_INTEGRATION=flask python -m unittest discover
+```

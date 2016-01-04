@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 from librato_python_web.instrumentor import context
 from librato_python_web.statsd.client import statsd_client
@@ -123,6 +123,35 @@ class TelemetryReporter(object):
 
     def record(self, metric, value):
         pass
+
+    def event(self, type_name, dictionary=None):
+        pass
+
+
+class TestTelemetryReporter(TelemetryReporter):
+    """
+    Gathers metrics to allow verification
+    """
+    def __init__(self):
+        super(TestTelemetryReporter, self).__init__()
+        self.counts = defaultdict(int)
+        self.records = {}
+
+    def reset(self):
+        self.counts = defaultdict(int)
+        self.records = {}
+
+    def count(self, metric, incr=1):
+        self.counts[metric] += incr
+
+    def get_count(self, metric):
+        return self.counts[metric]
+
+    def record(self, metric, value):
+        self.records[metric] = value
+
+    def get_record(self, metric):
+        return self.records.get(metric)
 
     def event(self, type_name, dictionary=None):
         pass
