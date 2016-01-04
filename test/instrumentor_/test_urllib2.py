@@ -31,6 +31,18 @@ from externaltest_base import BaseExternalTest
 
 
 class Urllib2Test(BaseExternalTest, unittest.TestCase):
+    expected_web_state_counts = {
+        'external.http.requests': 1,
+        'external.http.status.2xx': 1,
+        'external.file.requests': 1,
+        'external.ftp.requests': 1,
+    }
+    expected_web_state_gauges = [
+        'external.http.response.latency',
+        'external.file.response.latency',
+        'external.ftp.response.latency',
+    ]
+
     def make_requests(self):
         # HTTP
         r = urllib2.urlopen("http://www.python.org")

@@ -31,6 +31,9 @@ from externaltest_base import BaseExternalTest
 
 
 class RequestsTest(BaseExternalTest, unittest.TestCase):
+    expected_web_state_gauges = ['external.http.response.latency']
+    expected_web_state_counts = {'external.http.requests': 2, 'external.http.status.2xx': 2}
+
     def make_requests(self):
         # HTTP get
         r = requests.get("http://www.python.org")
