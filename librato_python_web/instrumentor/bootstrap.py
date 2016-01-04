@@ -83,6 +83,9 @@ def init():
             general.set_option('statsd.enabled', True)
             general.set_option('statsd.port', int(os.environ.get('LIBRATO_INSTRUMENTATION_PORT')))
 
+        if 'LIBRATO_INTEGRATION' in os.environ:
+            general.set_option('integration', os.environ.get('LIBRATO_INTEGRATION'))
+
         if general.get_option('statsd.enabled', False):
             logger.debug("Using Statsd reporter")
             telemetry.set_reporter(StatsdTelemetryReporter(general.get_option('statsd.port', 8142)))

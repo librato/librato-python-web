@@ -1,18 +1,17 @@
-
-import os
+import json
 import unittest
-import django
-from django.test import SimpleTestCase as TestCase
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 
-os.environ['DJANGO_SETTINGS_MODULE'] = 'test_site.settings'
-django.setup()
+import state_app
 
 
-class HelloTests(TestCase):
+class HelloTestCase(unittest.TestCase):
     def setUp(self):
+        state_app.app.config['TESTING'] = True
+        self.app = state_app.app.test_client()
+
         self.reporter = TestTelemetryReporter()
         telemetry.set_reporter(self.reporter)
 
@@ -20,14 +19,17 @@ class HelloTests(TestCase):
         telemetry.set_reporter(None)
 
     def test_state(self):
-        r = self.client.get('/state/')
+        r = self.app.get('/')
 
         self.assertEqual(r.status_code, 200)
-        states = r.json()
 
-        self.assertEqual(len(states), 1)
+        states = json.loads(r.data)
+
+        self.assertEqual(len(states), 2)
         self.assertIn('web', states)
+        self.assertIn('wsgi', states)
         self.assertEquals(states['web'], 1)
+        self.assertEquals(states['wsgi'], 1)
 
 if __name__ == '__main__':
     unittest.main()

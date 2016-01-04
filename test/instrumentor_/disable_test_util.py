@@ -33,9 +33,7 @@ from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.data.psycopg2 import Psycopg2Instrumentor
 from librato_python_web.instrumentor.instrument import contextmanager_wrapper_factory, OverrideWrapper
-from librato_python_web.instrumentor.telemetry import telemetry_context_manager
-
-from test_reporter import TestTelemetryReporter
+from librato_python_web.instrumentor.telemetry import telemetry_context_manager, TestTelemetryReporter
 
 
 def wrap_class(cls, methods=None):

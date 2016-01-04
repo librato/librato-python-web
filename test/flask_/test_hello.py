@@ -1,26 +1,24 @@
-
-import os
 import unittest
-import django
-from django.test import SimpleTestCase as TestCase
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 
-os.environ['DJANGO_SETTINGS_MODULE'] = 'test_site.settings'
-django.setup()
+import hello_app
 
 
-class HelloTests(TestCase):
+class HelloTestCase(unittest.TestCase):
     def setUp(self):
+        hello_app.app.config['TESTING'] = True
+        self.app = hello_app.app.test_client()
+
         self.reporter = TestTelemetryReporter()
         telemetry.set_reporter(self.reporter)
 
     def tearDown(self):
         telemetry.set_reporter(None)
 
-    def test_metrics_reported(self):
-        r = self.client.get('/hello/')
+    def test_simple(self):
+        r = self.app.get('/')
 
         self.assertEqual(r.status_code, 200)
         self.assertTrue(self.reporter.counts)

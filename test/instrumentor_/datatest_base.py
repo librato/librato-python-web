@@ -27,9 +27,8 @@
 from abc import abstractmethod
 
 from librato_python_web.instrumentor import telemetry
+from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 from librato_python_web.instrumentor.context import add_tag, push_state, pop_state
-
-from test_reporter import TestTelemetryReporter
 
 
 class BaseDataTest(object):
