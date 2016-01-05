@@ -24,34 +24,35 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from flask import Flask, abort
+from flask import Flask
+import sqlite3
+import urllib2
+
 
 app = Flask(__name__)
 
 
-@app.route('/')
-def hello_world():
-    return 'Hello World!'
+@app.route('/sqlite')
+def sqlite():
+    conn = sqlite3.connect(":memory:")
+
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+    finally:
+        conn.close()
+
+    return 'Made sqlite3 call!'
 
 
-@app.route('/dir/')
-def dir_listing():
-    return ['foo', 'bar']
+@app.route('/urllib2')
+def urllib2_():
+    r = urllib2.urlopen("http://www.python.org")
 
+    data = r.read()
+    data_len = len(data)
 
-@app.route('/notfound/')
-def notfound():
-    abort(404, "Verify this text!")
-
-
-@app.route('/error/')
-def error():
-    abort(505, "Internal error!")
-
-
-@app.route('/exception/')
-def exception():
-    raise Exception("Unexpected app exception")
+    return 'Read {} chars'.format(data_len)
 
 
 if __name__ == '__main__':

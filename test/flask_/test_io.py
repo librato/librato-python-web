@@ -24,19 +24,18 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import json
 import unittest
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 
-import state_app
+import io_app
 
 
 class HelloTestCase(unittest.TestCase):
     def setUp(self):
-        state_app.app.config['TESTING'] = True
-        self.app = state_app.app.test_client()
+        io_app.app.config['TESTING'] = True
+        self.app = io_app.app.test_client()
 
         self.reporter = TestTelemetryReporter()
         telemetry.set_reporter(self.reporter)
@@ -44,18 +43,40 @@ class HelloTestCase(unittest.TestCase):
     def tearDown(self):
         telemetry.set_reporter(None)
 
-    def test_state(self):
-        r = self.app.get('/')
+    def test_data(self):
+        r = self.app.get('/sqlite')
 
+        expected_gauge_metrics = [
+            'app.response.latency',
+            'wsgi.response.latency',
+            'web.response.latency',
+            'data.sqlite.execute.latency'
+        ]
         self.assertEqual(r.status_code, 200)
+        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
+                           self.reporter.get_gauge_value('web.response.latency'))
 
-        states = json.loads(r.data)
+        self.assertEqual(self.reporter.counts,
+                         {'web.status.2xx': 1, 'web.requests': 1, 'data.sqlite.execute.requests': 1})
 
-        self.assertEqual(len(states), 2)
-        self.assertIn('web', states)
-        self.assertIn('wsgi', states)
-        self.assertEquals(states['web'], 1)
-        self.assertEquals(states['wsgi'], 1)
+    def test_network(self):
+        r = self.app.get('/urllib2')
+
+        expected_gauge_metrics = [
+            'app.response.latency',
+            'wsgi.response.latency',
+            'web.response.latency',
+            'external.http.response.latency'
+        ]
+        self.assertEqual(r.status_code, 200)
+        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
+                           self.reporter.get_gauge_value('web.response.latency'))
+
+        self.assertEqual(self.reporter.counts,
+                         {'web.status.2xx': 1, 'external.http.requests': 1,
+                          'web.requests': 1, 'external.http.status.2xx': 1})
 
 if __name__ == '__main__':
     unittest.main()
