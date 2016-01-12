@@ -39,8 +39,6 @@ STATE_NAME = 'web'
 
 logger = getCustomLogger(__name__)
 
-_context = threading.local()
-
 
 def _cherrypy_respond_wrapper(f):
     def decorator(*args, **keywords):
@@ -88,12 +86,14 @@ def _cherrypy_wsgi_call(f):
             telemetry.record('wsgi.response.latency', elapsed)
     return decorator
 
+
 class CherryPyInstrumentor(BaseInstrumentor):
-    required_class_names = ['cherrypy._cprequest.Request']
+    required_class_names = ['cherrypy._cprequest.Request', 'cherrypy.Application']
 
     def __init__(self):
         super(CherryPyInstrumentor, self).__init__(
             {
+                'cherrypy.Application.__call__': function_wrapper_factory(_cherrypy_wsgi_call, enable_if=None),
                 'cherrypy._cprequest.Request.run': function_wrapper_factory(_cherrypy_respond_wrapper, enable_if=None),
             }
         )
