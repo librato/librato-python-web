@@ -25,58 +25,73 @@
 
 
 import unittest
+import cherrypy
+from cherrypy.test import helper
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 
-import io_app
+import hello_app
 
 
-class IOTestCase(unittest.TestCase):
+class HelloTestCase(helper.CPWebCase):
+    def setup_server():
+        cherrypy.tree.mount(hello_app.HelloWorld())
+    setup_server = staticmethod(setup_server)
+
     def setUp(self):
-        io_app.app.config['TESTING'] = True
-        self.app = io_app.app.test_client()
-
         self.reporter = TestTelemetryReporter()
         telemetry.set_reporter(self.reporter)
 
     def tearDown(self):
         telemetry.set_reporter(None)
 
-    def test_data(self):
-        r = self.app.get('/sqlite')
+    def test_once(self):
+        self.getPage('/')
+        self.assertStatus(200)
 
-        expected_gauge_metrics = [
-            'app.response.latency',
-            'wsgi.response.latency',
-            'web.response.latency',
-            'data.sqlite.execute.latency'
-        ]
-        self.assertEqual(r.status_code, 200)
+        expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
         self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
                            self.reporter.get_gauge_value('web.response.latency'))
 
-        self.assertEqual(self.reporter.counts,
-                         {'web.status.2xx': 1, 'web.requests': 1, 'data.sqlite.execute.requests': 1})
+        self.assertEqual(self.reporter.counts, {'web.status.2xx': 1, 'web.requests': 1})
 
-    def test_network(self):
-        r = self.app.get('/urllib2')
+    def test_twice(self):
+        self.getPage('/')
+        self.getPage('/')
+        self.assertStatus(200)
 
-        expected_gauge_metrics = [
-            'app.response.latency',
-            'wsgi.response.latency',
-            'web.response.latency',
-            'external.http.response.latency'
-        ]
-        self.assertEqual(r.status_code, 200)
+        expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
         self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
-        self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
-                           self.reporter.get_gauge_value('web.response.latency'))
 
-        self.assertEqual(self.reporter.counts,
-                         {'web.status.2xx': 1, 'external.http.requests': 1,
-                          'web.requests': 1, 'external.http.status.2xx': 1})
+        self.assertEqual(self.reporter.counts, {'web.status.2xx': 2, 'web.requests': 2})
+
+    def test_redirect(self):
+        self.getPage('/redirect')
+        self.assertStatus(303)
+
+        expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
+        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        self.assertEqual(self.reporter.counts, {'web.status.3xx': 1, 'web.requests': 1})
+
+    def test_notfound(self):
+        self.getPage('/notfound')
+        self.assertStatus(404)
+
+        expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
+        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        self.assertEqual(self.reporter.counts, {'web.status.4xx': 1, 'web.requests': 1})
+
+    def test_error(self):
+        self.getPage('/error')
+        self.assertStatus(505)
+
+        expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
+        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+
+        self.assertEqual(self.reporter.counts, {'web.status.5xx': 1, 'web.requests': 1})
+
 
 if __name__ == '__main__':
     unittest.main()

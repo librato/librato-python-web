@@ -25,6 +25,8 @@
 
 
 import unittest
+import cherrypy
+from cherrypy.test import helper
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
@@ -32,11 +34,12 @@ from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 import io_app
 
 
-class IOTestCase(unittest.TestCase):
-    def setUp(self):
-        io_app.app.config['TESTING'] = True
-        self.app = io_app.app.test_client()
+class IOTestCase(helper.CPWebCase):
+    def setup_server():
+        cherrypy.tree.mount(io_app.IOApp())
+    setup_server = staticmethod(setup_server)
 
+    def setUp(self):
         self.reporter = TestTelemetryReporter()
         telemetry.set_reporter(self.reporter)
 
@@ -44,7 +47,8 @@ class IOTestCase(unittest.TestCase):
         telemetry.set_reporter(None)
 
     def test_data(self):
-        r = self.app.get('/sqlite')
+        self.getPage('/sqlite')
+        self.assertStatus(200)
 
         expected_gauge_metrics = [
             'app.response.latency',
@@ -52,7 +56,6 @@ class IOTestCase(unittest.TestCase):
             'web.response.latency',
             'data.sqlite.execute.latency'
         ]
-        self.assertEqual(r.status_code, 200)
         self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
                            self.reporter.get_gauge_value('web.response.latency'))
@@ -61,7 +64,8 @@ class IOTestCase(unittest.TestCase):
                          {'web.status.2xx': 1, 'web.requests': 1, 'data.sqlite.execute.requests': 1})
 
     def test_network(self):
-        r = self.app.get('/urllib2')
+        self.getPage('/urllib')
+        self.assertStatus(200)
 
         expected_gauge_metrics = [
             'app.response.latency',
@@ -69,7 +73,6 @@ class IOTestCase(unittest.TestCase):
             'web.response.latency',
             'external.http.response.latency'
         ]
-        self.assertEqual(r.status_code, 200)
         self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
                            self.reporter.get_gauge_value('web.response.latency'))

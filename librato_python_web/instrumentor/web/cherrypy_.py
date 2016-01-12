@@ -44,7 +44,6 @@ def _cherrypy_respond_wrapper(f):
     def decorator(*args, **keywords):
         try:
             route = args[2] if args[2] else None
-            context.push_state(STATE_NAME)
             context.push_tag('web.route', route)
             context.push_tag('web.method', args[1])
             telemetry.count('web.requests')
@@ -53,7 +52,6 @@ def _cherrypy_respond_wrapper(f):
             # call the request function
             response = f(*args, **keywords)
 
-            context.pop_state(STATE_NAME)
             if response.status:
                 telemetry.count('web.status.%sxx' % response.status[0:1])
             return response
@@ -93,8 +91,10 @@ class CherryPyInstrumentor(BaseInstrumentor):
     def __init__(self):
         super(CherryPyInstrumentor, self).__init__(
             {
-                'cherrypy.Application.__call__': function_wrapper_factory(_cherrypy_wsgi_call, enable_if=None),
-                'cherrypy._cprequest.Request.run': function_wrapper_factory(_cherrypy_respond_wrapper, enable_if=None),
+                'cherrypy.Application.__call__': function_wrapper_factory(_cherrypy_wsgi_call, enable_if=None,
+                                                                          state='web'),
+                'cherrypy._cprequest.Request.run': function_wrapper_factory(_cherrypy_respond_wrapper, enable_if=None,
+                                                                          state='wsgi'),
             }
         )
 
