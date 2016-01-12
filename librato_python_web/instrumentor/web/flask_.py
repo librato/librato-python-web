@@ -42,80 +42,18 @@ STATE_NAME = 'web'
 logger = getCustomLogger(__name__)
 
 
-@contextmanager
-def _flask_add_url_rule(self, route, *args, **kwargs):
-    FlaskInstrumentor.urls.extend([route])
-    agent_api_config.declare('urls', FlaskInstrumentor.urls)
-    yield
-    _publish_config()
-
-
-def get_fw_version():
-    """
-    Tries to determine flask restful package version
-    """
-    if not FlaskInstrumentor.fw_version:
-        try:
-            import pkg_resources
-            FlaskInstrumentor._fw_version = pkg_resources.require("flask")[0].version
-            agent_api_config.declare('fw_version', FlaskInstrumentor.fw_version)
-        except:
-            # Might fail due to setuptools dependency
-            pass
-
-
-def _publish_config():
-    """
-    Publish the configuration
-    """
-    get_fw_version()
-    agent_api_config.publish()
-
-
-_context = threading.local()
-
-
-def _before_request():
-    try:
-        from flask import request
-        route = request.url_rule.rule if request.url_rule else None
-        context.push_state(STATE_NAME)
-        context.push_tag('web.route', route)
-        context.push_tag('web.method', request.method)
-        telemetry.count('web.requests')
-        Timing.push_timer()
-    except:
-        logger.exception('before_request instrumentation failure')
-
-
 def _after_request(response):
-    try:
-        context.pop_state(STATE_NAME)
-        if response.status_code:
-            telemetry.count('web.status.%ixx' % floor(response.status_code / 100))
-    except:
-        logger.exception('after_request instrumentation failure')
-    finally:
-        return response
+    # We need this since the response object isn't available in main function wrapper below (flask_dispatch).
+    # Might not get called in the event of an application error.
+    if response.status_code:
+        telemetry.count('web.status.%ixx' % floor(response.status_code / 100))
+    return response
 
 
 def _teardown_request(e=None):
-    try:
-        if e:
-            telemetry.count('web.errors')
-    finally:
-        try:
-            elapsed, net_elapsed = Timing.pop_timer()
-            telemetry.record('web.response.latency', elapsed)
-            telemetry.record('app.response.latency', net_elapsed)
-            try:
-                context.pop_tag()
-                context.pop_tag()
-            except:
-                logger.exception('Problem popping contexts')
-        except:
-            logger.exception('Teardown handler failed')
-            raise
+    if e:
+        telemetry.count('web.errors')
+        telemetry.count('web.status.5xx')
 
 
 def _flask_app(f):
@@ -123,7 +61,6 @@ def _flask_app(f):
         try:
             a = f(*args, **keywords)
             app = args[0]
-            app.before_request(_before_request)
             app.after_request(_after_request)
             app.teardown_request(_teardown_request)
             return a
@@ -131,6 +68,27 @@ def _flask_app(f):
             raise e
         finally:
             pass
+    return decorator
+
+
+def _flask_dispatch(f):
+    def decorator(*args, **keywords):
+        try:
+            from flask import request
+            route = request.url_rule.rule if request.url_rule else None
+            context.push_tag('web.route', route)
+            context.push_tag('web.method', request.method)
+            telemetry.count('web.requests')
+            Timing.push_timer()
+
+            return f(*args, **keywords)
+        finally:
+            elapsed, net_elapsed = Timing.pop_timer()
+            telemetry.record('web.response.latency', elapsed)
+            telemetry.record('app.response.latency', net_elapsed)
+            context.pop_tag()
+            context.pop_tag()
+
     return decorator
 
 
@@ -148,14 +106,12 @@ def _flask_wsgi_call(f):
 class FlaskInstrumentor(BaseInstrumentor):
     required_class_names = ['flask']
 
-    fw_version = None
-    urls = []
-
     def __init__(self):
         super(FlaskInstrumentor, self).__init__(
             {
                 'flask.app.Flask.__init__': function_wrapper_factory(_flask_app, enable_if=None),
-                'flask.app.Flask.add_url_rule': contextmanager_wrapper_factory(_flask_add_url_rule, enable_if=None),
+                'flask.app.Flask.dispatch_request': function_wrapper_factory(_flask_dispatch, enable_if=None,
+                                                                             state='web'),
                 'flask.app.Flask.__call__': function_wrapper_factory(_flask_wsgi_call, enable_if=None, state='wsgi'),
             }
         )
