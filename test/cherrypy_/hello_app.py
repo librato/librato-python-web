@@ -31,7 +31,7 @@ from cherrypy import tools
 class HelloWorld(object):
     @cherrypy.expose
     def index(self):
-        cherrypy.response.headers['Content-Type']= 'text/plain'
+        cherrypy.response.headers['Content-Type'] = 'text/plain'
         return "Hello world!"
 
     @cherrypy.expose
@@ -41,12 +41,12 @@ class HelloWorld(object):
 
     @cherrypy.expose
     def notfound(self):
-        cherrypy.response.headers['Content-Type']= 'text/plain'
+        cherrypy.response.headers['Content-Type'] = 'text/plain'
         raise cherrypy.NotFound("Verify this text!")
 
     @cherrypy.expose
     def error(self):
-        cherrypy.response.headers['Content-Type']= 'text/plain'
+        cherrypy.response.headers['Content-Type'] = 'text/plain'
         raise cherrypy.HTTPError(status=505, message="Internal error!")
 
     @cherrypy.expose
@@ -55,4 +55,4 @@ class HelloWorld(object):
 
 
 if __name__ == '__main__':
-   cherrypy.quickstart(HelloWorld())
+    cherrypy.quickstart(HelloWorld())

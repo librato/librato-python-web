@@ -24,11 +24,13 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import bootstrap        # Initialize the instrumentation
 import unittest
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 
+import bootstrap        # Initialize the instrumentation
 import io_app
 
 

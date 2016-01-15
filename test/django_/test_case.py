@@ -6,6 +6,9 @@ from django.test import SimpleTestCase as TestCase
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 
+
+import bootstrap    # Initialize instrumentation
+
 os.environ['DJANGO_SETTINGS_MODULE'] = 'test_site.settings'
 django.setup()
 

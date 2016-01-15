@@ -1,0 +1,4 @@
+cherrypy
+pytest
+nose
+urllib2

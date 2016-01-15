@@ -32,6 +32,7 @@ from cherrypy.test import helper
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 
+import bootstrap    # Initialize instrumentation
 import state_app
 
 
