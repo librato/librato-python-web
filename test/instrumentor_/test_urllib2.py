@@ -28,6 +28,9 @@ import unittest
 import urllib2
 
 from externaltest_base import BaseExternalTest
+from librato_python_web.instrumentor.external.urllib2_ import Urllib2Instrumentor
+
+Urllib2Instrumentor().run()
 
 
 class Urllib2Test(BaseExternalTest, unittest.TestCase):

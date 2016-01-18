@@ -26,9 +26,8 @@ from contextlib import contextmanager
 import unittest
 from librato_python_web.api import context
 
-from test_reporter import TestTelemetryReporter
 from librato_python_web.instrumentor.instrument import generator_wrapper_factory
-from librato_python_web.instrumentor.telemetry import generate_record_telemetry
+from librato_python_web.instrumentor.telemetry import generate_record_telemetry, TestTelemetryReporter
 from librato_python_web.instrumentor import instrument, util
 from librato_python_web.instrumentor import telemetry
 
@@ -54,7 +53,8 @@ class InstrumentTest(unittest.TestCase):
         pass
 
     def test_get_class_by_name(self):
-        a_class = instrument.get_class_by_name('instrumentor_.test_instrument.A')
+        class_name = ".".join([A.__module__, A.__name__])
+        a_class = instrument.get_class_by_name(class_name)
         self.assertEqual(A, a_class)
 
     def test_replace_method(self):

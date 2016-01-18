@@ -28,6 +28,9 @@ import unittest
 import requests
 
 from externaltest_base import BaseExternalTest
+from librato_python_web.instrumentor.external.requests_ import RequestsInstrumentor
+
+RequestsInstrumentor().run()
 
 
 class RequestsTest(BaseExternalTest, unittest.TestCase):

@@ -26,7 +26,10 @@
 from datatest_base import BaseDataTest
 import unittest
 import sqlite3
-# from librato_python_web.instrumentor.data.sqlite import SqliteInstrumentor
+
+from librato_python_web.instrumentor.data.sqlite import SqliteInstrumentor
+
+SqliteInstrumentor().run()
 
 
 class SqliteTest(BaseDataTest, unittest.TestCase):
