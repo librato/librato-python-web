@@ -8,9 +8,9 @@
 
 `docker run -d --name postgres-test-server -p 5432:5432 -e POSTGRES_DB=test postgres`
 
-* Launch the test as shown.
+* Launch the test, e.g. as shown.
 
-`LIBRATO_INSTRUMENT_PYTHON=1 python -m unittest instrumentor_.test_psycopg2`
+`python -m unittest instrumentor_.test_psycopg2`
 
 
 ## Testing mysql
@@ -23,9 +23,9 @@
 
 `docker run -d --name mysql-test-server -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=test -v $PWD/instrumentor_/mysql_test.cnf  mysql:5.6`
 
-* Launch the test as shown below.
+* Launch the test, e.g. as shown below.
 
-`LIBRATO_INSTRUMENT_PYTHON=1 python -m unittest instrumentor_.test_mysql`
+`python -m unittest instrumentor_.test_mysql`
 
 ## Testing web frameworks
 ```
