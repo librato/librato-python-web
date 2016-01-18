@@ -27,7 +27,10 @@
 import psycopg2
 import unittest
 
+from librato_python_web.instrumentor.data.psycopg2 import Psycopg2Instrumentor
 from datatest_base import BaseDataTest
+
+Psycopg2Instrumentor().run()
 
 
 class Psycopg2Test(BaseDataTest, unittest.TestCase):
