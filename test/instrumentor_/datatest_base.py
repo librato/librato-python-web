@@ -25,10 +25,14 @@
 
 
 from abc import abstractmethod
+import logging
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 from librato_python_web.instrumentor.context import add_tag, push_state, pop_state
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 
 class BaseDataTest(object):
@@ -57,6 +61,8 @@ class BaseDataTest(object):
             try:
                 push_state('web')
                 self.run_queries()
+            except Exception as e:
+                logger.exception("test_web_state")
             finally:
                 pop_state('web')
 
@@ -72,6 +78,8 @@ class BaseDataTest(object):
                 push_state('web')
                 push_state('model')
                 self.run_queries()
+            except Exception as e:
+                logger.exception("test_model_state")
             finally:
                 pop_state('web')
                 pop_state('model')
@@ -84,7 +92,10 @@ class BaseDataTest(object):
         Metrics shouldn't get reported outside a web state
         """
         with add_tag('test-context', 'data_test'):
-            self.run_queries()
+            try:
+                self.run_queries()
+            except Exception as e:
+                logger.exception("test_nostate")
 
         self.assertFalse(self.reporter.counts)
         self.assertFalse(self.reporter.records)

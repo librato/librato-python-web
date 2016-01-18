@@ -24,10 +24,13 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import MySQLdb
 import unittest
 
+from librato_python_web.instrumentor.data.mysqldb import MysqlInstrumentor
 from datatest_base import BaseDataTest
-import MySQLdb
+
+MysqlInstrumentor().run()
 
 
 class MysqlTest(BaseDataTest, unittest.TestCase):
