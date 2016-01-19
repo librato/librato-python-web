@@ -1,18 +1,18 @@
 librato-python-web
 ==================
 
-`librato-python-web` makes it easy to track the performance of Python Django and Flask web apps using [Librato](https://metrics.librato.com/). No code modifications to your apps are necessary and you can fine-tune the metrics you'd like monitored. In order to ensure there is no performance impact on your application, metrics are delivered asynchronously, using a bundled Statsd instance.
+`librato-python-web` makes it easy to track the performance of Python Django, Flask or CherryPy web apps using [Librato](https://metrics.librato.com/). No code modifications to your apps are necessary and you can fine-tune the metrics you'd like monitored. In order to ensure there is no performance impact on your application, metrics are delivered asynchronously, using a bundled Statsd instance.
 
 ## System requirements
 
 * Python 2.7.x (>=2.7.3) or Python 3.x
-* Django 1.8.6 or later
+* Django 1.8.6 or later, or Flask 0.10.1 or later, or CherryPy 4.0.0 or later
 * Linux or OSX
 
 ## Verified combinations
 * Python 2.7.3 or Python 3.4.3
-* Django 1.8.6
-* Ubuntu 14.04.3 LTS
+* Django 1.8.6 or Flask 0.10.1 or CherryPy 4.0.0
+* Ubuntu 14.04.3 LTS or OSX Yosemite 10.10.5
 
 
 ## Installation
@@ -29,6 +29,10 @@ pip install librato-python-web && librato-config --user <librato-email-address> 
   * For Flask, run
 ```
 pip install librato-python-web && librato-config --integration flask --user <librato-email-address> --api-token <librato-api-token> --app-id <app-id>
+```
+  * For CherryPy, run
+```
+pip install librato-python-web && librato-config --integration cherrypy --user <librato-email-address> --api-token <librato-api-token> --app-id <app-id>
 ```
 * Launch (or relaunch) your application in the same place where you ran the above one-liner, with the special librato-launch prefix. E.g., for Django,
 ```
