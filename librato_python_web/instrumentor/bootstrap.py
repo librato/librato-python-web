@@ -44,6 +44,7 @@ from .messaging.pykafka import PykafkaInstrumentor
 from .web.django_ import DjangoInstrumentor
 from .web.flask_ import FlaskInstrumentor
 from .web.cherrypy_ import CherryPyInstrumentor
+from .web.gunicorn_ import GunicornInstrumentor
 from .instrument import run_instrumentors, instrument_methods
 
 logger = custom_logging.getCustomLogger(__name__)
@@ -66,6 +67,7 @@ def init():
             'requests': RequestsInstrumentor,
             'urllib2': Urllib2Instrumentor,
             'cherrypy': CherryPyInstrumentor,
+            'gunicorn': GunicornInstrumentor,
         }
         _web_fxes = ['django', 'flask', 'cherrypy']
 
