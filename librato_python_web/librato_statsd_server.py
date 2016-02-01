@@ -26,6 +26,7 @@
 
 from librato_python_web.statsd.server.statsd_server import run_server
 
+
 def execute():
     run_server()
 

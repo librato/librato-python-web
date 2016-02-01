@@ -373,5 +373,3 @@ def execute():
 
     if options.create:
         _update(options.user, options.api_token, options.app_id, options.integration)
-
-
