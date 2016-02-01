@@ -41,7 +41,7 @@ def count(metric, incr=1):
     return _global.reporter.count(metric, incr)
 
 
-def record(metric, value):
+def record(metric, value, is_timer=False):
     """
     Records a given value as a data point for the given metric at the current timestamp.
 
@@ -53,7 +53,7 @@ def record(metric, value):
     :param metric: the given metric name
     :param value: the value to be recorded
     """
-    return _global.reporter.record(metric, value)
+    return _global.reporter.record(metric, value, is_timer)
 
 
 def event(event_type, dictionary=None):
@@ -147,7 +147,7 @@ class TestTelemetryReporter(TelemetryReporter):
     def get_count(self, metric):
         return self.counts[metric]
 
-    def record(self, metric, value):
+    def record(self, metric, value, is_timer=False):
         self.records[metric] = value
 
     def get_record(self, metric):
@@ -176,7 +176,7 @@ class StdoutTelemetryReporter(TelemetryReporter):
     def count(self, metric, incr=1):
         print(metric, context.get_tags(), incr)
 
-    def record(self, metric, value):
+    def record(self, metric, value, is_timer=False):
         print(metric, context.get_tags(), value)
 
     def event(self, type_name, dictionary=None):
@@ -191,8 +191,11 @@ class StatsdTelemetryReporter(TelemetryReporter):
     def count(self, metric, incr=1):
         self.client.increment(metric, incr)
 
-    def record(self, metric, value):
-        self.client.timing(metric, value * 1000)
+    def record(self, metric, value, is_timer=True):
+        if is_timer:
+            self.client.timing(metric, value * 1000)
+        else:
+            self.client.gauge(metric, value)
 
     def event(self, type_name, dictionary=None):
         # TBD: Not implemented
@@ -212,8 +215,11 @@ class StatsdTaggingTelemetryReporter(TelemetryReporter):
     def count(self, metric, incr=1):
         self.client.increment(metric, incr, tags=self.get_tags_dict())
 
-    def record(self, metric, value):
-        self.client.gauge(metric, value, tags=self.get_tags_dict())
+    def record(self, metric, value, is_timer=True):
+        if is_timer:
+            self.client.timing(metric, value * 1000, tags=self.get_tags_dict())
+        else:
+            self.client.gauge(metric, value, tags=self.get_tags_dict())
 
     def event(self, type_name, dictionary=None):
         # TBD: Not implemented

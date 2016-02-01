@@ -94,7 +94,7 @@ class CherryPyInstrumentor(BaseInstrumentor):
                 'cherrypy.Application.__call__': function_wrapper_factory(_cherrypy_wsgi_call, enable_if=None,
                                                                           state='web'),
                 'cherrypy._cprequest.Request.run': function_wrapper_factory(_cherrypy_respond_wrapper, enable_if=None,
-                                                                          state='wsgi'),
+                                                                            state='wsgi'),
             }
         )
 

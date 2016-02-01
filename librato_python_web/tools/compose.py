@@ -33,13 +33,15 @@ DEFAULT_PERIOD = 60
 
 def s_(metric, source=DYNAMIC_SOURCE, period=None, function=None):
     if period and function:
-        return 's("{}.{}", "{}", {{period: "{}", function: "{}"}})'.format(METRIC_PREFIX, metric, source, period, function)
+        return 's("{}.{}", "{}", {{period: "{}", function: "{}"}})'.format(METRIC_PREFIX, metric, source, period,
+                                                                           function)
     elif period:
         return 's("{}.{}", "{}", {{period: "{}"}})'.format(METRIC_PREFIX, metric, source, period)
     elif function:
         return 's("{}.{}", "{}", {{function: "{}"}})'.format(METRIC_PREFIX, metric, source, function)
     else:
         return 's("{}.{}", "{}")'.format(METRIC_PREFIX, metric, source)
+
 
 def timeshift_(shift, series):
     return 'timeshift("{}", {})'.format(shift, series)
@@ -68,8 +70,10 @@ def scale_(series, factor):
 def derive_(series, detect_reset="true"):
     return 'derive({}, {{detect_reset: "{}"}})'.format(series, detect_reset)
 
+
 def mean_(*args):
     return 'mean([{}])'.format(', '.join(args))
+
 
 def rate_(metric, source=DYNAMIC_SOURCE, period=DEFAULT_PERIOD, duration=DEFAULT_PERIOD):
     return 'rate(sum([derive(s("{}.{}", "{}", {{period:"{}"}}), {{detect_reset: "true"}})]), {{duration:"{}"}})'.format(

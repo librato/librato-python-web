@@ -113,7 +113,7 @@ def wraps(wrapped, assigned=functools.WRAPPER_ASSIGNMENTS, updated=functools.WRA
     :return: the wrapped method
     """
     return functools.wraps(wrapped, assigned=filter(lambda a: hasattr(wrapped, a), assigned),
-        updated=filter(lambda a: hasattr(wrapped, a), updated))
+                           updated=filter(lambda a: hasattr(wrapped, a), updated))
 
 
 def prepend_to_tuple(t, value):

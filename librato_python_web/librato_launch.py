@@ -26,6 +26,7 @@
 
 from librato_python_web.tools.launch import main as launch
 
+
 def execute():
     launch()
 

@@ -26,6 +26,7 @@
 
 from librato_python_web.tools.configure import execute as configure
 
+
 def execute():
     configure()
 

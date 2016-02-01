@@ -40,8 +40,11 @@ librato-launch python manage.py runserver
 ```
 * Charts will now start to appear on your space. A number of new metrics will also start to appear in your Librato account.
 
-## Known Issues
-* Flask: Unhandled application exceptions might cause negative wsgi response time latencies to show up in the dashboard.
+## Gunicorn
+Alter the gunicorn command line to send metrics to the bundled StatsD instance. For example,
+```
+librato-launch gunicorn --statsd-host=127.0.0.1:8142 wsgi-module:app
+```
 
 ## Copyright
 
