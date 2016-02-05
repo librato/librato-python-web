@@ -82,8 +82,20 @@ class Server(object):
         self.expire = expire
         self.hostname = socket.gethostname()
 
+        parts = librato_hostname.split("://")
+        if len(parts) > 2:
+            raise ValueError("Malformed hostname: {}".format(librato_hostname))
+        elif len(parts) == 2:
+            protocol, librato_hostname = parts
+            if protocol not in ["http", "https"]:
+                raise ValueError("Unsupported protocol: {}".format(protocol))
+        else:
+            protocol = "https"
+
         self.api = librato.connect(librato_user, librato_api_token,
-                                   hostname=librato_hostname, sanitizer=librato.sanitize_metric_name)
+                                   hostname=librato_hostname,
+                                   protocol=protocol,
+                                   sanitizer=librato.sanitize_metric_name)
 
         self.counters = {}
         self.timers = {}
