@@ -49,7 +49,8 @@ def _manage_workers(f):
 
         try:
             arbiter = args[0]
-            telemetry.record('gunicorn.workers', arbiter._last_logged_active_worker_count, is_timer=False)
+            telemetry.record('gunicorn.workers', arbiter._last_logged_active_worker_count, is_timer=False,
+                             reporter='gunicorn')
         except Exception, e:
             logger.exception("Instrumentation error while reporting gunicorn.workers")
 
@@ -67,7 +68,7 @@ def _worker_notify(f):
             now = int(time.time())
             threshold = int(60*floor(now/60))
             if not __globals.last_reported or __globals.last_reported < threshold:
-                telemetry.count("gunicorn.active_workers", 1)
+                telemetry.count("gunicorn.active_workers", 1, reporter='gunicorn')
                 __globals.last_reported = now
         except Exception, e:
             logger.exception("Instrumentation error while reporting gunicorn.active_workers")

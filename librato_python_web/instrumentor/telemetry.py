@@ -11,11 +11,10 @@ logger = getCustomLogger(__name__)
 
 # noinspection PyClassHasNoInit
 class _global:
-    reporter = None
-    """:type: TelemetryReporter"""
+    reporters = {}
 
 
-def set_reporter(reporter):
+def set_reporter(reporter, name='web'):
     """
     Sets the reporter for configuration information.
 
@@ -24,10 +23,10 @@ def set_reporter(reporter):
     :param reporter: the reporter instance
     :type reporter: TelemetryReporter
     """
-    _global.reporter = reporter
+    _global.reporters[name] = reporter
 
 
-def count(metric, incr=1):
+def count(metric, incr=1, reporter='web'):
     """
     Increment the count for the given metric by the given increment.
 
@@ -38,10 +37,10 @@ def count(metric, incr=1):
     :param metric: the given metric name
     :param incr: the value by which it is incremented
     """
-    return _global.reporter.count(metric, incr)
+    return _global.reporters[reporter].count(metric, incr)
 
 
-def record(metric, value, is_timer=False):
+def record(metric, value, is_timer=True, reporter='web'):
     """
     Records a given value as a data point for the given metric at the current timestamp.
 
@@ -53,10 +52,10 @@ def record(metric, value, is_timer=False):
     :param metric: the given metric name
     :param value: the value to be recorded
     """
-    return _global.reporter.record(metric, value, is_timer)
+    return _global.reporters[reporter].record(metric, value, is_timer)
 
 
-def event(event_type, dictionary=None):
+def event(event_type, dictionary=None, reporter='web'):
     """
     Reports an event of a given type.
 
@@ -75,10 +74,10 @@ def event(event_type, dictionary=None):
     :param event_type: descriptor for event type
     :param dictionary: additional values for event
     """
-    _global.reporter.event(event_type, dictionary)
+    _global.reporters[reporter].event(event_type, dictionary)
 
 
-def telemetry_context_manager(type_name='resource'):
+def telemetry_context_manager(type_name='resource', reporter='web'):
     """
     Records count and latency metrics for wrapped block
 
@@ -91,24 +90,24 @@ def telemetry_context_manager(type_name='resource'):
             yield
         finally:
             elapsed, _ = Timing.pop_timer()
-            record_telemetry(type_name, elapsed)
+            record_telemetry(type_name, elapsed, reporter)
 
     return decorator
 
 
-def record_telemetry(type_name, elapsed):
-    count(type_name + 'requests')
-    record(type_name + 'latency', elapsed)
+def record_telemetry(type_name, elapsed, reporter='web'):
+    count(type_name + 'requests', reporter=reporter)
+    record(type_name + 'latency', elapsed, reporter=reporter)
 
 
-def generate_record_telemetry(type_name):
-    return lambda elapsed: record_telemetry(type_name, elapsed)
+def generate_record_telemetry(type_name, reporter='web'):
+    return lambda elapsed: record_telemetry(type_name, elapsed, reporter)
 
 
-def increment_count(type_name='resource'):
+def increment_count(type_name='resource', reporter='web'):
     @contextmanager
     def wrapper_func(*args, **keywords):
-        count(type_name + 'requests')
+        count(type_name + 'requests', reporter=reporter)
         yield
 
     return wrapper_func
@@ -147,7 +146,7 @@ class TestTelemetryReporter(TelemetryReporter):
     def get_count(self, metric):
         return self.counts[metric]
 
-    def record(self, metric, value, is_timer=False):
+    def record(self, metric, value, is_timer=True):
         self.records[metric] = value
 
     def get_record(self, metric):
@@ -176,7 +175,7 @@ class StdoutTelemetryReporter(TelemetryReporter):
     def count(self, metric, incr=1):
         print(metric, context.get_tags(), incr)
 
-    def record(self, metric, value, is_timer=False):
+    def record(self, metric, value, is_timer=True):
         print(metric, context.get_tags(), value)
 
     def event(self, type_name, dictionary=None):
@@ -184,9 +183,10 @@ class StdoutTelemetryReporter(TelemetryReporter):
 
 
 class StatsdTelemetryReporter(TelemetryReporter):
-    def __init__(self, port=8142):
+    def __init__(self, port=8142, prefix=None):
         super(StatsdTelemetryReporter, self).__init__()
-        self.client = statsd_client.Client(port=port)
+        self.client = statsd_client.Client(port=port, prefix=prefix)
+        self.prefix = prefix
 
     def count(self, metric, incr=1):
         self.client.increment(metric, incr)

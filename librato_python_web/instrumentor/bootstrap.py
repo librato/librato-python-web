@@ -88,19 +88,17 @@ def init():
         if 'LIBRATO_INTEGRATION' in os.environ:
             general.set_option('integration', os.environ.get('LIBRATO_INTEGRATION'))
 
+        integration = general.get_option('integration', 'django')
+        logger.info("Integration = %s", integration)
+
         if general.get_option('statsd.enabled', False):
             logger.debug("Using Statsd reporter")
-            telemetry.set_reporter(StatsdTelemetryReporter(general.get_option('statsd.port', 8142)))
-
-        if general.get_option('config.enabled', False):
-            logger.debug("Using legacy config reporter")
-            config.config.set_reporter(LegacyConfigReporter())
+            statsd_port = general.get_option('statsd.port', 8142)
+            telemetry.set_reporter(StatsdTelemetryReporter(statsd_port, prefix=integration))
+            telemetry.set_reporter(StatsdTelemetryReporter(statsd_port), name='gunicorn')
 
         libs = general.get_option('libraries')
         logger.info("Specified libraries = %s", libs)
-
-        integration = general.get_option('integration', 'django')
-        logger.info("Integration = %s", integration)
 
         if not libs:
             # By default, let us exclude the other web frameworks

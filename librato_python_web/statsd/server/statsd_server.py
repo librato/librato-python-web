@@ -72,7 +72,7 @@ class Server(object):
     def __init__(self, librato_user, librato_api_token,
                  pct_threshold=90, debug=False, flush_interval=60000,
                  no_aggregate_counters=False, expire=0, source_prefix='',
-                 librato_hostname=LIBRATO_HOSTNAME, prefix='statsd'):
+                 librato_hostname=LIBRATO_HOSTNAME, prefix=None):
         self.buf = 8192
         self.flush_interval = float(flush_interval/1000)
         self.pct_threshold = pct_threshold
@@ -107,7 +107,6 @@ class Server(object):
             self.source = '{}-{}'.format(source_prefix, self.hostname)
         else:
             self.source = self.hostname
-        self.prefix = prefix
 
     def process(self, data):
         # the data is a sequence of newline-delimited metrics
@@ -296,16 +295,19 @@ class Server(object):
         tags_dict = dict(tags) if tags else {}
         if 'source' not in tags_dict:
             tags_dict['source'] = self.source
-        queue.add('{}.{}'.format(self.prefix, key), value, metric_type, measure_time=timestamp,
-                  source=self.source)
+        metric = '{}.{}'.format(self.prefix, key) if self.prefix else key
+        queue.add(metric, value, metric_type, measure_time=timestamp, source=self.source)
+        logger.debug("%s %s => %s", metric_type, metric, value)
 
     def _add_gauge_to_queue(self, queue, key, value, timestamp, min_=None, max_=None, count=1,
                             sum_=None, sum_squares=None, tags=None):
         tags_dict = dict(tags) if tags else {}
         if 'source' not in tags_dict:
             tags_dict['source'] = self.source
-        queue.add('{}.{}'.format(self.prefix, key), None, 'gauge', measure_time=timestamp,
+        metric = '{}.{}'.format(self.prefix, key) if self.prefix else key
+        queue.add(metric, None, 'gauge', measure_time=timestamp,
                   source=self.source, count=count, sum=sum_, max=max_, min=min_, sum_squares=sum_squares)
+        logger.debug("gauge %s => %s", metric, value)
 
     def _set_timer(self):
         self._timer = threading.Timer(self.flush_interval, self.on_timer)
@@ -371,7 +373,6 @@ class ServerDaemon(Daemon):
                         no_aggregate_counters=options.no_aggregate_counters,
                         expire=options.expire,
                         source_prefix=options.app_id,
-                        prefix=options.integration,
                         librato_hostname=options.metrics_hostname)
 
         server.serve(options.hostname, options.port)
