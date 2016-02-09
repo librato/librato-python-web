@@ -28,7 +28,13 @@
 `python -m unittest instrumentor_.test_mysql`
 
 ## Testing web frameworks
+* To test Django or Flask, cd to the respective directory and run unittest.
 ```
-cd flask_    # or cherry_ or django_
+cd flask_    # or django_
 python -m unittest discover
+```
+* To test CherryPy use nose.
+```
+cd cherrypy_
+nosetests
 ```
