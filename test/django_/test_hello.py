@@ -33,8 +33,8 @@ class HelloTests(DjangoTestCase):
         expected_gauge_metrics = ['app.response.latency', 'web.response.latency']
         self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
 
-        self.assertEqual(self.reporter.counts,
-                         {'web.status.3xx': 1, 'web.requests': 1, 'logging.warning.requests': 1})
+        self.assertDictContainsSubset(self.reporter.counts,
+                                      {'web.status.3xx': 1, 'web.requests': 1, 'logging.warning.requests': 1})
 
     def test_notfound(self):
         r = self.client.get('/hello/notfound/')

@@ -30,7 +30,7 @@ from librato_python_web.api.context import push_tag, pop_tag, add_tag, get_tags,
 
 
 def run():
-    print "running"
+    print("running")
 
 
 class ImportTest(unittest.TestCase):

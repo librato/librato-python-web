@@ -60,7 +60,7 @@ class UtilTest(unittest.TestCase):
         for _ in range(0, 5000):
             for i in range(0, 100):
                 aliases.generate_alias('/foo/bar/zap/%s' % i)
-        print 'no cache', (time.time()-t)/500000
+        print('no cache', (time.time()-t)/500000)
 
         aliases = AliasGenerator(200)
         # pre-cache
@@ -71,7 +71,7 @@ class UtilTest(unittest.TestCase):
         for _ in range(0, 5000):
             for i in range(0, 100):
                 aliases.generate_alias('/foo/bar/zap/%s' % i)
-        print 'cache', (time.time()-t)/500000
+        print('cache', (time.time()-t)/500000)
 
 if __name__ == '__main__':
     unittest.main()

@@ -27,9 +27,9 @@ import inspect
 import time
 import sys
 
-from peak.util.proxies import ObjectWrapper
 import six
 
+from librato_python_web.instrumentor.objproxies import ObjectWrapper
 from librato_python_web.instrumentor import context
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 from librato_python_web.instrumentor.util import wraps, is_class_available, get_class_by_name, wrap_method

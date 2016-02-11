@@ -142,7 +142,7 @@ class AliasGenerator(object):
         alias = self.get_alias(str_value)
         if not alias:
             h = hashlib.md5()
-            h.update(str_value)
+            h.update(str_value.encode('utf-8'))
             alias = h.hexdigest()
             self.cache[str_value] = alias
             if len(self.cache) > self.MAX_CACHE:

@@ -24,6 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+from os import environ
 import MySQLdb
 import unittest
 
@@ -43,7 +44,10 @@ class MysqlTest(BaseDataTest, unittest.TestCase):
         """
 
         # connect (params impl dependent) dsn data source name, host hostname, database db name
-        conn = MySQLdb.connect(host="127.0.0.1", user="root", passwd="root", db="test")
+        dbname = environ.get('MYSQL_TEST_DB', 'test')
+        dbuser = environ.get('MYSQL_TEST_USER', 'root')
+        dbpassword = environ.get('MYSQL_TEST_PASSWORD', '')
+        conn = MySQLdb.connect(host="127.0.0.1", user=dbuser, passwd=dbpassword, db=dbname)
 
         # Exception logging (see types: https://www.python.org/dev/peps/pep-0249/#exceptions)
         cur = conn.cursor()

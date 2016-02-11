@@ -367,7 +367,7 @@ class UtilTest(unittest.TestCase):
 
     def test_proxy_native_instance(self):
         import psycopg2
-        from peak.util.proxies import ObjectWrapper
+        from librato_python_web.instrumentor.objproxies import ObjectWrapper
 
         state = {}
 
@@ -403,7 +403,7 @@ class UtilTest(unittest.TestCase):
 
     def test_override_proxy_native_instance(self):
         import psycopg2
-        from peak.util.proxies import ObjectWrapper
+        from librato_python_web.instrumentor.objproxies import ObjectWrapper
 
         state = defaultdict(int)
 
@@ -454,7 +454,7 @@ class UtilTest(unittest.TestCase):
 
     def test_instrumented_proxy_native_instance(self):
         import psycopg2
-        from peak.util.proxies import ObjectWrapper
+        from objproxies import ObjectWrapper
 
         class MeasureWrapper(ObjectWrapper):
             def __init__(self, subject, measured_methods, metric_name, state_name, enable_if, disable_if):
