@@ -24,6 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+from os import environ
 import psycopg2
 import unittest
 
@@ -39,7 +40,9 @@ class Psycopg2Test(BaseDataTest, unittest.TestCase):
 
     def run_queries(self):
         # connect (params impl dependent) dsn data source name, host hostname, database db name
-        conn = psycopg2.connect("host=localhost dbname=test user=postgres")
+        dbname = environ.get('POSTGRES_TEST_DB', 'test')
+        dbuser = environ.get('POSTGRES_TEST_USER', 'postgres')
+        conn = psycopg2.connect(host="localhost", dbname=dbname, user=dbuser)
 
         #
         # apilevel

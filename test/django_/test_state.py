@@ -1,4 +1,5 @@
 
+import json
 import unittest
 from test_case import DjangoTestCase
 
@@ -8,7 +9,7 @@ class StateTests(DjangoTestCase):
         r = self.client.get('/state/')
 
         self.assertEqual(r.status_code, 200)
-        states = r.json()
+        states = json.loads(r.content)
 
         self.assertEqual(len(states), 1)
         self.assertIn('web', states)
