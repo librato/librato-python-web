@@ -221,8 +221,8 @@ def pop_tag():
         # e is ('route', '/v1/foo')
     :return: the entry on the top of the stack
     """
-    o = _get_stack().pop()
-    return o
+    stk = _get_stack()
+    return stk.pop() if stk else None
 
 
 def fail():
