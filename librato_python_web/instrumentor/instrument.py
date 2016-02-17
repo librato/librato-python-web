@@ -131,7 +131,7 @@ def wrap_returned_instances(original_method, overrides):
         if hasattr(ret, '__class__'):
             # Partial ensures that wrapper method gets original method as first argument --
             # partial(func, *args, **keywords)
-            instrumented = {k: functools.partial(v, ret) for k, v in overrides.iteritems()}
+            instrumented = {k: functools.partial(v, ret) for k, v in six.iteritems(overrides)}
 
             # Create a dynamic proxy for a wrapped instance in which the instrumented methods are
             return OverrideWrapper(ret, instrumented)
