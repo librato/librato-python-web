@@ -52,10 +52,9 @@ class ImportTest(unittest.TestCase):
         self.assertListEqual([], get_tags())
 
     def test_pushPopTooMuch(self):
-        with self.assertRaises(IndexError):
-            push_tag('foo', 1)
-            pop_tag()
-            pop_tag()
+        push_tag('foo', 1)
+        self.assertTrue(pop_tag())
+        self.assertFalse(pop_tag())
 
     def test_set(self):
         with add_all_tags([('foo', 1)]):
