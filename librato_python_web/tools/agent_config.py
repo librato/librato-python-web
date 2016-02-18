@@ -85,7 +85,7 @@ class config_info(object):
     pass
 
 
-def load_config(args=sys.argv[1:]):
+def load_config(args=sys.argv[1:], must_exist=True):
     """ Load configuration with the following priority """
     """ a. Command line params """
     """ b. Configuration file """
@@ -115,6 +115,10 @@ def load_config(args=sys.argv[1:]):
 
     options = parser.parse_args(args)
     _globals.config_path = options.config_path
+
+    if must_exist and not os.path.isfile(_globals.config_path):
+        print "Can't open configuration file: {}".format(_globals.config_path)
+        sys.exit(1)
 
     # Drop the null values argparse supplies
     new_options = config_info()
@@ -150,7 +154,7 @@ def update_config_from_config_file(options=None, config_file=None):
                 if key in agent_conf and not hasattr(options, key):
                     setattr(options, key, agent_conf.get(key))
     else:
-        raise ValueError("{} is not a file".format(config_file))
+        logger.info("Config file %s doesn't exist", config_file)
 
     return options
 
