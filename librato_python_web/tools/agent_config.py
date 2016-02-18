@@ -77,17 +77,23 @@ defaults = {
 }
 
 
+class _globals(object):
+    config_path = "./agent-conf.json"
+
+
 class config_info(object):
     pass
 
 
-def load_config(args=sys.argv[1:]):
+def load_config(args=sys.argv[1:], must_exist=True):
     """ Load configuration with the following priority """
     """ a. Command line params """
     """ b. Configuration file """
     """ c. Baked in defaults, where appropriate """
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--debug', help='debug mode')
+    parser.add_argument('--config-path', help='configuration file path (default: {})'.format(python_agent_conf),
+                        default=python_agent_conf)
     parser.add_argument('-c', '--create', help='create librato space (default: false)')
     parser.add_argument('-H', '--hostname', help='hostname to run on (default: localhost')
     parser.add_argument('-p', '--port', help='port to run on (default: 8142)', type=int)
@@ -108,6 +114,11 @@ def load_config(args=sys.argv[1:]):
     parser.add_argument('-I', '--integration', help='Librato Python integration (django, flask or cherrypy)')
 
     options = parser.parse_args(args)
+    _globals.config_path = options.config_path
+
+    if must_exist and not os.path.isfile(_globals.config_path):
+        print("Can't open configuration file: {}".format(_globals.config_path))
+        sys.exit(1)
 
     # Drop the null values argparse supplies
     new_options = config_info()
@@ -129,7 +140,10 @@ def load_config(args=sys.argv[1:]):
     return options
 
 
-def update_config_from_config_file(options=None, config_file=python_agent_conf):
+def update_config_from_config_file(options=None, config_file=None):
+    if not config_file:
+        config_file = _globals.config_path
+
     options = options or config_info()
 
     if os.path.isfile(config_file):
@@ -139,11 +153,16 @@ def update_config_from_config_file(options=None, config_file=python_agent_conf):
             for key in config_options:
                 if key in agent_conf and not hasattr(options, key):
                     setattr(options, key, agent_conf.get(key))
+    else:
+        logger.info("Config file %s doesn't exist", config_file)
 
     return options
 
 
-def update_config_file(agent_settings, config_file=python_agent_conf):
+def update_config_file(agent_settings, config_file=None):
+    if not config_file:
+        config_file = _globals.config_path
+
     with open(config_file, 'w') as conf:
         json.dump(agent_settings, conf, indent=3)
 

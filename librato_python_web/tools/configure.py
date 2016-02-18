@@ -33,6 +33,7 @@ from .compose import s_, timeshift_, sum_, subtract_, scale_, derive_, \
 from .librato.spaces import Api
 
 
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
 SPACE_NAME = '{}:Python {} Application'
@@ -359,10 +360,10 @@ def _update(_user, _password, _app_id, _integration):
 
 
 def execute():
-    options = agent_config.load_config()
+    options = agent_config.load_config(must_exist=False)
 
     log_level = logging.DEBUG if options.debug else logging.WARNING
-    logging.basicConfig(level=log_level, format='%(asctime)s [%(levelname)s] %(message)s')
+    logging.getLogger().setLevel(log_level)
 
     (isvalid, errors) = agent_config.validate_config(options)
     if not isvalid:

@@ -50,7 +50,7 @@ from .instrument import run_instrumentors, instrument_methods
 logger = custom_logging.getCustomLogger(__name__)
 
 
-def init():
+def init(config_path=None):
     try:
         _wrapped = {
         }
@@ -71,11 +71,13 @@ def init():
         }
         _web_fxes = ['django', 'flask', 'cherrypy']
 
-        config_file = './agent-conf.json'
-        if os.path.isfile(config_file):
-            general.configure(config_file)
+        if not config_path:
+            config_path = os.environ.get('LIBRATO_CONFIG_PATH', "./agent-conf.json")
+
+        if os.path.isfile(config_path):
+            general.configure(config_path)
         else:
-            logger.info("Can't load configuration file: %s", config_file)
+            logger.info("Can't load configuration file: %s", config_path)
             # sys.exit(1)
 
         log_level = general.get_option("instrumentor.log_level", 30)
