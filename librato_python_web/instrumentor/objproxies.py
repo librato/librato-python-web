@@ -25,7 +25,7 @@
 
 
 """
-Adapted from objproxies (https://pypi.python.org/pypi/objproxies/0.9.4) and 
+Adapted from objproxies (https://pypi.python.org/pypi/objproxies/0.9.4) and
 ProxyTypes (https://pypi.python.org/pypi/ProxyTypes).
 Pruned and modified to work on Python 2 and 3.
 """

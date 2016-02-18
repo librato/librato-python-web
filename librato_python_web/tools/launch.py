@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 class _globals:
     subproc = None
+    config_path = None
 
 
 def enable_instrumentation():
@@ -53,6 +54,11 @@ def enable_instrumentation():
 def set_instrumentation_port(_port):
     logger.info("Setting statsd port to %s", _port)
     os.environ['LIBRATO_INSTRUMENTATION_PORT'] = str(_port)
+
+
+def set_config_path():
+    if _globals.config_path:
+        os.environ['LIBRATO_CONFIG_PATH'] = _globals.config_path
 
 
 def launch_statsd():
@@ -75,8 +81,11 @@ def launch_statsd():
 
         while True:
             try:
-                logging.info("launching StatsD as: %s", STATSD_ARGS)
-                _globals.subproc = subprocess.Popen(STATSD_ARGS)
+                args = STATSD_ARGS
+                if _globals.config_path:
+                    args.extend(['--config-path', _globals.config_path])
+                logging.info("launching StatsD as: %s", args)
+                _globals.subproc = subprocess.Popen(args)
                 rc = _globals.subproc.wait()
 
                 logging.info("StatsD terminated with code %s", rc)
@@ -120,10 +129,37 @@ def control_c_handler(signal, frame):
 
 
 def main():
-    options = agent_config.load_config([])  # Note that the we are ignoring the command args
+    index = 1
+    log_level = logging.WARN
+    while index < len(sys.argv) and sys.argv[index].startswith('-'):
+        opt = sys.argv[index]
 
-    log_level = logging.DEBUG if options.debug else logging.WARNING
+        if opt == '--info':
+            log_level = logging.INFO
+        elif opt == '--debug':
+            log_level = logging.DEBUG
+        elif opt.startswith('--config-path='):
+            _globals.config_path = opt.partition('=')[2]
+        elif opt == '--config-path':
+            index += 1
+            if index == len(sys.argv) or sys.argv[index].startswith('-'):
+                print("--config-path option requires an argument")
+                usage(1)
+            _globals.config_path = sys.argv[index]
+        elif opt in ['--help', '-h', '--usage', '-?']:
+            usage()
+        else:
+            print("Unknown option {}".format(opt))
+            usage(1)
+
+        index += 1
+
+    args = sys.argv[index:]
+
     logging.basicConfig(level=log_level, format='%(asctime)s [%(levelname)s] %(message)s')
+
+    config_args = ["--config-path", _globals.config_path] if _globals.config_path else []
+    options = agent_config.load_config(config_args)
 
     signal.signal(signal.SIGINT, control_c_handler)
 
@@ -132,31 +168,13 @@ def main():
         logger.error("Invalid Configuration:\n  %s", "\n  ".join(errors))
         sys.exit(2)
 
-    if len(sys.argv) >= 2 and sys.argv[1].startswith('-'):
-        opt = sys.argv[1]
-        if opt == '--info':
-            log_level = logging.INFO
-        elif opt == '--debug':
-            log_level = logging.DEBUG
-        elif opt in ['--help', '-h', '--usage', '-?']:
-            usage()
-        else:
-            print("Unknown option {}".format(opt))
-            usage(1)
-
-        args = sys.argv[2:]
-    elif len(sys.argv) >= 1:
-        if sys.argv[1].startswith('-'):
-            usage()
-        args = sys.argv[1:]
-    else:
-        usage()
-
     if args:
-        logging.basicConfig(level=log_level)
         enable_instrumentation()
         set_instrumentation_port(options.port)
+        set_config_path()
+
         launch_statsd()
+
         logging.info("launching: %s", args)
         subprocess.call(args)
         logging.info("finished")
