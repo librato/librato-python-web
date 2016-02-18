@@ -259,9 +259,9 @@ def _eval(args, keywords, expressions):
     final_failure = Exception
     if expressions is None:
         return None
-    for expression in expressions.split('|') if isinstance(expressions, basestring) else [expressions]:
+    for expression in expressions.split('|') if isinstance(expressions, six.string_types) else [expressions]:
         try:
-            if isinstance(expression, (int, long)):
+            if isinstance(expression, six.integer_types):
                 value = args[expression]
             elif expression.startswith('self'):
                 v = {'self': args[0]}
