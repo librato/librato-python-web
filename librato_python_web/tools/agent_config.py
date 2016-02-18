@@ -117,7 +117,7 @@ def load_config(args=sys.argv[1:], must_exist=True):
     _globals.config_path = options.config_path
 
     if must_exist and not os.path.isfile(_globals.config_path):
-        print "Can't open configuration file: {}".format(_globals.config_path)
+        print("Can't open configuration file: {}".format(_globals.config_path))
         sys.exit(1)
 
     # Drop the null values argparse supplies
