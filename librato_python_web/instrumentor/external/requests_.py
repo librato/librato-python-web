@@ -60,8 +60,8 @@ class RequestsInstrumentor(BaseInstrumentor):
         super(RequestsInstrumentor, self).__init__(
             {
                 # External calls are not recorded when in the context of a model operation
-                'requests.api.request': function_wrapper_factory(requests_request_time, state='external',
-                                                                 disable_if='model')
+                'requests.sessions.Session.send': function_wrapper_factory(requests_request_time, state='external',
+                                                                           disable_if='model')
             }
         )
 
