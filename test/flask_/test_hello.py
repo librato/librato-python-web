@@ -23,6 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import six
 import unittest
 
 from librato_python_web.instrumentor import telemetry
@@ -48,7 +49,7 @@ class HelloTestCase(unittest.TestCase):
 
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
         self.assertEqual(r.status_code, 200)
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
                            self.reporter.get_gauge_value('web.response.latency'))
 
@@ -60,7 +61,7 @@ class HelloTestCase(unittest.TestCase):
 
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
         self.assertEqual(r.status_code, 200)
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
 
         self.assertEqual(self.reporter.counts, {'web.status.2xx': 2, 'web.requests': 2})
 
@@ -71,17 +72,17 @@ class HelloTestCase(unittest.TestCase):
         self.assertEqual(r.status_code, 301)
 
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertEqual(self.reporter.counts, {'web.status.3xx': 1, 'web.requests': 1})
 
     def test_notfound(self):
         r = self.app.get('/notfound/')
 
         self.assertEqual(r.status_code, 404)
-        self.assertIn("Verify this text!", r.data)
+        self.assertIn("Verify this text!", r.data.decode())
 
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertEqual(self.reporter.counts, {'web.status.4xx': 1, 'web.requests': 1})
 
     def test_error(self):
@@ -90,7 +91,7 @@ class HelloTestCase(unittest.TestCase):
         self.assertEqual(r.status_code, 505)
 
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
 
         self.assertEqual(self.reporter.counts, {'web.status.5xx': 1, 'web.requests': 1})
 

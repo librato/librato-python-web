@@ -222,7 +222,8 @@ def pop_tag():
     :return: the entry on the top of the stack
     """
     stk = _get_stack()
-    return stk.pop() if stk else None
+    #return stk.pop() if stk else None
+    return stk.pop()
 
 
 def fail():

@@ -23,6 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from contextlib import contextmanager
+import six
 import unittest
 from librato_python_web.api import context
 
@@ -105,7 +106,7 @@ class InstrumentTest(unittest.TestCase):
         wrapped(wrapped_value)
         self.assertTrue(state.get('before'))
         self.assertTrue(state.get('after'))
-        self.assertEquals(wrapped_value, state.get('wrapped'))
+        self.assertEqual(wrapped_value, state.get('wrapped'))
 
     def test_contextmanager_wrapper(self):
         state = {
@@ -187,7 +188,7 @@ class InstrumentTest(unittest.TestCase):
         self.assertEqual(range_max - 1, i)
 
         self.assertLessEqual(0, reporter.get_record('test.latency'))
-        self.assertEquals(1, reporter.get_count('test.requests'))
+        self.assertEqual(1, reporter.get_count('test.requests'))
 
         reporter.record('test.latency', 0)
 
@@ -196,12 +197,12 @@ class InstrumentTest(unittest.TestCase):
         def trigger_generator_exit():
             # trigger the GeneratorExit when this goes out of scope
             iterator = wrapped_generator()
-            iterator.next()
+            six.next(iterator)
 
         trigger_generator_exit()
 
         self.assertLessEqual(0, reporter.get_record('test.latency'))
-        self.assertEquals(2, reporter.get_count('test.requests'))
+        self.assertEqual(2, reporter.get_count('test.requests'))
 
 if __name__ == '__main__':
     unittest.main()

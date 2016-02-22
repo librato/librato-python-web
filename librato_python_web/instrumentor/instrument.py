@@ -384,7 +384,7 @@ def generator_wrapper_factory(recorder, state=None, enable_if='web', disable_if=
                         context.push_state(state)
                         t = time.time()
                         try:
-                            v = gen.next()
+                            v = six.next(gen)
                         finally:
                             elapsed += time.time() - t
                             context.pop_state(state)

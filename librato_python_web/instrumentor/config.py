@@ -115,7 +115,7 @@ class ConfigReporter(object):
         config = self.config if config is None else config
         hasher = hashlib.md5() if md5 is None else md5
         if isinstance(config, dict):
-            for k in sorted(config.iterkeys()):
+            for k in sorted(config.keys()):
                 value = config.get(k)
                 if value:
                     self.internal_hash(value, hasher)

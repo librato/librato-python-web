@@ -395,7 +395,7 @@ class UtilTest(unittest.TestCase):
         self.assertTrue(state['before'])
         self.assertTrue(state['after'])
 
-        self.assertEquals(ObjectWrapper, type(cur))
+        self.assertEqual(ObjectWrapper, type(cur))
         cur.execute("SELECT 1")
         self.assertEqual((1,), cur.fetchone())
         cur.execute("SELECT 1, 2")
@@ -443,7 +443,7 @@ class UtilTest(unittest.TestCase):
         conn = psycopg2.extensions.connection(LOCAL_DSN)
         cur = conn.cursor()
 
-        self.assertEquals(MeasureWrapper, type(cur))
+        self.assertEqual(MeasureWrapper, type(cur))
         cur.execute("SELECT 1")
         self.assertEqual((1,), cur.fetchone())
         cur.execute("SELECT 1, 2")
@@ -503,7 +503,7 @@ class UtilTest(unittest.TestCase):
         conn = psycopg2.extensions.connection(LOCAL_DSN)
         cur = conn.cursor()
 
-        self.assertEquals(MeasureWrapper, type(cur))
+        self.assertEqual(MeasureWrapper, type(cur))
         cur.execute("SELECT 1")
         self.assertEqual((1,), cur.fetchone())
         cur.execute("SELECT 1, 2")
@@ -563,15 +563,15 @@ class UtilTest(unittest.TestCase):
                 return object.__new__(t)
 
         simple = Simple()
-        self.assertEquals(1, simple.foo)
-        self.assertEquals('barvalue', simple.bar)
-        self.assertEquals('zapped me', simple.zap('me'))
-        self.assertEquals(Simple, type(simple))
+        self.assertEqual(1, simple.foo)
+        self.assertEqual('barvalue', simple.bar)
+        self.assertEqual('zapped me', simple.zap('me'))
+        self.assertEqual(Simple, type(simple))
 
         simple = Fako(simple, {})
-        self.assertEquals(1, simple.foo)
-        self.assertEquals('barvalue', simple.bar)
-        self.assertEquals('zapped me', simple.zap('me'))
+        self.assertEqual(1, simple.foo)
+        self.assertEqual('barvalue', simple.bar)
+        self.assertEqual('zapped me', simple.zap('me'))
 
 if __name__ == '__main__':
     unittest.main()

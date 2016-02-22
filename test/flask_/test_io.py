@@ -25,6 +25,7 @@
 
 
 import bootstrap        # Initialize the instrumentation
+import six
 import unittest
 
 from librato_python_web.instrumentor import telemetry
@@ -55,7 +56,7 @@ class IOTestCase(unittest.TestCase):
             'data.sqlite.execute.latency'
         ]
         self.assertEqual(r.status_code, 200)
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
                            self.reporter.get_gauge_value('web.response.latency'))
 
@@ -72,7 +73,7 @@ class IOTestCase(unittest.TestCase):
             'external.http.response.latency'
         ]
         self.assertEqual(r.status_code, 200)
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
                            self.reporter.get_gauge_value('web.response.latency'))
 

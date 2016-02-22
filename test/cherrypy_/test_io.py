@@ -23,7 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
+import six
 import unittest
 import cherrypy
 from cherrypy.test import helper
@@ -57,7 +57,7 @@ class IOTestCase(helper.CPWebCase):
             'web.response.latency',
             'data.sqlite.execute.latency'
         ]
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
                            self.reporter.get_gauge_value('web.response.latency'))
 
@@ -74,7 +74,7 @@ class IOTestCase(helper.CPWebCase):
             'web.response.latency',
             'external.http.response.latency'
         ]
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
                            self.reporter.get_gauge_value('web.response.latency'))
 

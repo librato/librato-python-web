@@ -26,6 +26,7 @@
 
 from abc import abstractmethod
 import logging
+import six
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
@@ -67,7 +68,7 @@ class BaseDataTest(object):
                 pop_state('web')
 
         self.assertEqual(self.reporter.counts, self.expected_web_state_counts)
-        self.assertItemsEqual(self.reporter.records.keys(), self.expected_web_state_gauges)
+        six.assertCountEqual(self, self.reporter.records.keys(), self.expected_web_state_gauges)
 
     def test_model_state(self):
         """
