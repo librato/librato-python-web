@@ -25,7 +25,6 @@
 
 """ CherryPy instrumentation """
 
-import threading
 import time
 
 from librato_python_web.instrumentor import context as context

@@ -26,7 +26,6 @@
 """ Flask instrumentation """
 from contextlib import contextmanager
 from math import floor
-import threading
 import time
 
 from librato_python_web.instrumentor import config as agent_api_config

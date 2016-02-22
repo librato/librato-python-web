@@ -26,7 +26,6 @@
 """ Instruments Gunicorn to report active and configured worker counts """
 
 from math import floor
-import threading
 import time
 
 from librato_python_web.instrumentor import telemetry
