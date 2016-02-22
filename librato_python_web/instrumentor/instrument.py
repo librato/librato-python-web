@@ -418,10 +418,10 @@ def contextmanager_wrapper_factory(context_manager, mapping=None, state=None, en
         @wraps(f)
         def wrapper(*args, **keywords):
             if _should_be_instrumented(state, enable_if, disable_if):
-                tag_pairs = _build_key(mapping, args, keywords)
+                # Tags are ignored for now
+                # tag_pairs = _build_key(mapping, args, keywords)
                 try:
                     context.push_state(state)
-                    context.push_tags(tag_pairs)
                     with context_manager(*args, **keywords):
                         if hasattr(f, '__get__'):
                             self = args[0].__subject__ if hasattr(args[0], '__subject__') else args[0]
@@ -429,7 +429,6 @@ def contextmanager_wrapper_factory(context_manager, mapping=None, state=None, en
                         else:
                             return f(*args, **keywords)
                 finally:
-                    context.pop_tags(tag_pairs)
                     context.pop_state(state)
             else:
                 return f(*args, **keywords)

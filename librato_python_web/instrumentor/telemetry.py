@@ -173,13 +173,13 @@ class StdoutTelemetryReporter(TelemetryReporter):
         super(StdoutTelemetryReporter, self).__init__()
 
     def count(self, metric, incr=1):
-        print(metric, context.get_tags(), incr)
+        print(metric, incr)
 
     def record(self, metric, value, is_timer=True):
-        print(metric, context.get_tags(), value)
+        print(metric, value)
 
     def event(self, type_name, dictionary=None):
-        print(type_name, context.get_tags(), dictionary)
+        print(type_name, dictionary)
 
 
 class StatsdTelemetryReporter(TelemetryReporter):
@@ -203,42 +203,6 @@ class StatsdTelemetryReporter(TelemetryReporter):
 
     def _register_alias(self, alias, value):
         logger.debug("registering alias %s->%s", alias, value)
-        self.client.define_alias(alias, value)
-
-
-class StatsdTaggingTelemetryReporter(TelemetryReporter):
-    def __init__(self):
-        super(StatsdTaggingTelemetryReporter, self).__init__()
-        self.client = statsd_client.Client()
-        self.aliases = AliasGenerator()
-
-    def count(self, metric, incr=1):
-        self.client.increment(metric, incr, tags=self.get_tags_dict())
-
-    def record(self, metric, value, is_timer=True):
-        if is_timer:
-            self.client.timing(metric, value * 1000, tags=self.get_tags_dict())
-        else:
-            self.client.gauge(metric, value, tags=self.get_tags_dict())
-
-    def event(self, type_name, dictionary=None):
-        # TBD: Not implemented
-        pass
-
-    def get_tags_dict(self):
-        tags = OrderedDict()
-        for key, value in context.get_tags():
-            alias = self.aliases.get_alias(value)
-            if alias:
-                value = alias
-            elif self.aliases.needs_alias(value):
-                alias = self.aliases.generate_alias(value)
-                self._register_alias(alias, value)
-                value = alias
-            tags[key] = value
-        return tags
-
-    def _register_alias(self, alias, value):
         self.client.define_alias(alias, value)
 
 
