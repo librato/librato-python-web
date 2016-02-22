@@ -52,7 +52,7 @@ class StateTestCase(helper.CPWebCase):
         self.getPage('/')
         self.assertStatus(200)
 
-        states = json.loads(self.body)
+        states = json.loads(self.body.decode())
 
         self.assertEqual(len(states), 2)
         self.assertIn('web', states)

@@ -23,10 +23,14 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import sys
 from .telemetry import telemetry_context_manager
 
+from librato_python_web.instrumentor.custom_logging import getCustomLogger
 from librato_python_web.instrumentor.instrument import instrument_methods, contextmanager_wrapper_factory, \
     override_classes
+
+logger = getCustomLogger(__name__)
 
 
 def default_context_wrapper_factory(metric_name, state, mapping=None, enable_if='web', disable_if=None):
@@ -42,6 +46,10 @@ class BaseInstrumentor(object):
         self.wrapped = wrapped
         self.overridden_classes = {}
 
+        # Subclasses should override major_versions to specify supported Python versions.
+        # Default is all versions.
+        self.major_versions = None
+
     def set_overridden(self, overridden_classes):
         self.overridden_classes = overridden_classes if overridden_classes is not None else {}
 
@@ -49,6 +57,11 @@ class BaseInstrumentor(object):
         self.wrapped = wrapped if wrapped is not None else {}
 
     def run(self):
+        major_version = sys.version_info[0]
+        if self.major_versions and major_version not in self.major_versions:
+            logger.warn("Disabling %s since it doesn't support python %s.x", self.__class__, major_version)
+            return
+
         # instrument static resources
         override_classes(self.overridden_classes, self.wrapped)
         instrument_methods(self.wrapped)
