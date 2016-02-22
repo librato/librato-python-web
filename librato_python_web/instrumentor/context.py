@@ -46,15 +46,20 @@ Metrics are accumulated individually and as an intersection of the context.
 from collections import defaultdict
 from contextlib import contextmanager
 
-import threading
-
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
 
 
 class _globals:
-    context = threading.local()
+    context = None
+
+
+def _get_context():
+    if not _globals.context:
+        threading = __import__('threading')
+        _globals.context = threading.local()
+    return _globals.context
 
 
 def _set_state(state):
@@ -63,7 +68,7 @@ def _set_state(state):
 
     :param state: an set of state entries
     """
-    _globals.context.state = defaultdict(int, state)
+    _get_context().state = defaultdict(int, state)
 
 
 def _get_state():
@@ -73,9 +78,10 @@ def _get_state():
     :return: the state
     :rtype: dict
     """
-    if not getattr(_globals.context, 'state', None):
+    ctx = _get_context()
+    if not getattr(ctx, 'state', None):
         _set_state({})
-    return _globals.context.state
+    return ctx.state
 
 
 def push_state(name):
