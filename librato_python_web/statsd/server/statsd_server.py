@@ -206,7 +206,10 @@ class Server(object):
 
     def _process_counters(self, queue, ts):
         stats = 0
-        for context, (v, t) in self.counters.items():
+
+        # Make a copy of keys since dict can change
+        for context in list(self.counters):
+            (v, t) = self.counters[context]
 
             # default to counter, no_aggregate_counters defaults to false
             metric_type = "gauge" if self.no_aggregate_counters else "counter"
@@ -223,7 +226,11 @@ class Server(object):
 
     def _process_gauges(self, queue, ts):
         stats = 0
-        for context, (v, t) in self.gauges.items():
+
+        # Make a copy of keys since dict can change
+        for context in list(self.gauges):
+            (v, t) = self.gauges[context]
+
             if self.expire > 0 and t + self.expire < ts:
                 logger.debug("Expiring gauge %s (age: %s)", context, ts - t)
                 del(self.gauges[context])
