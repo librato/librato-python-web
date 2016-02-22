@@ -150,15 +150,11 @@ class InstrumentTest(unittest.TestCase):
         def capture_args(x, y):
             state['x'] = x
             state['y'] = y
-            tags = context.get_tags()
-            self.assertNotIn('x', tags)
-            self.assertNotIn('y', tags)
 
         wrapped = wrapper(capture_args)
         wrapped(1, 2)
         self.assertTrue(1, state.get('x'))
         self.assertTrue(2, state.get('y'))
-        self.assertEqual(0, len(context.get_tags()))
 
         wrapper = instrument.contextmanager_wrapper_factory(context_wrapper, enable_if=None)
 

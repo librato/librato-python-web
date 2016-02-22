@@ -30,7 +30,7 @@ import six
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
-from librato_python_web.instrumentor.context import add_tag, push_state, pop_state
+from librato_python_web.instrumentor.context import push_state, pop_state
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -58,14 +58,13 @@ class BaseDataTest(object):
         """
         Metrics should get reported in web state
         """
-        with add_tag('test-context', 'data_test'):
-            try:
-                push_state('web')
-                self.run_queries()
-            except Exception as e:
-                logger.exception("test_web_state")
-            finally:
-                pop_state('web')
+        try:
+            push_state('web')
+            self.run_queries()
+        except Exception as e:
+            logger.exception("test_web_state")
+        finally:
+            pop_state('web')
 
         self.assertEqual(self.reporter.counts, self.expected_web_state_counts)
         six.assertCountEqual(self, self.reporter.records.keys(), self.expected_web_state_gauges)
@@ -74,16 +73,15 @@ class BaseDataTest(object):
         """
         Metrics shouldn't get reported in web state if also in model state
         """
-        with add_tag('test-context', 'data_test'):
-            try:
-                push_state('web')
-                push_state('model')
-                self.run_queries()
-            except Exception as e:
-                logger.exception("test_model_state")
-            finally:
-                pop_state('web')
-                pop_state('model')
+        try:
+            push_state('web')
+            push_state('model')
+            self.run_queries()
+        except Exception as e:
+            logger.exception("test_model_state")
+        finally:
+            pop_state('web')
+            pop_state('model')
 
         self.assertFalse(self.reporter.counts)
         self.assertFalse(self.reporter.records)
@@ -92,11 +90,10 @@ class BaseDataTest(object):
         """
         Metrics shouldn't get reported outside a web state
         """
-        with add_tag('test-context', 'data_test'):
-            try:
-                self.run_queries()
-            except Exception as e:
-                logger.exception("test_nostate")
+        try:
+            self.run_queries()
+        except Exception as e:
+            logger.exception("test_nostate")
 
         self.assertFalse(self.reporter.counts)
         self.assertFalse(self.reporter.records)

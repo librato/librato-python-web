@@ -73,10 +73,6 @@ def _flask_app(f):
 def _flask_dispatch(f):
     def decorator(*args, **keywords):
         try:
-            from flask import request
-            route = request.url_rule.rule if request.url_rule else None
-            context.push_tag('web.route', route)
-            context.push_tag('web.method', request.method)
             telemetry.count('web.requests')
             Timing.push_timer()
 
@@ -85,8 +81,6 @@ def _flask_dispatch(f):
             elapsed, net_elapsed = Timing.pop_timer()
             telemetry.record('web.response.latency', elapsed)
             telemetry.record('app.response.latency', net_elapsed)
-            context.pop_tag()
-            context.pop_tag()
 
     return decorator
 

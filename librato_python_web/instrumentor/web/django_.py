@@ -47,7 +47,6 @@ class AgentMiddleware(object):
         self.is_active = True
         Timing.push_timer()
         context.push_state(STATE_NAME)
-        context.push_tag('web.route', request.path)
         telemetry.count('web.requests')
 
     def process_view(self, request, view_func, view_args, view_kwargs):
@@ -60,10 +59,6 @@ class AgentMiddleware(object):
             telemetry.record('web.response.latency', elapsed)
             telemetry.record('app.response.latency', net_elapsed)
             telemetry.count('web.status.%ixx' % floor(response.status_code / 100))
-            try:
-                context.pop_tag()
-            except IndexError:
-                logger.exception('process_response cannot pop context')
             context.pop_state(STATE_NAME)
             self.is_active = False
         else:

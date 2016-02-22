@@ -43,9 +43,6 @@ logger = getCustomLogger(__name__)
 def _cherrypy_respond_wrapper(f):
     def decorator(*args, **keywords):
         try:
-            route = args[2] if args[2] else None
-            context.push_tag('web.route', route)
-            context.push_tag('web.method', args[1])
             telemetry.count('web.requests')
             Timing.push_timer()
 
@@ -63,11 +60,6 @@ def _cherrypy_respond_wrapper(f):
                 elapsed, net_elapsed = Timing.pop_timer()
                 telemetry.record('web.response.latency', elapsed)
                 telemetry.record('app.response.latency', net_elapsed)
-                try:
-                    context.pop_tag()
-                    context.pop_tag()
-                except:
-                    logger.exception('Problem popping contexts')
             except:
                 logger.exception('Teardown handler failed')
                 raise
