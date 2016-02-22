@@ -24,6 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import six
 import unittest
 import cherrypy
 from cherrypy.test import helper
@@ -52,7 +53,7 @@ class HelloTestCase(helper.CPWebCase):
         self.assertStatus(200)
 
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
                            self.reporter.get_gauge_value('web.response.latency'))
 
@@ -64,7 +65,7 @@ class HelloTestCase(helper.CPWebCase):
         self.assertStatus(200)
 
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
 
         self.assertEqual(self.reporter.counts, {'web.status.2xx': 2, 'web.requests': 2})
 
@@ -73,7 +74,7 @@ class HelloTestCase(helper.CPWebCase):
         self.assertStatus(303)
 
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertEqual(self.reporter.counts, {'web.status.3xx': 1, 'web.requests': 1})
 
     def test_notfound(self):
@@ -81,7 +82,7 @@ class HelloTestCase(helper.CPWebCase):
         self.assertStatus(404)
 
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
         self.assertEqual(self.reporter.counts, {'web.status.4xx': 1, 'web.requests': 1})
 
     def test_error(self):
@@ -89,7 +90,7 @@ class HelloTestCase(helper.CPWebCase):
         self.assertStatus(505)
 
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
-        self.assertItemsEqual(self.reporter.get_gauge_names(), expected_gauge_metrics)
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
 
         self.assertEqual(self.reporter.counts, {'web.status.5xx': 1, 'web.requests': 1})
 

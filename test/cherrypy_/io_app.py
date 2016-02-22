@@ -25,7 +25,7 @@
 
 
 import sqlite3
-import urllib2
+import six
 
 import cherrypy
 from cherrypy import tools
@@ -46,7 +46,7 @@ class IOApp(object):
 
     @cherrypy.expose
     def urllib(self):
-        r = urllib2.urlopen("http://www.python.org")
+        r = six.moves.urllib.request.urlopen("http://www.python.org")
 
         data = r.read()
         data_len = len(data)

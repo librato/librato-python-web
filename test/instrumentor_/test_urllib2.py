@@ -25,7 +25,7 @@
 
 
 import unittest
-import urllib2
+import six
 
 from externaltest_base import BaseExternalTest
 from librato_python_web.instrumentor.external.urllib2_ import Urllib2Instrumentor
@@ -48,7 +48,7 @@ class Urllib2Test(BaseExternalTest, unittest.TestCase):
 
     def make_requests(self):
         # HTTP
-        r = urllib2.urlopen("http://www.python.org")
+        r = six.moves.urllib.request.urlopen("http://www.python.org")
 
         self.assertEqual(r.getcode(), 200)
 
@@ -61,11 +61,11 @@ class Urllib2Test(BaseExternalTest, unittest.TestCase):
         self.iterate_lines(r, 1000, 10000)
 
         # File
-        r = urllib2.urlopen("file:///etc/hosts")
+        r = six.moves.urllib.request.urlopen("file:///etc/hosts")
         self.iterate_lines(r, 1, 10)
 
         # FTP
-        r = urllib2.urlopen("ftp://speedtest.tele2.net/")
+        r = six.moves.urllib.request.urlopen("ftp://speedtest.tele2.net/")
         self.iterate_lines(r, 10, 100)
 
 

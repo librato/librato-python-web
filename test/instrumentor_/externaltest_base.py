@@ -24,6 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+import six
 from abc import abstractmethod
 
 from librato_python_web.instrumentor import telemetry
@@ -67,7 +68,7 @@ class BaseExternalTest(object):
             pop_state('web')
 
         self.assertEqual(self.reporter.counts, self.expected_web_state_counts)
-        self.assertItemsEqual(self.reporter.records.keys(), self.expected_web_state_gauges)
+        six.assertCountEqual(self, self.reporter.records.keys(), self.expected_web_state_gauges)
 
     def test_model_state(self):
         """

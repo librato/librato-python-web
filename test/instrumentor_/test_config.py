@@ -26,6 +26,7 @@
 
 import random
 import unittest
+import six
 
 from librato_python_web.instrumentor.config import ConfigReporter
 
@@ -56,8 +57,8 @@ class ConfigTest(unittest.TestCase):
         self.assertEntry("foo", [1, 2, 3])
 
     def assertEntry(self, name, value):
-        actual = reduce(lambda a, k: a.get(k), name.split('.'), self.config.config)
-        self.assertEquals(value, actual)
+        actual = six.moves.reduce(lambda a, k: a.get(k), name.split('.'), self.config.config)
+        self.assertEqual(value, actual)
 
     def test_hash(self):
         for i, k in enumerate('qwertyuiopasdfghjklzxcvbnm'):

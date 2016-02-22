@@ -66,7 +66,7 @@ class SqliteTest(BaseDataTest, unittest.TestCase):
         cur.execute('SELECT * FROM stocks WHERE symbol=?', t)
         row = cur.fetchone()
         self.assertIsNotNone(row)
-        self.assertEquals(('2006-01-05', 'BUY', 'RHAT', 100, 35.14), row)
+        self.assertEqual(('2006-01-05', 'BUY', 'RHAT', 100, 35.14), row)
 
         # Larger example that inserts many records at a time
         purchases = [('2006-03-28', 'BUY', 'IBM', 1000, 45.00),

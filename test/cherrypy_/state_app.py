@@ -25,7 +25,6 @@
 
 
 import sqlite3
-import urllib2
 
 import cherrypy
 from cherrypy import tools

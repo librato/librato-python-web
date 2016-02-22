@@ -52,13 +52,13 @@ class HelloTestCase(unittest.TestCase):
 
         self.assertEqual(r.status_code, 200)
 
-        states = json.loads(r.data)
+        states = json.loads(r.data.decode())
 
         self.assertEqual(len(states), 2)
         self.assertIn('web', states)
         self.assertIn('wsgi', states)
-        self.assertEquals(states['web'], 1)
-        self.assertEquals(states['wsgi'], 1)
+        self.assertEqual(states['web'], 1)
+        self.assertEqual(states['wsgi'], 1)
 
 if __name__ == '__main__':
     unittest.main()

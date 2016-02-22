@@ -26,7 +26,7 @@
 
 from flask import Flask
 import sqlite3
-import urllib2
+import six
 
 
 app = Flask(__name__)
@@ -47,7 +47,7 @@ def sqlite():
 
 @app.route('/urllib2')
 def urllib2_():
-    r = urllib2.urlopen("http://www.python.org")
+    r = six.moves.urllib.request.urlopen("http://www.python.org")
 
     data = r.read()
     data_len = len(data)
