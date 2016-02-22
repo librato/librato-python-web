@@ -9,6 +9,7 @@ class Psycopg2Instrumentor(BaseInstrumentor):
 
     def __init__(self):
         super(Psycopg2Instrumentor, self).__init__()
+        self.major_versions = [2]
         self.set_overridden(
             {
                 'psycopg2': {

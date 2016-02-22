@@ -143,6 +143,7 @@ class Urllib2Instrumentor(BaseInstrumentor):
                 'urllib2.OpenerDirector.open': function_wrapper_factory(_urllib2_open, disable_if='model')
             }
         )
+        self.major_versions = [2]
 
     def run(self):
         super(Urllib2Instrumentor, self).run()
