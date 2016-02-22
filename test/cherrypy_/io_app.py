@@ -46,7 +46,7 @@ class IOApp(object):
 
     @cherrypy.expose
     def urllib(self):
-        r = six.urllib.request.urlopen("http://www.python.org")
+        r = six.moves.urllib.request.urlopen("http://www.python.org")
 
         data = r.read()
         data_len = len(data)
