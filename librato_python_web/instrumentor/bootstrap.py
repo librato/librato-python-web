@@ -38,7 +38,7 @@ from .data.elasticsearch import ElasticsearchInstrumentor
 from .data.mysqldb import MysqlInstrumentor
 from . import custom_logging
 from .external.requests_ import RequestsInstrumentor
-from .external.urllib2_ import Urllib2Instrumentor
+from .external.urllib_ import Urllib2Instrumentor, UrllibInstrumentorPy3
 from .log.logging import LoggingInstrumentor
 from .messaging.pykafka import PykafkaInstrumentor
 from .web.django_ import DjangoInstrumentor
@@ -66,6 +66,7 @@ def init(config_path=None):
             'pykafka': PykafkaInstrumentor,
             'requests': RequestsInstrumentor,
             'urllib2': Urllib2Instrumentor,
+            'urllib': UrllibInstrumentorPy3,
             'cherrypy': CherryPyInstrumentor,
             'gunicorn': GunicornInstrumentor,
         }

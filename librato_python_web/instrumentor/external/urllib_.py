@@ -60,6 +60,7 @@ class _response_wrapper:
         if hasattr(target, "__iter__"):
             self.__iter__ = self.iter_
             self.next = self.next_
+            self.__next__ = self.next_
 
     def read(self, *args, **keywords):
         return _wrapped_call(self.metric_name, self.target.read, *args, **keywords)
@@ -147,3 +148,18 @@ class Urllib2Instrumentor(BaseInstrumentor):
 
     def run(self):
         super(Urllib2Instrumentor, self).run()
+
+
+class UrllibInstrumentorPy3(BaseInstrumentor):
+    required_class_names = ['urllib.request.OpenerDirector']
+
+    def __init__(self):
+        super(UrllibInstrumentorPy3, self).__init__(
+            {
+                'urllib.request.OpenerDirector.open': function_wrapper_factory(_urllib2_open, disable_if='model')
+            }
+        )
+        self.major_versions = [3]
+
+    def run(self):
+        super(UrllibInstrumentorPy3, self).run()

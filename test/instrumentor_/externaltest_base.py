@@ -43,6 +43,7 @@ class BaseExternalTest(object):
     def iterate_lines(self, src, min_lines, min_chars):
         t_len = 0
         t_lines = 0
+
         for l in src:
             t_lines += 1
             t_len += len(l)
