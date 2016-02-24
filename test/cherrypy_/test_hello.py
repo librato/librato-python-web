@@ -23,6 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import bootstrap    # Initialize instrumentaion
 
 import six
 import unittest
@@ -32,7 +33,6 @@ from cherrypy.test import helper
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 
-import bootstrap    # Initialize instrumentaion
 import hello_app
 
 

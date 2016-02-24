@@ -24,7 +24,9 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
-from librato_python_web.instrumentor.bootstrap import init
+from librato_python_web.instrumentor.bootstrap import init, general
 
 os.environ['LIBRATO_INTEGRATION'] = 'cherrypy'
+general.set_option('instrumentor.log_level', 30)
+
 init()
