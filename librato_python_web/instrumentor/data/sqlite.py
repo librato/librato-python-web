@@ -9,6 +9,8 @@ class SqliteInstrumentor(BaseInstrumentor):
     def __init__(self):
         super(SqliteInstrumentor, self).__init__()
         self.major_versions = [2]
+
+    def run(self):
         self.set_overridden(
             {
                 'sqlite3': {
@@ -46,5 +48,4 @@ class SqliteInstrumentor(BaseInstrumentor):
             wrapped
         )
 
-    def run(self):
         super(SqliteInstrumentor, self).run()
