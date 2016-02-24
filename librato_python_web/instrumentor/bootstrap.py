@@ -153,6 +153,7 @@ def import2(*args, **kwargs):
     name = mod_.__name__
 
     if name in _globals.targeted_modules and name not in _globals.instrumented_modules:
+        logger.debug("Custom loading - %s", modname)
         instrumentor = _globals.targeted_modules[name]
         _globals.instrumented_modules.update(instrumentor.modules)
 
