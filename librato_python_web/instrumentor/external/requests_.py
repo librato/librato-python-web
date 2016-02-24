@@ -51,7 +51,7 @@ def requests_request_time(f):
 
 
 class RequestsInstrumentor(BaseInstrumentor):
-    required_class_names = ['requests.api']
+    modules = ['requests.sessions']
 
     def __init__(self):
         super(RequestsInstrumentor, self).__init__(

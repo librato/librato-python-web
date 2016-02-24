@@ -77,7 +77,7 @@ def _cherrypy_wsgi_call(f):
 
 
 class CherryPyInstrumentor(BaseInstrumentor):
-    required_class_names = ['cherrypy._cprequest.Request', 'cherrypy.Application']
+    modules = ['cherrypy', 'cherrypy._cprequest']
 
     def __init__(self):
         super(CherryPyInstrumentor, self).__init__(

@@ -100,7 +100,7 @@ def _django_wsgi_call(original_method):
 
 
 class DjangoInstrumentor(BaseInstrumentor):
-    required_class_names = ['django.core', 'django.apps']
+    modules = ['django.core.handlers.wsgi', 'django.conf', 'django.db.models.query']
     _wrapped = {
         'django.core.handlers.wsgi.WSGIHandler.__call__':
             function_wrapper_factory(_django_wsgi_call, state='wsgi', enable_if=None),

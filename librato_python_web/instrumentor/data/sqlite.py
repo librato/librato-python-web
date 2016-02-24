@@ -4,7 +4,7 @@ from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, 
 
 
 class SqliteInstrumentor(BaseInstrumentor):
-    required_class_names = ['sqlite3']
+    modules = ['sqlite3']
 
     def __init__(self):
         super(SqliteInstrumentor, self).__init__()
