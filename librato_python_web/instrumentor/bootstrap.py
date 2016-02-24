@@ -41,7 +41,7 @@ from .external.requests_ import RequestsInstrumentor
 from .external.urllib2_ import Urllib2Instrumentor
 from .log.logging import LoggingInstrumentor
 from .messaging.pykafka import PykafkaInstrumentor
-from .web.django_ import DjangoInstrumentor
+from .web.django_ import DjangoCoreInstrumentor, DjangoConfInstrumentor, DjangoDbInstrumentor
 from .web.flask_ import FlaskInstrumentor
 from .web.cherrypy_ import CherryPyInstrumentor
 from .web.gunicorn_ import GunicornInstrumentor
@@ -51,18 +51,18 @@ logger = custom_logging.getCustomLogger(__name__)
 
 
 _instrumentors = {
-    'django': DjangoInstrumentor,
-    'elasticsearch': ElasticsearchInstrumentor,
-    'flask': FlaskInstrumentor,
-    'logging': LoggingInstrumentor,
-    'mysql': MysqlInstrumentor,
-    'sqlite': SqliteInstrumentor,
-    'psycopg2': Psycopg2Instrumentor,
-    'pykafka': PykafkaInstrumentor,
-    'requests': RequestsInstrumentor,
-    'urllib2': Urllib2Instrumentor,
-    'cherrypy': CherryPyInstrumentor,
-    'gunicorn': GunicornInstrumentor,
+    'django': [DjangoCoreInstrumentor, DjangoConfInstrumentor, DjangoDbInstrumentor],
+    'elasticsearch': [ElasticsearchInstrumentor],
+    'flask': [FlaskInstrumentor],
+    'logging': [LoggingInstrumentor],
+    'mysql': [MysqlInstrumentor],
+    'sqlite': [SqliteInstrumentor],
+    'psycopg2': [Psycopg2Instrumentor],
+    'pykafka': [PykafkaInstrumentor],
+    'requests': [RequestsInstrumentor],
+    'urllib2': [Urllib2Instrumentor],
+    'cherrypy': [CherryPyInstrumentor],
+    'gunicorn': [GunicornInstrumentor],
 }
 _web_fxes = ['django', 'flask', 'cherrypy']
 
@@ -126,9 +126,10 @@ def set_instrumentors():
             logger.info("Skipping %s", alias)
             continue
 
-        instrumentor = _instrumentors[alias]()
-        for mod_ in instrumentor.modules:
-            _globals.targeted_modules[mod_] = instrumentor
+        for instrumentor_class in _instrumentors[alias]:
+            instrumentor = instrumentor_class()
+            for mod_ in instrumentor.modules:
+                _globals.targeted_modules[mod_] = instrumentor
 
 
 def set_reporter():
