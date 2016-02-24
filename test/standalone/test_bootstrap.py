@@ -39,21 +39,7 @@ for lib in bootstrap._instrumentors:
 actual = set([m.split('.')[0] for m in sys.modules])
 
 
-# Load unittest down here because it pulls in logging
-unittest = __import__('unittest')    # pep8 compatible way
+for prefix in actual:
+    assert prefix not in unexpected, "Module %s was unexpectedly loaded" % prefix
 
-
-class BootstrapTest(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
-    def test_loaded_modules(self):
-        for prefix in actual:
-            self.assertNotIn(prefix, unexpected)
-
-
-if __name__ == '__main__':
-    unittest.main()
+print "Bootstrap test finished okay"
