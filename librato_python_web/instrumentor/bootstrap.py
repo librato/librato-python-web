@@ -50,6 +50,8 @@ from .instrument import run_instrumentors, instrument_methods
 logger = custom_logging.getCustomLogger(__name__)
 
 
+# Maps a library name to its corresponding instrumentor classes
+# An instrumentor handles one or more related modules
 _instrumentors = {
     'django': [DjangoCoreInstrumentor, DjangoConfInstrumentor, DjangoDbInstrumentor],
     'elasticsearch': [ElasticsearchInstrumentor],
@@ -69,7 +71,7 @@ _web_fxes = ['django', 'flask', 'cherrypy']
 
 class _globals:
     bootstrapped = False
-    targeted_modules = {}
+    targeted_modules = {}    # Lets the custom loader find the instrumentor for a targeted module
     instrumented_modules = set()
     builtin_importer = None
 
@@ -101,12 +103,13 @@ def init(config_path=None):
 
         set_instrumentors()
         set_importer()
-        set_reporter()
+        set_reporter()	# TBD: This binds the reporter to the baked-in UDP module and needs further review
     except:
         logger.exception("Error initializing instrumentation")
 
 
 def set_instrumentors():
+    """ Populates the targeted_modules dict, which is required by the custom loader """
     integration = general.get_option('integration', 'django')
     logger.info("Integration = %s", integration)
 
@@ -147,15 +150,19 @@ def set_importer():
 
 
 def import2(*args, **kwargs):
-    """ Our import function which injects wrapper modules where necessary """
+    """ Our import function which instruments the modules we care about """
     modname = args[0]
 
     mod_ = _globals.builtin_importer(*args, **kwargs)
     name = mod_.__name__
 
     if name in _globals.targeted_modules and name not in _globals.instrumented_modules:
+        # We care about this module and it hasn't already been instrumented
+
         logger.debug("Custom loading - %s", modname)
         instrumentor = _globals.targeted_modules[name]
+
+        # Check off all the modules this instrumentor handles
         _globals.instrumented_modules.update(instrumentor.modules)
 
         try:
