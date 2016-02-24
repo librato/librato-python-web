@@ -68,6 +68,7 @@ _web_fxes = ['django', 'flask', 'cherrypy']
 
 
 class _globals:
+    bootstrapped = False
     targeted_modules = {}
     instrumented_modules = set()
     builtin_importer = None
@@ -75,6 +76,10 @@ class _globals:
 
 def init(config_path=None):
     try:
+        if _globals.bootstrapped:
+            return
+        _globals.bootstrapped = True
+
         if not config_path:
             config_path = os.environ.get('LIBRATO_CONFIG_PATH', "./agent-conf.json")
 
