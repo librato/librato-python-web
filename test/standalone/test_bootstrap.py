@@ -42,4 +42,4 @@ actual = set([m.split('.')[0] for m in sys.modules])
 for prefix in actual:
     assert prefix not in unexpected, "Module %s was unexpectedly loaded" % prefix
 
-print "Bootstrap test finished okay"
+print("Bootstrap test finished okay")
