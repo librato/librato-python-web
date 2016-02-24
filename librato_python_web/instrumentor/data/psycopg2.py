@@ -10,6 +10,8 @@ class Psycopg2Instrumentor(BaseInstrumentor):
     def __init__(self):
         super(Psycopg2Instrumentor, self).__init__()
         self.major_versions = [2]
+
+    def run(self):
         self.set_overridden(
             {
                 'psycopg2': {
@@ -50,5 +52,4 @@ class Psycopg2Instrumentor(BaseInstrumentor):
             wrapped
         )
 
-    def run(self):
         super(Psycopg2Instrumentor, self).run()

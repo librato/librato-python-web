@@ -84,10 +84,10 @@ def instrument_methods(method_wrappers):
                 logger.debug('instrumenting method %s', qualified_method_name)
                 wrap_method(class_def, method_name, method_wrapper)
             else:
-                logger.info('%s not instrumented because not found', fully_qualified_class_name)
+                logger.warn('%s not instrumented because not found', fully_qualified_class_name)
         except ImportError:
             logger.debug('could not instrument %s', qualified_method_name)
-            logger.info('%s not instrumented because not found', fully_qualified_class_name)
+            logger.warn('%s not instrumented because not found', fully_qualified_class_name)
         except AttributeError:
             logger.warn('could not instrument %s', qualified_method_name)
 
@@ -106,10 +106,10 @@ def override_classes(overridden_classes, wrapped):
                 logger.debug('instrumenting class %s', fully_qualified_class_name)
                 wrap_methods(cls, targeted_methods, wrapped)
             else:
-                logger.info('%s not overridden because not found', fully_qualified_class_name)
+                logger.warn('%s not overridden because not found', fully_qualified_class_name)
         except ImportError:
             logger.debug('could not override %s', fully_qualified_class_name)
-            logger.info('%s not overridden because not found', fully_qualified_class_name)
+            logger.warn('%s not overridden because not found', fully_qualified_class_name)
 
 
 def wrap_returned_instances(original_method, overrides):
