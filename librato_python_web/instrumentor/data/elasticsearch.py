@@ -28,7 +28,7 @@ from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, 
 
 
 class ElasticsearchInstrumentor(BaseInstrumentor):
-    required_class_names = ['elasticsearch.client.Elasticsearch']
+    modules = ['elasticsearch.client']
 
     def __init__(self):
         super(ElasticsearchInstrumentor, self).__init__()

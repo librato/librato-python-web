@@ -31,7 +31,6 @@
 # Modified to be used to post metrics to Librato-StatsD style collector
 # Support 'tags' and multi-dimensional metrics interface
 
-import logging
 import socket
 import random
 import sys
@@ -56,8 +55,6 @@ class Client(object):
         self.port = int(port)
         self.addr = (socket.gethostbyname(self.host), self.port)
         self.prefix = prefix
-        self.log = logging.getLogger("statsd.client")
-        self.log.addHandler(logging.StreamHandler())
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def timing_since(self, stat, start, sample_rate=1, tags=None):

@@ -135,7 +135,7 @@ def _urllib2_open(f):
 
 
 class Urllib2Instrumentor(BaseInstrumentor):
-    required_class_names = ['urllib2.OpenerDirector']
+    modules = ['urllib2']
 
     def __init__(self):
         super(Urllib2Instrumentor, self).__init__(

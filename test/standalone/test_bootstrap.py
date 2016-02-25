@@ -1,4 +1,4 @@
-# Copyright (c) 2015. Librato, Inc.
+# Copyright (c) 2016. Librato, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -23,10 +23,23 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import os
-from librato_python_web.instrumentor.bootstrap import init, general
+import sys
+from librato_python_web.instrumentor import bootstrap
 
-os.environ['LIBRATO_INTEGRATION'] = 'cherrypy'
-general.set_option('instrumentor.log_level', 30)
+bootstrap.init()
 
-init()
+# Gather every top-level module we instrument
+unexpected = set()
+for lib in bootstrap._instrumentors:
+    for instrumentor in bootstrap._instrumentors[lib]:
+        for module in instrumentor.modules:
+            unexpected.add(module.split('.')[0])
+
+# Gather top-level modules that actually exist
+actual = set([m.split('.')[0] for m in sys.modules])
+
+
+for prefix in actual:
+    assert prefix not in unexpected, "Module %s was unexpectedly loaded" % prefix
+
+print("Bootstrap test finished okay")

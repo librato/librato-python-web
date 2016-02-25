@@ -26,14 +26,14 @@
 
 # Top-level module names and the corresponding proxies
 import os
+from six.moves import builtins
 
 from . import general
 from . import telemetry
 from . import config
-from .config import LegacyConfigReporter
+from .telemetry import StatsdTelemetryReporter
 from .data.psycopg2 import Psycopg2Instrumentor
 from .data.sqlite import SqliteInstrumentor
-from .telemetry import StatsdTelemetryReporter
 from .data.elasticsearch import ElasticsearchInstrumentor
 from .data.mysqldb import MysqlInstrumentor
 from . import custom_logging
@@ -41,7 +41,7 @@ from .external.requests_ import RequestsInstrumentor
 from .external.urllib2_ import Urllib2Instrumentor
 from .log.logging import LoggingInstrumentor
 from .messaging.pykafka import PykafkaInstrumentor
-from .web.django_ import DjangoInstrumentor
+from .web.django_ import DjangoCoreInstrumentor, DjangoConfInstrumentor, DjangoDbInstrumentor
 from .web.flask_ import FlaskInstrumentor
 from .web.cherrypy_ import CherryPyInstrumentor
 from .web.gunicorn_ import GunicornInstrumentor
@@ -50,26 +50,37 @@ from .instrument import run_instrumentors, instrument_methods
 logger = custom_logging.getCustomLogger(__name__)
 
 
+# Maps a library name to its corresponding instrumentor classes
+# An instrumentor handles one or more related modules
+_instrumentors = {
+    'django': [DjangoCoreInstrumentor, DjangoConfInstrumentor, DjangoDbInstrumentor],
+    'elasticsearch': [ElasticsearchInstrumentor],
+    'flask': [FlaskInstrumentor],
+    'logging': [LoggingInstrumentor],
+    'mysql': [MysqlInstrumentor],
+    'sqlite': [SqliteInstrumentor],
+    'psycopg2': [Psycopg2Instrumentor],
+    'pykafka': [PykafkaInstrumentor],
+    'requests': [RequestsInstrumentor],
+    'urllib2': [Urllib2Instrumentor],
+    'cherrypy': [CherryPyInstrumentor],
+    'gunicorn': [GunicornInstrumentor],
+}
+_web_fxes = ['django', 'flask', 'cherrypy']
+
+
+class _globals:
+    bootstrapped = False
+    targeted_modules = {}    # Lets the custom loader find the instrumentor for a targeted module
+    instrumented_modules = set()
+    builtin_importer = None
+
+
 def init(config_path=None):
     try:
-        _wrapped = {
-        }
-
-        _instrumentors = {
-            'django': DjangoInstrumentor,
-            'elasticsearch': ElasticsearchInstrumentor,
-            'flask': FlaskInstrumentor,
-            'logging': LoggingInstrumentor,
-            'mysql': MysqlInstrumentor,
-            'sqlite': SqliteInstrumentor,
-            'psycopg2': Psycopg2Instrumentor,
-            'pykafka': PykafkaInstrumentor,
-            'requests': RequestsInstrumentor,
-            'urllib2': Urllib2Instrumentor,
-            'cherrypy': CherryPyInstrumentor,
-            'gunicorn': GunicornInstrumentor,
-        }
-        _web_fxes = ['django', 'flask', 'cherrypy']
+        if _globals.bootstrapped:
+            return
+        _globals.bootstrapped = True
 
         if not config_path:
             config_path = os.environ.get('LIBRATO_CONFIG_PATH', "./agent-conf.json")
@@ -90,27 +101,74 @@ def init(config_path=None):
         if 'LIBRATO_INTEGRATION' in os.environ:
             general.set_option('integration', os.environ.get('LIBRATO_INTEGRATION'))
 
-        integration = general.get_option('integration', 'django')
-        logger.info("Integration = %s", integration)
+        set_instrumentors()
+        set_importer()
+        set_reporter()	# TBD: This binds the reporter to the baked-in UDP module and needs further review
+    except:
+        logger.exception("Error initializing instrumentation")
 
-        if general.get_option('statsd.enabled', False):
-            logger.debug("Using Statsd reporter")
-            statsd_port = general.get_option('statsd.port', 8142)
-            telemetry.set_reporter(StatsdTelemetryReporter(statsd_port, prefix=integration))
-            telemetry.set_reporter(StatsdTelemetryReporter(statsd_port), name='gunicorn')
 
-        libs = general.get_option('libraries')
-        logger.info("Specified libraries = %s", libs)
+def set_instrumentors():
+    """ Populates the targeted_modules dict, which is required by the custom loader """
+    integration = general.get_option('integration', 'django')
+    logger.info("Integration = %s", integration)
 
-        if not libs:
-            # By default, let us exclude the other web frameworks
-            # The user can pull in multiple frameworks by being explicit
-            libs = [lib for lib in _instrumentors.keys() if lib not in _web_fxes or lib == integration]
-        elif libs == '*':
-            libs = _instrumentors.keys()
-        logger.info("Computed libraries = %s", libs)
+    libs = general.get_option('libraries')
+    logger.info("Specified libraries = %s", libs)
 
-        instrument_methods(_wrapped)
-        run_instrumentors(_instrumentors, libs)
-    except Exception:
-        logger.exception("librato_python_web __init__ failure")
+    if not libs:
+        # By default, let us exclude the other web frameworks
+        # The user can pull in multiple frameworks by being explicit
+        libs = [lib for lib in _instrumentors.keys() if lib not in _web_fxes or lib == integration]
+    elif libs == '*':
+        libs = _instrumentors.keys()
+    logger.info("Computed libraries = %s", libs)
+
+    for alias in _instrumentors:
+        if alias not in libs:
+            logger.info("Skipping %s", alias)
+            continue
+
+        for instrumentor_class in _instrumentors[alias]:
+            instrumentor = instrumentor_class()
+            for mod_ in instrumentor.modules:
+                _globals.targeted_modules[mod_] = instrumentor
+
+
+def set_reporter():
+    if general.get_option('statsd.enabled', False):
+        logger.debug("Using Statsd reporter")
+        statsd_port = general.get_option('statsd.port', 8142)
+        integration = general.get_option('integration')
+        telemetry.set_reporter(StatsdTelemetryReporter(statsd_port, prefix=integration))
+        telemetry.set_reporter(StatsdTelemetryReporter(statsd_port), name='gunicorn')
+
+
+def set_importer():
+    _globals.builtin_importer = builtins.__import__
+    builtins.__import__ = import2    # Substitute built-in import function with our own
+
+
+def import2(*args, **kwargs):
+    """ Our import function which instruments the modules we care about """
+    modname = args[0]
+
+    mod_ = _globals.builtin_importer(*args, **kwargs)
+    name = mod_.__name__
+
+    if name in _globals.targeted_modules and name not in _globals.instrumented_modules:
+        # We care about this module and it hasn't already been instrumented
+
+        logger.debug("Custom loading - %s", modname)
+        instrumentor = _globals.targeted_modules[name]
+
+        # Check off all the modules this instrumentor handles
+        _globals.instrumented_modules.update(instrumentor.modules)
+
+        try:
+            logger.info("Instrumenting %s", name)
+            instrumentor.run()
+        except:
+            logger.exception("Error instrumenting %s", name)
+
+    return mod_

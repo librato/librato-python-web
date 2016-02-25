@@ -24,11 +24,9 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from contextlib import contextmanager
-import logging
 
 from librato_python_web.instrumentor import telemetry
 
-logger = logging.getLogger(__name__)
 
 
 def count(metric, incr=1):
@@ -90,10 +88,6 @@ def increment_count(type_name='resource'):
     @contextmanager
     def wrapper_func(*args, **keywords):
         count(type_name + 'requests')
-        try:
-            yield
-        except:
-            logger.exception('increment_count exception')
-            raise
+        yield
 
     return wrapper_func

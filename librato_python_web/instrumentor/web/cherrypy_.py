@@ -77,13 +77,13 @@ def _cherrypy_wsgi_call(f):
 
 
 class CherryPyInstrumentor(BaseInstrumentor):
-    required_class_names = ['cherrypy._cprequest.Request', 'cherrypy.Application']
+    modules = ['cherrypy._cptree', 'cherrypy._cprequest']
 
     def __init__(self):
         super(CherryPyInstrumentor, self).__init__(
             {
-                'cherrypy.Application.__call__': function_wrapper_factory(_cherrypy_wsgi_call, enable_if=None,
-                                                                          state='web'),
+                'cherrypy._cptree.Application.__call__': function_wrapper_factory(_cherrypy_wsgi_call, enable_if=None,
+                                                                                  state='web'),
                 'cherrypy._cprequest.Request.run': function_wrapper_factory(_cherrypy_respond_wrapper, enable_if=None,
                                                                             state='wsgi'),
             }

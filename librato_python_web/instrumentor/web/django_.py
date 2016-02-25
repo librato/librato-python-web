@@ -99,12 +99,47 @@ def _django_wsgi_call(original_method):
     return decorator
 
 
-class DjangoInstrumentor(BaseInstrumentor):
-    required_class_names = ['django.core', 'django.apps']
+class DjangoCoreInstrumentor(BaseInstrumentor):
+    modules = ['django.core.handlers.wsgi', 'django.conf']
     _wrapped = {
         'django.core.handlers.wsgi.WSGIHandler.__call__':
             function_wrapper_factory(_django_wsgi_call, state='wsgi', enable_if=None),
         'django.conf.LazySettings.__getattr__': django_inject_middleware,
+    }
+
+    def __init__(self):
+        super(DjangoCoreInstrumentor, self).__init__()
+
+    def run(self):
+        try:
+            instrument_methods(self._wrapped)
+            logger.debug('django core instrumentation complete')
+        except:
+            logger.exception('problem with django core instrumentation')
+            raise
+
+
+class DjangoConfInstrumentor(BaseInstrumentor):
+    modules = ['django.conf']
+    _wrapped = {
+        'django.conf.LazySettings.__getattr__': django_inject_middleware,
+    }
+
+    def __init__(self):
+        super(DjangoConfInstrumentor, self).__init__()
+
+    def run(self):
+        try:
+            instrument_methods(self._wrapped)
+            logger.debug('django conf instrumentation complete')
+        except:
+            logger.exception('problem with django conf instrumentation')
+            raise
+
+
+class DjangoDbInstrumentor(BaseInstrumentor):
+    modules = ['django.db.models.query']
+    _wrapped = {
         'django.db.models.query.QuerySet.iterator':
             generator_wrapper_factory(generate_record_telemetry('model.iterator.'), state='model'),
     }
@@ -112,7 +147,7 @@ class DjangoInstrumentor(BaseInstrumentor):
                          'iterator, update_or_create, delete, update, exists'
 
     def __init__(self):
-        super(DjangoInstrumentor, self).__init__()
+        super(DjangoDbInstrumentor, self).__init__()
         for method in [m.strip() for m in self._query_set_methods.split(',')]:
             self._wrapped['django.db.models.query.QuerySet.%s' % method] = default_context_wrapper_factory(
                 'model.%s.' % method,
@@ -121,7 +156,7 @@ class DjangoInstrumentor(BaseInstrumentor):
     def run(self):
         try:
             instrument_methods(self._wrapped)
-            logger.debug('django instrumentation complete')
+            logger.debug('django db instrumentation complete')
         except:
-            logger.exception('problem with django instrumentation')
+            logger.exception('problem with django db instrumentation')
             raise

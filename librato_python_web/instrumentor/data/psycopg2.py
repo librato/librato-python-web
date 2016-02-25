@@ -5,11 +5,13 @@ from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, 
 
 
 class Psycopg2Instrumentor(BaseInstrumentor):
-    required_class_names = ['psycopg2']
+    modules = ['psycopg2', 'psycopg2.extensions.connection', 'psycopg2.extensions.cursor']
 
     def __init__(self):
         super(Psycopg2Instrumentor, self).__init__()
         self.major_versions = [2]
+
+    def run(self):
         self.set_overridden(
             {
                 'psycopg2': {
@@ -50,5 +52,4 @@ class Psycopg2Instrumentor(BaseInstrumentor):
             wrapped
         )
 
-    def run(self):
         super(Psycopg2Instrumentor, self).run()

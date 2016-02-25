@@ -2,7 +2,7 @@ from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, 
 
 
 class MysqlInstrumentor(BaseInstrumentor):
-    required_class_names = ['MySQLdb']
+    modules = ['MySQLdb.cursors']
 
     def __init__(self):
         super(MysqlInstrumentor, self).__init__()
