@@ -1,7 +1,7 @@
 librato-python-web
 ==================
 
-`librato-python-web` is the Python agent for Librato's Django, Flask, CherryPy Gunicorn turnkey integrations. It gathers essential health and performance metrics related to your web application and ships them to [Librato](https://metrics.librato.com/), where you can view them in curated or your own custom dashboards.
+`librato-python-web` is the Python agent for Librato's Django, Flask, CherryPy and Gunicorn turnkey integrations. It gathers essential health and performance metrics related to your web application and ships them to [Librato](https://metrics.librato.com/), where you can view them in curated or custom metrics dashboards.
 
 ## System requirements
 
@@ -45,16 +45,16 @@ Use the provided librato-launch tool to configure the Python agent. Do this for 
 librato-config --app-id cherrypy-prod-1 --integration=cherrypy --user user@librato.com --api-token XXXXXXXXXXXX
 ```
 
-This will create a configuration file in the current directory, which by default is called agent-conf.json. The
+This will create a configuration file in the current directory, which by default, is called agent-conf.json. The
 --config-path option can be used to specify an alternate configuration file location.
 
-The --integration option optionally specifies the web framework to instrument (defaults is 'django'). It also determines the metric names that get sent to Librato.
+The --integration option optionally specifies the web framework to monitor (defaults is 'django').
 
 The --app-id option (required) specifies a unique identifier for the application. The instrumentation prefixes the application id to the [source](https://www.librato.com/docs/kb/faq/glossary/whats_a_source.html) for every measurement related to the app. This allows you to filter or aggregate metrics down to the application in turnkey or custom dashboards.
 
 Run ```-config --help``` to see a full list of options.
 
-## Running your app
+## Running your application
 
 In order to instrument your application, prefix your runtime command with librato-launch. E.g.
 
@@ -62,18 +62,18 @@ In order to instrument your application, prefix your runtime command with librat
 librato-launch python manage.py runserver
 ```
 
-Running under librato-launch causes a custom module loader to instrument classes as they get imported by the application. The instrumentor targets web framework modules (e.g. django.*) to report web request latency, throughput and error metrics. It also instruments libraries such as mysql, postgres, elasticsearch, urllib2 and requests in order to decompose web request latency into subcomponents, such as data, external and wsgi.
+Running under librato-launch triggers a custom module loader, which instruments classes as they get imported by the application. The loader targets web framework modules (e.g. django.*) to report web request latency, throughput and error metrics. It also instruments libraries such as mysql, postgres, elasticsearch, urllib2 and requests in order to decompose web request latency into subcomponents, such as data, external and wsgi.
 
-librato-launch consumes the configuration file (./agent-conf.json by default). Use --config-path to override this default location.
+librato-launch consumes the configuration file (./agent-conf.json, by default). Use --config-path to override this default location.
 
-librato-launch spawns a StatsD process to report metrics over to Librato, which uses port 8142 by default. You can customize this port using the --port option to librato-config, or by manually editing the configuration file.
+librato-launch spawns a StatsD process to report metrics to Librato, which uses port 8142 by default. You can customize this port using the --port option to librato-config, or by manually editing the configuration file.
 
 ## Gunicorn monitoring
 
-To monitor Gunicorn, simply use the --statsd-host option to send metrics to the bundled StatsD instance. E.g,
+To monitor Gunicorn, add the --statsd-host option as shown below.
 
 ```
-librato-launch gunicorn --statsd-host=127.0.0.1:8142 wsgi-module:app
+librato-launch gunicorn --statsd-host=127.0.0.1:8142 ... my_module:my_app
 ```
 
 ## Copyright
