@@ -141,7 +141,7 @@ One of the web frameworks (django, flask or cherrypy) gets instrumented dependin
 | requests      | 2.9.1              |                 |
 | logging       |                    |                 |
 
-The 'libraries' option can be used to exclude libraries which might be incompatible with the instrumentation or broken. For example, add the following line to the configuration file to exclude postgres, elasticsearch and urllib2.
+The 'libraries' option can be used to exclude libraries (e.g. to zero in on a version compatibility issue). For example, appending the following line to the configuration file causes postgres, elasticsearch and urllib2 to be ignored.
 
 ```
     "libraries": ["gunicorn", "sqlite3", "MySQL-python", "requests", "logging"]
@@ -149,13 +149,13 @@ The 'libraries' option can be used to exclude libraries which might be incompati
 
 ## Debugging
 
-You can turn on verbose logging using the 'instrumentor.log_level' configuration file option. 10 means debug, 20 means info, 30 means warning and so on. The default logging level is 30 (warning). The following example turns on the debug (most verbose) level.
+You can turn on verbose logging using the 'instrumentor.log_level' configuration file option. 10 means debug, 20 means info, 30 means warning and so on. The default logging level is 30 (warning). Append the following line to the configuration file to turn on verbose debugging.
 
 ```
     "instrumentor.log_level": 10
 ```
 
-This should be done during troubleshooting only, since otherwise the application's performance will be impacted.
+This should be done during troubleshooting only to avoid a performance degradation.
 
 ## Copyright
 
