@@ -52,7 +52,8 @@ The --integration option optionally specifies the web framework to monitor (defa
 
 The --app-id option (required) specifies a unique identifier for the application. The instrumentation prefixes the application id to the [source](https://www.librato.com/docs/kb/faq/glossary/whats_a_source.html) for every measurement related to the app. This allows you to filter or aggregate metrics down to the application in turnkey or custom dashboards.
 
-Run ```-config --help``` to see a full list of options.
+Run ```librato-config --help``` to see a full list of options.
+
 
 ## Running your application
 
@@ -74,6 +75,16 @@ To monitor Gunicorn, add the --statsd-host option as shown below.
 
 ```
 librato-launch gunicorn --statsd-host=127.0.0.1:8142 ... my_module:my_app
+```
+
+## Instrumenting using code
+
+You can't or don't want to auto-instrument your app, you can skip launch-launch and trigger instrumentation using the following code.
+
+```
+from librato_python_web.instrumentor import bootstrap
+
+bootstrap.init(config-file-path)   # config-file-path can be omitted and defaults to './agent-conf.json'
 ```
 
 ## Copyright
