@@ -127,22 +127,26 @@ Run ```librato-statsd-server --help``` for a complete list of options.
 
 ## Configuring instrumented libraries
 
-The following libraries/modules are instrumented by default: 
-  - django or flask or cherryPy (determined by the 'integration' configuration setting)
-  - gunicorn
-  - sqlite3
-  - MySQLdb
-  - psycopg2 (postgres)
-  - elasticsearch
-  - pykafka
-  - requests
-  - urllib2 (Python 2.x only)
-  - logging
+One of the web frameworks (django, flask or cherrypy) gets instrumented depending on the 'integration' configuration file option. The following additional libraries also get instrumented by default.
 
-You can explicitly specify the libraries to configure using the 'libraries' configuration file option, as shown below. Note that one of the web frameworks (django, flask or cherrypy) always gets instrumented when imported by the application code.
+The following libraries/modules are instrumented by default: 
+
+| Library       | Tested version(s)  | Comments        |
+|---------------|--------------------|-----------------|
+| gunicorn      | 19.4.5             |                 |
+| sqlite3       |                    |                 |
+| MySQL-python  | 1.2.5              |                 |
+| psycopg2      | 2.6.1              | Postgres        |
+| elasticsearch | 2.2.0              |                 |
+| pykafka       | 2.2.1              |                 |
+| urllib2       |                    | Python 2.x only |
+| requests      | 2.9.1              |                 |
+| logging       |                    |                 |
+
+The 'libraries' option can be used to exclude libraries which might be incompatible with the instrumentation or broken. The following example shows how to exclude postgres, elasticsearch and urllib2.
 
 ```
-    "libraries": ["gunicorn", "sqlite3", "requests"]
+    "libraries": ["gunicorn", "sqlite3", "MySQL-python", "requests", "logging"]
 ```
 
 ## Debugging
