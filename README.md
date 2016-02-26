@@ -68,11 +68,11 @@ This will create a JSON configuration file in the current directory, named agent
 }
 ```
 
-The --config-path option can be used to specify an alternate file location.
+--config-path can be optionally used to specify an alternate file location. Default is './agent-conf.json'.
 
-The --integration option optionally specifies the web framework to monitor (default is 'django').
+--integration optionally specifies the web framework to monitor (default is 'django').
 
-The --app-id option (required) specifies a unique identifier for the application. The instrumentation prefixes the application id to the [source](https://www.librato.com/docs/kb/faq/glossary/whats_a_source.html) for every measurement related to the app. This allows you to filter or aggregate metrics down to the application in turnkey or custom dashboards.
+--app-id (required) specifies a unique identifier for the application. The instrumentation prefixes the application id to the [source](https://www.librato.com/docs/kb/faq/glossary/whats_a_source.html) for every measurement related to the app. This allows you to filter or aggregate metrics down to the application in turnkey or custom dashboards.
 
 Run ```librato-config --help``` to see a full list of options.
 
@@ -85,11 +85,11 @@ In order to instrument your application, prefix your runtime command with librat
 librato-launch python manage.py runserver
 ```
 
-Running under librato-launch triggers a custom module loader, which instruments classes as they get imported by the application. The loader targets web framework modules (e.g. django.*) to report web request latency, throughput and error metrics. It also instruments libraries such as mysql, postgres, elasticsearch, urllib2 and requests in order to decompose web request latency into subcomponents, such as data, external and wsgi.
+Running with librato-launch installs a custom module loader, which instruments classes as they get imported by the application. The loader targets framework modules (e.g. django.*) to report web request latency, throughput and error metrics. It also instruments libraries such as mysql, postgres, elasticsearch, urllib2 and requests in order to decompose web request latency into 'data', 'external', 'wsgi' and 'app' buckets.
 
 librato-launch consumes the configuration file (./agent-conf.json, by default). Use --config-path to override this default location.
 
-librato-launch spawns a StatsD process to report metrics to Librato, which uses port 8142 by default. You can customize this port using the --port option to librato-config, or by manually editing the configuration file.
+librato-launch spawns a StatsD process to report metrics to Librato, which listens over UDP port 8142 by default. You can customize this port using the --port option to librato-config, or by manually editing the 'port' option in the configuration file.
 
 ## Gunicorn monitoring
 
@@ -123,6 +123,37 @@ librato-statsd-server --config-path <config-file-location>
 ```
 
 Run ```librato-statsd-server --help``` for a complete list of options.
+
+
+## Configuring instrumented libraries
+
+The following libraries/modules are instrumented by default: 
+  - django or flask or cherryPy (determined by the 'integration' configuration setting)
+  - gunicorn
+  - sqlite3
+  - MySQLdb
+  - psycopg2 (postgres)
+  - elasticsearch
+  - pykafka
+  - requests
+  - urllib2 (Python 2.x only)
+  - logging
+
+You can explicitly specify the libraries to configure using the 'libraries' configuration file option, as shown below. Note that one of the web frameworks (django, flask or cherrypy) always gets instrumented when imported by the application code.
+
+```
+    "libraries": ["gunicorn", "sqlite3", "requests"]
+```
+
+## Debugging
+
+You can turn on verbose logging using the 'instrumentor.log_level' configuration file option. 10 means debug, 20 means info, 30 means warning and so on. The default logging level is 30 (warning). The following example turns on the debug (most verbose) level.
+
+```
+    "instrumentor.log_level": 10
+```
+
+This should be done during troubleshooting only, since otherwise the application's performance will be impacted.
 
 ## Copyright
 
