@@ -43,7 +43,7 @@ def default_context_wrapper_factory(metric_name, state, mapping=None, enable_if=
 
 class BaseInstrumentor(object):
     def __init__(self, wrapped=None, state=None):
-        self.wrapped = wrapped
+        self.wrapped_methods = wrapped
         self.overridden_classes = {}
 
         # Subclasses should override major_versions to specify supported Python versions.
@@ -54,7 +54,7 @@ class BaseInstrumentor(object):
         self.overridden_classes = overridden_classes if overridden_classes is not None else {}
 
     def set_wrapped(self, wrapped):
-        self.wrapped = wrapped if wrapped is not None else {}
+        self.wrapped_methods = wrapped if wrapped is not None else {}
 
     def can_run(self):
         # Confirm that required modules and attributes exist
@@ -81,5 +81,5 @@ class BaseInstrumentor(object):
             return
 
         # instrument static resources
-        override_classes(self.overridden_classes, self.wrapped)
-        instrument_methods(self.wrapped)
+        override_classes(self.overridden_classes, self.wrapped_methods)
+        instrument_methods(self.wrapped_methods)

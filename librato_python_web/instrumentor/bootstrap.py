@@ -39,6 +39,7 @@ from .data.mysqldb import MysqlInstrumentor
 from . import custom_logging
 from .external.requests_ import RequestsInstrumentor
 from .external.urllib2_ import Urllib2Instrumentor
+from .external.py3_urllib import UrllibInstrumentor
 from .log.logging import LoggingInstrumentor
 from .messaging.pykafka import PykafkaInstrumentor
 from .web.django_ import DjangoCoreInstrumentor, DjangoConfInstrumentor, DjangoDbInstrumentor
@@ -62,6 +63,7 @@ _instrumentors = {
     # 'psycopg2': [Psycopg2Instrumentor],
     'pykafka': [PykafkaInstrumentor],
     'requests': [RequestsInstrumentor],
+    'urllib': [UrllibInstrumentor],
     'urllib2': [Urllib2Instrumentor],
     'cherrypy': [CherryPyInstrumentor],
     'gunicorn': [GunicornInstrumentor],
