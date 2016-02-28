@@ -23,16 +23,15 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import functools
-import inspect
-import time
-import sys
 
 import six
 
+from librato_python_web.instrumentor import context
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
-from librato_python_web.instrumentor.telemetry import count
+from librato_python_web.instrumentor.telemetry import count, record
 from librato_python_web.instrumentor.util import get_class_by_name
+from librato_python_web.instrumentor.instrument import _should_be_instrumented
+from librato_python_web.instrumentor.util import Timing
 
 logger = getCustomLogger(__name__)
 
@@ -46,7 +45,33 @@ def get_increment_wrapper(metric, reporter='web', increment=1):
     return increment_wrapper
 
 
-def get_delegating_wrapper(original_method, wrapper_method):
+def get_complex_wrapper(metric, state, enable_if='web', disable_if=None, reporter='web'):
+    """
+    Returns a wrapper that records latency and count metrics 
+    :param metric: metric prefix
+    :param state: the state to add to the context
+    :param enable_if: metrics will only be reported if these states are on the context stack
+    :param disable_if: metrics won't be reported if these states are on the context stack
+    :param reporter: must be 'web' or 'gunicorn' and determines the telemetry reporter to use
+    """
+    def complex_wrapper(func, *args, **keywords):
+        if _should_be_instrumented(state, enable_if, disable_if):
+            Timing.push_timer()
+            context.push_state(state)
+            try:
+                return func(*args, **keywords)
+            finally:
+                elapsed, _ = Timing.pop_timer()
+                count(metric + 'requests', reporter=reporter)
+                record(metric + 'latency', elapsed, reporter=reporter)
+                context.pop_state(state)
+        else:
+            return func(*args, **keywords)
+
+    return complex_wrapper
+
+
+def _get_delegating_wrapper(original_method, wrapper_method):
     """ Conceptually similar to functools.partial, but returns an object """
     """ that is a descriptor and can hence wrap an instance method """
     def delegator(*args, **kwargs):
@@ -64,7 +89,7 @@ def instrument_methods_v2(method_wrappers):
                 logger.debug('instrumenting method %s', qualified_method_name)
 
                 original_method = getattr(class_def, method_name)
-                delegator = get_delegating_wrapper(original_method, method_wrapper)
+                delegator = _get_delegating_wrapper(original_method, method_wrapper)
 
                 setattr(class_def, method_name, delegator)
             else:

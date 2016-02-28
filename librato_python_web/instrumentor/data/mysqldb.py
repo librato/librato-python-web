@@ -1,4 +1,5 @@
-from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, default_context_wrapper_factory
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.instrument2 import get_complex_wrapper, instrument_methods_v2
 
 
 class MysqlInstrumentor(BaseInstrumentor):
@@ -11,13 +12,18 @@ class MysqlInstrumentor(BaseInstrumentor):
         self.set_wrapped(
             {
                 'MySQLdb.cursors.Cursor.execute':
-                    default_context_wrapper_factory('data.mysql.execute.', mapping={'resource': 1},
-                                                    state='data.mysql', disable_if='model'),
+                    get_complex_wrapper('data.mysql.execute.', state='data.mysql', disable_if='model'),
                 'MySQLdb.cursors.Cursor.callproc':
-                    default_context_wrapper_factory('data.mysql.callproc.', mapping={'resource': 1},
-                                                    state='data.mysql', disable_if='model'),
+                    get_complex_wrapper('data.mysql.callproc.', state='data.mysql', disable_if='model'),
             }
         )
 
     def run(self):
-        super(MysqlInstrumentor, self).run()
+        instrument_methods_v2(
+            {
+                'MySQLdb.cursors.Cursor.execute':
+                    get_complex_wrapper('data.mysql.execute.', state='data.mysql', disable_if='model'),
+                'MySQLdb.cursors.Cursor.callproc':
+                    get_complex_wrapper('data.mysql.callproc.', state='data.mysql', disable_if='model'),
+            }
+        )
