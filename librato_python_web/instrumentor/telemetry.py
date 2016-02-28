@@ -29,7 +29,6 @@ def set_reporter(reporter, name='web'):
 def count(metric, incr=1, reporter='web'):
     """
     Increment the count for the given metric by the given increment.
-
     Example
         telemetry.count('requests')
         telemetry.count('bytesReceived', len(request.content))

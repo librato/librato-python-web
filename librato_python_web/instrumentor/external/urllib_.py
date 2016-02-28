@@ -68,7 +68,7 @@ class _response_wrapper(ObjectWrapper):
         return _wrapped_call(self.metric_name, self.__subject__.readlines, *args, **keywords)
 
 
-def _urllib2_open_wrapper(func, *args, **keywords):
+def _urllib_open_wrapper(func, *args, **keywords):
     """ Wraps urllib.request.url_open """
 
     if not _should_be_instrumented(state='external', enable_if='web', disable_if='model'):
@@ -103,16 +103,33 @@ def _urllib2_open_wrapper(func, *args, **keywords):
     return decorator
 
 
+class Urllib2Instrumentor(BaseInstrumentor):
+    """ Python2 urllib2 """
+    modules = ['urllib2']
+
+    def __init__(self):
+        super(Urllib2Instrumentor, self).__init__(
+            {
+                'urllib2.OpenerDirector.open': _urllib_open_wrapper,
+            }
+        )
+        self.major_versions = [2]
+
+    def run(self):
+        instrument_methods_v2(self.wrapped_methods)
+
+
 class UrllibInstrumentor(BaseInstrumentor):
+    """ Python3 urllib """
     modules = ['urllib.request']
 
     def __init__(self):
         super(UrllibInstrumentor, self).__init__(
             {
-                'urllib.request.OpenerDirector.open': _urllib2_open_wrapper,
+                'urllib.request.OpenerDirector.open': _urllib_open_wrapper,
             }
         )
-        self.major_versions = [2]
+        self.major_versions = [3]
 
     def run(self):
         instrument_methods_v2(self.wrapped_methods)

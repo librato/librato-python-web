@@ -38,8 +38,7 @@ from .data.elasticsearch import ElasticsearchInstrumentor
 from .data.mysqldb import MysqlInstrumentor
 from . import custom_logging
 from .external.requests_ import RequestsInstrumentor
-from .external.urllib2_ import Urllib2Instrumentor
-from .external.py3_urllib import UrllibInstrumentor
+from .external.urllib_ import Urllib2Instrumentor, UrllibInstrumentor
 from .log.logging import LoggingInstrumentor
 from .messaging.pykafka import PykafkaInstrumentor
 from .web.django_ import DjangoCoreInstrumentor, DjangoConfInstrumentor, DjangoDbInstrumentor
@@ -112,7 +111,7 @@ def init(config_path=None):
 
         set_instrumentors()
         set_importer()
-        set_reporter()	 # TBD: This binds the reporter to the baked-in UDP module and needs further review
+        set_reporter()    # TBD: This binds the reporter to the baked-in UDP module and needs further review
     except:
         logger.exception("Error initializing instrumentation")
 

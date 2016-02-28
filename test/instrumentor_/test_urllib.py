@@ -28,8 +28,7 @@ import unittest
 import six
 
 from externaltest_base import BaseExternalTest
-from librato_python_web.instrumentor.external.urllib2_ import Urllib2Instrumentor
-from librato_python_web.instrumentor.external.py3_urllib import UrllibInstrumentor
+from librato_python_web.instrumentor.external.urllib_ import UrllibInstrumentor, Urllib2Instrumentor
 
 UrllibInstrumentor().run()
 Urllib2Instrumentor().run()
