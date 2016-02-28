@@ -93,31 +93,6 @@ def instrument_methods(method_wrappers):
             logger.exception('details')
 
 
-def instrument_methods_v2(method_wrappers):
-    for qualified_method_name, method_wrapper in six.iteritems(method_wrappers):
-        (fully_qualified_class_name, method_name) = qualified_method_name.rsplit('.', 1)
-        try:
-            class_def = get_class_by_name(fully_qualified_class_name)
-            if class_def:
-                logger.debug('instrumenting method %s', qualified_method_name)
-
-                original_method = getattr(class_def, method_name)
-
-                def delegator(*args, **kwargs):
-                    """ Delegate to wrapper method passing in original function """
-                    """ Can't use functools.partials since bound methods need descriptors """
-                    return method_wrapper(original_method, *args, **kwargs)
-
-                setattr(class_def, method_name, delegator)
-            else:
-                logger.warn('%s not instrumented because not found', fully_qualified_class_name)
-        except ImportError:
-            logger.debug('could not instrument %s', qualified_method_name)
-            logger.warn('%s not instrumented because not found', fully_qualified_class_name)
-        except:
-            logger.exception('could not instrument %s', qualified_method_name)
-
-
 def override_classes(overridden_classes, wrapped):
     """
     Override static classes by creating a subclass (via type) that contains overridden methods. Typically this is
