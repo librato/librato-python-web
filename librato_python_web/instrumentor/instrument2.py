@@ -45,6 +45,22 @@ def get_increment_wrapper(metric, reporter='web', increment=1):
     return increment_wrapper
 
 
+def get_conditional_wrapper(wrapper, state=None, enable_if='web', disable_if=None):
+    """ Wraps function (func below) only if conditions are met """
+
+    def conditional_wrapper(func, *args, **kwargs):
+        if _should_be_instrumented(state, enable_if, disable_if):
+            try:
+                context.push_state(state)
+                return wrapper(func, *args, **kwargs)
+            finally:
+                context.pop_state(state)
+        else:
+            return func(*args, **kwargs)
+
+    return conditional_wrapper
+
+
 def get_complex_wrapper(metric, state, enable_if='web', disable_if=None, reporter='web'):
     """
     Returns a wrapper that records latency and count metrics 

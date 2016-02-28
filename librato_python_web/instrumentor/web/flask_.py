@@ -24,15 +24,12 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """ Flask instrumentation """
-from contextlib import contextmanager
 from math import floor
 import time
 
-from librato_python_web.instrumentor import config as agent_api_config
-from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.instrument import contextmanager_wrapper_factory, function_wrapper_factory
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.instrument2 import get_conditional_wrapper, instrument_methods_v2
 from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
@@ -54,59 +51,51 @@ def _teardown_request(e=None):
         telemetry.count('web.status.5xx')
 
 
-def _flask_app(f):
-    def decorator(*args, **keywords):
-        try:
-            a = f(*args, **keywords)
-            app = args[0]
-            app.after_request(_after_request)
-            app.teardown_request(_teardown_request)
-            return a
-        except Exception as e:
-            raise e
-        finally:
-            pass
-    return decorator
+def _flask_app(f, *args, **keywords):
+    try:
+        a = f(*args, **keywords)
+        app = args[0]
+        app.after_request(_after_request)
+        app.teardown_request(_teardown_request)
+        return a
+    except Exception as e:
+        raise e
+    finally:
+        pass
 
 
-def _flask_dispatch(f):
-    def decorator(*args, **keywords):
-        try:
-            telemetry.count('web.requests')
-            Timing.push_timer()
+def _flask_dispatch(f, *args, **keywords):
+    try:
+        telemetry.count('web.requests')
+        Timing.push_timer()
 
-            return f(*args, **keywords)
-        finally:
-            elapsed, net_elapsed = Timing.pop_timer()
-            telemetry.record('web.response.latency', elapsed)
-            telemetry.record('app.response.latency', net_elapsed)
-
-    return decorator
+        return f(*args, **keywords)
+    finally:
+        elapsed, net_elapsed = Timing.pop_timer()
+        telemetry.record('web.response.latency', elapsed)
+        telemetry.record('app.response.latency', net_elapsed)
 
 
-def _flask_wsgi_call(f):
-    def decorator(*args, **keywords):
-        t = time.time()
-        try:
-            return f(*args, **keywords)
-        finally:
-            elapsed = time.time() - t
-            telemetry.record('wsgi.response.latency', elapsed)
-    return decorator
+def _flask_wsgi_call(f, *args, **kwargs):
+    t = time.time()
+    try:
+        return f(*args, **kwargs)
+    finally:
+        elapsed = time.time() - t
+        telemetry.record('wsgi.response.latency', elapsed)
 
 
 class FlaskInstrumentor(BaseInstrumentor):
     modules = {'flask.app': ['Flask']}
 
     def __init__(self):
-        super(FlaskInstrumentor, self).__init__(
-            {
-                'flask.app.Flask.__init__': function_wrapper_factory(_flask_app, enable_if=None),
-                'flask.app.Flask.dispatch_request': function_wrapper_factory(_flask_dispatch, enable_if=None,
-                                                                             state='web'),
-                'flask.app.Flask.__call__': function_wrapper_factory(_flask_wsgi_call, enable_if=None, state='wsgi'),
-            }
-        )
+        super(FlaskInstrumentor, self).__init__()
 
     def run(self):
-        super(FlaskInstrumentor, self).run()
+        instrument_methods_v2(
+            {
+                'flask.app.Flask.__init__': get_conditional_wrapper(_flask_app, enable_if=None),
+                'flask.app.Flask.dispatch_request': get_conditional_wrapper(_flask_dispatch, enable_if=None,
+                                                                             state='web'),
+                'flask.app.Flask.__call__': get_conditional_wrapper(_flask_wsgi_call, enable_if=None, state='wsgi'),
+            })
