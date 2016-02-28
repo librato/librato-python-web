@@ -29,8 +29,9 @@ import time
 
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.instrument import contextmanager_wrapper_factory, function_wrapper_factory
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.instrument2 import get_conditional_wrapper, get_complex_wrapper, \
+     instrument_methods_v2
 from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
@@ -39,55 +40,50 @@ STATE_NAME = 'web'
 logger = getCustomLogger(__name__)
 
 
-def _cherrypy_respond_wrapper(f):
-    def decorator(*args, **keywords):
+def _cherrypy_respond_wrapper(func, *args, **keywords):
+    try:
+        telemetry.count('web.requests')
+        Timing.push_timer()
+
+        # call the request function
+        response = func(*args, **keywords)
+
+        if response.status:
+            telemetry.count('web.status.%sxx' % response.status[0:1])
+        return response
+    except Exception as e:
+        telemetry.count('web.errors')
+        raise e
+    finally:
         try:
-            telemetry.count('web.requests')
-            Timing.push_timer()
-
-            # call the request function
-            response = f(*args, **keywords)
-
-            if response.status:
-                telemetry.count('web.status.%sxx' % response.status[0:1])
-            return response
-        except Exception as e:
-            telemetry.count('web.errors')
-            raise e
-        finally:
-            try:
-                elapsed, net_elapsed = Timing.pop_timer()
-                telemetry.record('web.response.latency', elapsed)
-                telemetry.record('app.response.latency', net_elapsed)
-            except:
-                logger.exception('Teardown handler failed')
-                raise
-    return decorator
+            elapsed, net_elapsed = Timing.pop_timer()
+            telemetry.record('web.response.latency', elapsed)
+            telemetry.record('app.response.latency', net_elapsed)
+        except:
+            logger.exception('Teardown handler failed')
+            raise
 
 
-def _cherrypy_wsgi_call(f):
-    def decorator(*args, **keywords):
-        t = time.time()
-        try:
-            return f(*args, **keywords)
-        finally:
-            elapsed = time.time() - t
-            telemetry.record('wsgi.response.latency', elapsed)
-    return decorator
+def _cherrypy_wsgi_call(func, *args, **keywords):
+    t = time.time()
+    try:
+        return func(*args, **keywords)
+    finally:
+        elapsed = time.time() - t
+        telemetry.record('wsgi.response.latency', elapsed)
 
 
 class CherryPyInstrumentor(BaseInstrumentor):
     modules = {'cherrypy._cptree': ['Application'], 'cherrypy._cprequest': ['Request']}
 
     def __init__(self):
-        super(CherryPyInstrumentor, self).__init__(
-            {
-                'cherrypy._cptree.Application.__call__': function_wrapper_factory(_cherrypy_wsgi_call, enable_if=None,
-                                                                                  state='web'),
-                'cherrypy._cprequest.Request.run': function_wrapper_factory(_cherrypy_respond_wrapper, enable_if=None,
-                                                                            state='wsgi'),
-            }
-        )
+        super(CherryPyInstrumentor, self).__init__()
 
     def run(self):
-        super(CherryPyInstrumentor, self).run()
+        instrument_methods_v2(
+            {
+                'cherrypy._cptree.Application.__call__': get_conditional_wrapper(_cherrypy_wsgi_call, enable_if=None,
+                                                                                 state='web'),
+                'cherrypy._cprequest.Request.run': get_conditional_wrapper(_cherrypy_respond_wrapper, enable_if=None,
+                                                                           state='wsgi'),
+            })
