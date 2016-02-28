@@ -24,30 +24,44 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.instrument2 import get_complex_wrapper, instrument_methods_v2
+from datetime import datetime
+import unittest
+
+from librato_python_web.instrumentor.data.elasticsearch import ElasticsearchInstrumentor
+from datatest_base import BaseDataTest
+
+from elasticsearch import Elasticsearch
+
+ElasticsearchInstrumentor().run()
+es = Elasticsearch()
 
 
-class ElasticsearchInstrumentor(BaseInstrumentor):
-    modules = {
-                  'elasticsearch.client': ['Elasticsearch']
-              }
+class ElasticsearchTest(BaseDataTest, unittest.TestCase):
+    expected_web_state_counts = {'data.es.get.requests': 1,
+                                 'data.es.index.requests': 1,
+                                 'data.es.search.requests': 1}
+    expected_web_state_gauges = ['data.es.get.latency', 'data.es.index.latency', 'data.es.search.latency']
 
-    def __init__(self):
-        super(ElasticsearchInstrumentor, self).__init__()
+    def run_queries(self):
+        """
+        Elasticsearch queries
+        """
 
-    def run(self):
-        instrument_methods_v2(
-            {
-                'elasticsearch.client.Elasticsearch.create':
-                    get_complex_wrapper('data.es.create.', state='data.elasticsearch', disable_if='model'),
-                'elasticsearch.client.Elasticsearch.get':
-                    get_complex_wrapper('data.es.get.', state='data.elasticsearch', disable_if='model'),
-                'elasticsearch.client.Elasticsearch.index':
-                    get_complex_wrapper('data.es.index.', state='data.elasticsearch', disable_if='model'),
-                'elasticsearch.client.Elasticsearch.search':
-                    get_complex_wrapper('data.es.search.', state='data.elasticsearch', disable_if='model'),
-                'elasticsearch.client.Elasticsearch.delete':
-                    get_complex_wrapper('data.es.delete.', state='data.elasticsearch', disable_if='model'),
-            }
-        )
+        doc = {
+            'author': 'kimchy',
+            'text': 'Elasticsearch: cool. bonsai cool.',
+            'timestamp': datetime.now(),
+        }
+        res = es.index(index="test-index", doc_type='tweet', id=1, body=doc)
+        print(res['created'])
+
+        res = es.get(index="test-index", doc_type='tweet', id=1)
+        print(res['_source'])
+
+        es.indices.refresh(index="test-index")
+
+        res = es.search(index="test-index", body={"query": {"match_all": {}}})
+
+
+if __name__ == '__main__':
+    unittest.main()

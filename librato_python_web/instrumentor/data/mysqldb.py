@@ -9,14 +9,6 @@ class MysqlInstrumentor(BaseInstrumentor):
 
     def __init__(self):
         super(MysqlInstrumentor, self).__init__()
-        self.set_wrapped(
-            {
-                'MySQLdb.cursors.Cursor.execute':
-                    get_complex_wrapper('data.mysql.execute.', state='data.mysql', disable_if='model'),
-                'MySQLdb.cursors.Cursor.callproc':
-                    get_complex_wrapper('data.mysql.callproc.', state='data.mysql', disable_if='model'),
-            }
-        )
 
     def run(self):
         instrument_methods_v2(
