@@ -96,6 +96,6 @@ class FlaskInstrumentor(BaseInstrumentor):
             {
                 'flask.app.Flask.__init__': get_conditional_wrapper(_flask_app, enable_if=None),
                 'flask.app.Flask.dispatch_request': get_conditional_wrapper(_flask_dispatch, enable_if=None,
-                                                                             state='web'),
+                                                                            state='web'),
                 'flask.app.Flask.__call__': get_conditional_wrapper(_flask_wsgi_call, enable_if=None, state='wsgi'),
             })

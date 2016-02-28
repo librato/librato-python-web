@@ -63,7 +63,8 @@ def get_conditional_wrapper(wrapper, state=None, enable_if='web', disable_if=Non
 
 def get_complex_wrapper(metric, state, enable_if='web', disable_if=None, reporter='web'):
     """
-    Returns a wrapper that records latency and count metrics 
+    Returns a wrapper that records latency and count metrics
+
     :param metric: metric prefix
     :param state: the state to add to the context
     :param enable_if: metrics will only be reported if these states are on the context stack
@@ -85,6 +86,49 @@ def get_complex_wrapper(metric, state, enable_if='web', disable_if=None, reporte
             return func(*args, **keywords)
 
     return complex_wrapper
+
+
+def get_generator_wrapper(recorder, state=None, enable_if='web', disable_if=None):
+    """
+    Wraps a generator
+
+    :param recorder: the function used to record metrics when the underlying generator finishes
+    :param state: the state associated with the wrapped method
+    :param enable_if: instrumentation is only enabled when this state is present
+    :param disable_if: instrumentation is disabled when this state is present
+    :return: the function wrapper
+    """
+
+    def generator_wrapper(generator, *args, **keywords):
+        if _should_be_instrumented(state, enable_if, disable_if):
+            # wrap the initialization
+            elapsed = 0
+            context.push_state(state)
+            t = time.time()
+            try:
+                gen = generator(*args, **keywords)
+            finally:
+                elapsed += time.time() - t
+                context.pop_state(state)
+            try:
+                while True:
+                    # wrap each successive value generation
+                    context.push_state(state)
+                    t = time.time()
+                    try:
+                        v = six.next(gen)
+                    finally:
+                        elapsed += time.time() - t
+                        context.pop_state(state)
+                    yield v
+            finally:
+                # finish metrics (GeneratorExit or otherwise)
+                recorder(elapsed)
+        else:
+            for x in generator(*args, **keywords):
+                yield x
+
+    return generator_wrapper
 
 
 def _get_delegating_wrapper(original_method, wrapper_method):
