@@ -100,11 +100,10 @@ def _django_wsgi_call(original_method):
 
 
 class DjangoCoreInstrumentor(BaseInstrumentor):
-    modules = ['django.core.handlers.wsgi', 'django.conf']
+    modules = {'django.core.handlers.wsgi': ['WSGIHandler']}
     _wrapped = {
         'django.core.handlers.wsgi.WSGIHandler.__call__':
             function_wrapper_factory(_django_wsgi_call, state='wsgi', enable_if=None),
-        'django.conf.LazySettings.__getattr__': django_inject_middleware,
     }
 
     def __init__(self):
@@ -120,7 +119,7 @@ class DjangoCoreInstrumentor(BaseInstrumentor):
 
 
 class DjangoConfInstrumentor(BaseInstrumentor):
-    modules = ['django.conf']
+    modules = {'django.conf': ['LazySettings']}
     _wrapped = {
         'django.conf.LazySettings.__getattr__': django_inject_middleware,
     }
@@ -138,7 +137,7 @@ class DjangoConfInstrumentor(BaseInstrumentor):
 
 
 class DjangoDbInstrumentor(BaseInstrumentor):
-    modules = ['django.db.models.query']
+    modules = {'django.db.models.query': ['QuerySet']}
     _wrapped = {
         'django.db.models.query.QuerySet.iterator':
             generator_wrapper_factory(generate_record_telemetry('model.iterator.'), state='model'),

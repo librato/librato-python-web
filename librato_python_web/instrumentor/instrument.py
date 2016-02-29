@@ -90,6 +90,7 @@ def instrument_methods(method_wrappers):
             logger.warn('%s not instrumented because not found', fully_qualified_class_name)
         except AttributeError:
             logger.warn('could not instrument %s', qualified_method_name)
+            logger.exception('details')
 
 
 def override_classes(overridden_classes, wrapped):

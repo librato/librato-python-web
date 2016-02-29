@@ -2,7 +2,9 @@ from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, 
 
 
 class MysqlInstrumentor(BaseInstrumentor):
-    modules = ['MySQLdb.cursors']
+    modules = {
+                  'MySQLdb.cursors': ['Cursor']
+              }
 
     def __init__(self):
         super(MysqlInstrumentor, self).__init__()

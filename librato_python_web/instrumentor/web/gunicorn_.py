@@ -78,7 +78,7 @@ def _worker_notify(f):
 
 
 class GunicornInstrumentor(BaseInstrumentor):
-    modules = ['gunicorn.arbiter', 'gunicorn.workers.base']
+    modules = {'gunicorn.arbiter': ['Arbiter'], 'gunicorn.workers.base': ['Worker']}
 
     def __init__(self):
         super(GunicornInstrumentor, self).__init__(
