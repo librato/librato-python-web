@@ -28,7 +28,6 @@ from contextlib import contextmanager
 from librato_python_web.instrumentor import telemetry
 
 
-
 def count(metric, incr=1):
     """
     Increment the count for the given metric by the given increment.

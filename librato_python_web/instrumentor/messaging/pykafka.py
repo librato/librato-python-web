@@ -2,7 +2,7 @@ from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, 
 
 
 class PykafkaInstrumentor(BaseInstrumentor):
-    modules = ['pykafka', 'pykafka.simpleconsumer']
+    modules = {'pykafka': ['Producer'], 'pykafka.simpleconsumer': ['SimpleConsumer']}
 
     def __init__(self):
         super(PykafkaInstrumentor, self).__init__()

@@ -4,7 +4,7 @@ from librato_python_web.instrumentor.telemetry import increment_count
 
 
 class LoggingInstrumentor(BaseInstrumentor):
-    modules = ['logging']
+    modules = {'logging': ['Logger']}
 
     def __init__(self):
         super(LoggingInstrumentor, self).__init__(

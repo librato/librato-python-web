@@ -96,7 +96,7 @@ def _flask_wsgi_call(f):
 
 
 class FlaskInstrumentor(BaseInstrumentor):
-    modules = ['flask.app']
+    modules = {'flask.app': ['Flask']}
 
     def __init__(self):
         super(FlaskInstrumentor, self).__init__(
