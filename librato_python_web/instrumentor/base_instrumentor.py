@@ -56,6 +56,24 @@ class BaseInstrumentor(object):
     def set_wrapped(self, wrapped):
         self.wrapped = wrapped if wrapped is not None else {}
 
+    def can_run(self):
+        # Confirm that required modules and attributes exist
+        if hasattr(self, 'modules'):
+            for name in self.modules:
+                if name not in sys.modules:
+                    logger.info("Skipping for now - required module %s not loaded yet", name)
+                    return False
+                mod_ = sys.modules[name]
+
+                for attr_ in self.modules[name]:
+                    if hasattr(mod_, attr_):
+                        logger.info("Found required attribute %s in %s", attr_, name)
+                    else:
+                        logger.info("Skipping %s for now - missing required attr %s", name, attr_)
+                        return False
+
+        return True
+
     def run(self):
         major_version = sys.version_info[0]
         if self.major_versions and major_version not in self.major_versions:
