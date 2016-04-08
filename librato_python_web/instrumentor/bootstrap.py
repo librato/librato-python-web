@@ -32,7 +32,7 @@ from . import general
 from . import telemetry
 from . import config
 from .telemetry import StatsdTelemetryReporter
-from .data.psycopg2 import Psycopg2Instrumentor, Psycopg2ExtensionsInstrumentor
+from .data.psycopg2 import Psycopg2Instrumentor
 from .data.sqlite import SqliteInstrumentor
 from .data.elasticsearch import ElasticsearchInstrumentor
 from .data.mysqldb import MysqlInstrumentor
@@ -59,7 +59,7 @@ _instrumentors = {
     'logging': [LoggingInstrumentor],
     'mysql': [MysqlInstrumentor],
     'sqlite': [SqliteInstrumentor],
-    'psycopg2': [Psycopg2Instrumentor, Psycopg2ExtensionsInstrumentor],
+    'psycopg2': [Psycopg2Instrumentor],
     'pykafka': [PykafkaInstrumentor],
     'requests': [RequestsInstrumentor],
     'urllib2': [Urllib2Instrumentor],
