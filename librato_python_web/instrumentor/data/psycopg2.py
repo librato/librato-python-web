@@ -5,7 +5,7 @@ from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, 
 
 
 class Psycopg2Instrumentor(BaseInstrumentor):
-    modules = {'psycopg2': ['connect'], 'psycopg2.extensions': ['connection', 'cursor']}
+    modules = {'psycopg2': ['connect']}
 
     def __init__(self):
         super(Psycopg2Instrumentor, self).__init__()
@@ -18,7 +18,24 @@ class Psycopg2Instrumentor(BaseInstrumentor):
                     'connect': {
                         'returns': 'psycopg2.extensions.connection'
                     }
-                },
+                }
+            }
+        )
+
+        self.set_wrapped({})
+        super(Psycopg2Instrumentor, self).run()
+
+
+class Psycopg2ExtensionsInstrumentor(BaseInstrumentor):
+    modules = {'psycopg2.extensions': ['connection', 'cursor']}
+
+    def __init__(self):
+        super(Psycopg2ExtensionsInstrumentor, self).__init__()
+        self.major_versions = [2]
+
+    def run(self):
+        self.set_overridden(
+            {
                 'psycopg2.extensions.connection': {
                     'cursor': {
                         'returns': 'psycopg2.extensions.cursor'
@@ -52,4 +69,4 @@ class Psycopg2Instrumentor(BaseInstrumentor):
             wrapped
         )
 
-        super(Psycopg2Instrumentor, self).run()
+        super(Psycopg2ExtensionsInstrumentor, self).run()
