@@ -159,16 +159,13 @@ def import2(*args, **kwargs):
     if name in _globals.targeted_modules and name not in _globals.instrumented_modules:
         # We care about this module and it hasn't already been instrumented
 
+        logger.debug("Request to load module %s", name)
         instrumentor = _globals.targeted_modules[name]
 
         # Don't proceed till required attributes are present
         # Recursion in the module loading process can result in partially loaded modules
-        for attr_ in instrumentor.modules[name]:
-            if hasattr(mod_, attr_):
-                logger.info("Found required attribute %s in %s", attr_, name)
-            else:
-                logger.info("Skipping %s for now - missing required attr %s", name, attr_)
-                return mod_
+        if not instrumentor.can_run():
+            return mod_
 
         # Check off all the modules this instrumentor handles
         _globals.instrumented_modules.update(instrumentor.modules.keys())
