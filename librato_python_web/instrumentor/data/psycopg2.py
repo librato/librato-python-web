@@ -5,7 +5,7 @@ from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, 
 
 
 class Psycopg2Instrumentor(BaseInstrumentor):
-    modules = {'psycopg2': []}
+    modules = {'psycopg2': ['connect']}
 
     def __init__(self):
         super(Psycopg2Instrumentor, self).__init__()
