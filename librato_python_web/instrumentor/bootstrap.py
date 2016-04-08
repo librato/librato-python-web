@@ -159,6 +159,7 @@ def import2(*args, **kwargs):
     if name in _globals.targeted_modules and name not in _globals.instrumented_modules:
         # We care about this module and it hasn't already been instrumented
 
+        logger.debug("Request to load module %s", name)
         instrumentor = _globals.targeted_modules[name]
 
         # Don't proceed till required attributes are present
