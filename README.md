@@ -102,7 +102,7 @@ librato-launch gunicorn --statsd-host=127.0.0.1:8142 ... my_module:my_app
 
 ## Instrumenting using code
 
-You can't or don't want to auto-instrument your app, you can skip launch-launch and trigger instrumentation using the following code.
+You can't or don't want to auto-instrument your app, you can skip librato-launch and trigger instrumentation using the following code.
 
 ```
 from librato_python_web.instrumentor import bootstrap
