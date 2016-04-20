@@ -85,7 +85,7 @@ class config_info(object):
     pass
 
 
-def load_config(args=sys.argv[1:], must_exist=True):
+def load_config(args=sys.argv[1:], use_env=True):
     """ Load configuration with the following priority """
     """ a. Command line params """
     """ b. Configuration file """
@@ -116,10 +116,6 @@ def load_config(args=sys.argv[1:], must_exist=True):
     options = parser.parse_args(args)
     _globals.config_path = options.config_path
 
-    if must_exist and not os.path.isfile(_globals.config_path):
-        print("Can't open configuration file: {}".format(_globals.config_path))
-        sys.exit(1)
-
     # Drop the null values argparse supplies
     new_options = config_info()
     for f in config_options:
@@ -129,6 +125,8 @@ def load_config(args=sys.argv[1:], must_exist=True):
                 setattr(new_options, f, val)
     options = new_options
 
+    if use_env:
+        update_config_from_env(options)
     update_config_from_config_file(options)
 
     # Use baked in defaults
@@ -137,6 +135,20 @@ def load_config(args=sys.argv[1:], must_exist=True):
             setattr(options, key, defaults.get(key))
 
     setattr(options, 'integration', getattr(options, 'integration', 'django').lower())
+    return options
+
+
+def update_config_from_env(options=None):
+    options = options or config_info()
+
+    for attr, var in [("user", "LIBRATO_USER"), ("api_token", "LIBRATO_API_TOKEN"),
+                      ("app_id", "LIBRATO_APP_ID"), ("integration", "LIBRATO_INTEGRATION")]:
+        if var in os.environ:
+            setattr(options, attr, os.environ[var])
+
+    if "LIBRATO_INSTRUMENTATION_PORT" in os.environ:
+        setattr(options, "port", int(os.environ["LIBRATO_INSTRUMENTATION_PORT"]))
+
     return options
 
 

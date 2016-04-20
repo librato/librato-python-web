@@ -360,7 +360,7 @@ def _update(_user, _password, _app_id, _integration):
 
 
 def execute():
-    options = agent_config.load_config(must_exist=False)
+    options = agent_config.load_config(use_env=False)
 
     log_level = logging.DEBUG if options.debug else logging.WARNING
     logging.getLogger().setLevel(log_level)
