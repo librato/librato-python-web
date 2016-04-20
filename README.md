@@ -89,7 +89,18 @@ Running with librato-launch installs a custom module loader, which instruments c
 
 librato-launch consumes the configuration file (./agent-conf.json, by default). Use --config-path to override this default location.
 
-librato-launch spawns a StatsD process to report metrics to Librato, which listens over UDP port 8142 by default. You can customize this port using the --port option to librato-config, or by manually editing the 'port' option in the configuration file.
+librato-launch spawns a StatsD process to report metrics to Librato, which listens over UDP port 8142 by default. You can
+customize this port using the --port option to librato-config, or by manually editing the 'port' option in the configuration
+file.
+
+The following environment variables, if defined, will override any configuration file settings.
+
+* LIBRATO_INTEGRATION - identifies the web framework for your app (django, flask or cherrypy)
+* LIBRATO_USER - the username associated with your Librato account
+* LIBRATO_API_TOKEN - a valid api token which has write access to Librato
+* LIBRATO_APP_ID - uniquely identifies your web application and can be used to filter your curated dashboards
+* LIBRATO_INSTRUMENTATION_PORT - UDP port that the bundled statsd instance will listen on
+
 
 ## Gunicorn monitoring
 
