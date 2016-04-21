@@ -91,6 +91,9 @@ def init(config_path=None):
             logger.info("Can't load configuration file: %s", config_path)
             # sys.exit(1)
 
+        if 'LIBRATO_INSTRUMENTATION_LOG_LEVEL' in os.environ:
+            general.set_option('instrumentor.log_level', os.environ.get('LIBRATO_INSTRUMENTATION_LOG_LEVEL'))
+
         log_level = general.get_option("instrumentor.log_level", 30)
         custom_logging.setDefaultLevel(int(log_level))
 
@@ -100,6 +103,10 @@ def init(config_path=None):
 
         if 'LIBRATO_INTEGRATION' in os.environ:
             general.set_option('integration', os.environ.get('LIBRATO_INTEGRATION'))
+
+        if 'LIBRATO_INSTRUMENTATION_LIBS' in os.environ:
+            libs = os.environ.get('LIBRATO_INSTRUMENTATION_LIBS').split()
+            general.set_option('libraries', libs)
 
         set_instrumentors()
         set_importer()
