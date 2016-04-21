@@ -100,6 +100,8 @@ The following environment variables, if defined, will override any configuration
 * LIBRATO_API_TOKEN - a valid api token which has write access to Librato
 * LIBRATO_APP_ID - uniquely identifies your web application and can be used to filter your curated dashboards
 * LIBRATO_INSTRUMENTATION_PORT - UDP port that the bundled statsd instance will listen on
+* LIBRATO_INSTRUMENTATION_LIBS - a white-space separated list of libraries to instrument
+* LIBRATO_INSTRUMENTATION_LOG_LEVEL - a value from 10 to 50, which controls instrumentor logging verbosity (10 = debug)
 
 
 ## Gunicorn monitoring
