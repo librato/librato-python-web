@@ -29,7 +29,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="librato-python-web",
-    version="0.40.4",
+    version="0.40.5",
     description=("Librato Python Agent. Copyright (c) 2015 Librato, Inc "
                  "All Rights Reserved"),
 
