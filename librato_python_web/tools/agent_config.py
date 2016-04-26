@@ -141,7 +141,7 @@ def load_config(args=sys.argv[1:], use_env=True):
 def update_config_from_env(options=None):
     options = options or config_info()
 
-    for attr, var in [("user", "LIBRATO_USER"), ("api_token", "LIBRATO_API_TOKEN"),
+    for attr, var in [("user", "LIBRATO_USER"), ("api_token", "LIBRATO_TOKEN"),
                       ("app_id", "LIBRATO_APP_ID"), ("integration", "LIBRATO_INTEGRATION")]:
         if var in os.environ:
             setattr(options, attr, os.environ[var])
