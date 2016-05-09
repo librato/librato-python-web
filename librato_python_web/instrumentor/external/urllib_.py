@@ -106,7 +106,7 @@ def _urllib_open_wrapper(func, *args, **keywords):
 
 class Urllib2Instrumentor(BaseInstrumentor):
     """ Python2 urllib2 """
-    modules = ['urllib2']
+    modules = {'urllib2': ['OpenerDirector']}
 
     def __init__(self):
         self.major_versions = [2]
@@ -117,7 +117,7 @@ class Urllib2Instrumentor(BaseInstrumentor):
 
 class UrllibInstrumentor(BaseInstrumentor):
     """ Python3 urllib """
-    modules = ['urllib.request']
+    modules = {'urllib.request': ['OpenerDirector']}
 
     def __init__(self):
         self.major_versions = [3]

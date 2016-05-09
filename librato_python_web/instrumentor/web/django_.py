@@ -126,10 +126,6 @@ class DjangoConfInstrumentor(BaseInstrumentor):
 
 class DjangoDbInstrumentor(BaseInstrumentor):
     modules = {'django.db.models.query': ['QuerySet']}
-    _wrapped = {
-        'django.db.models.query.QuerySet.iterator':
-            generator_wrapper_factory(generate_record_telemetry('model.iterator.'), state='model'),
-    }
 
     def __init__(self):
         super(DjangoDbInstrumentor, self).__init__()

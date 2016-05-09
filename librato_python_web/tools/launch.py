@@ -109,7 +109,7 @@ def launch_statsd():
 
 
 def usage(code=0):
-    print("Usage: {} [--info | --debug] command ...".format(sys.argv[0]))
+    print("Usage: {} [--info | --debug] [--config-path config-file] command ...".format(sys.argv[0]))
     print("       {} --help".format(sys.argv[0]))
     sys.exit(code)
 
