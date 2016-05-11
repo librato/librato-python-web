@@ -24,8 +24,6 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import unittest
-from librato_python_web.instrumentor.instrument import generator_wrapper_factory
-from librato_python_web.instrumentor.telemetry import generate_record_telemetry
 
 
 class TelemetryTest(unittest.TestCase):

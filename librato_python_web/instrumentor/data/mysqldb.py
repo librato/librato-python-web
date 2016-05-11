@@ -25,7 +25,7 @@
 
 
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.instrument2 import get_complex_wrapper
+from librato_python_web.instrumentor.instrument import get_complex_wrapper
 
 
 class MysqlInstrumentor(BaseInstrumentor):

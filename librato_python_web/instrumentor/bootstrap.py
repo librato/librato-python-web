@@ -45,7 +45,6 @@ from .web.django_ import DjangoCoreInstrumentor, DjangoConfInstrumentor, DjangoD
 from .web.flask_ import FlaskInstrumentor
 from .web.cherrypy_ import CherryPyInstrumentor
 from .web.gunicorn_ import GunicornInstrumentor
-from .instrument import instrument_methods
 
 logger = custom_logging.getCustomLogger(__name__)
 

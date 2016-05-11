@@ -24,7 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from librato_python_web.instrumentor.instrument2 import get_complex_wrapper
+from librato_python_web.instrumentor.instrument import get_complex_wrapper
 from librato_python_web.instrumentor.objproxies import ObjectWrapper
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 

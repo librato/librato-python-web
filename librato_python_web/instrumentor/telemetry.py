@@ -76,24 +76,6 @@ def event(event_type, dictionary=None, reporter='web'):
     _global.reporters[reporter].event(event_type, dictionary)
 
 
-def telemetry_context_manager(type_name='resource', reporter='web'):
-    """
-    Records count and latency metrics for wrapped block
-
-    :param type_name: prefixes used to generate metric names
-    """
-    @contextmanager
-    def decorator(*args, **keywords):
-        Timing.push_timer()
-        try:
-            yield
-        finally:
-            elapsed, _ = Timing.pop_timer()
-            record_telemetry(type_name, elapsed, reporter)
-
-    return decorator
-
-
 def record_telemetry(type_name, elapsed, reporter='web'):
     count(type_name + 'requests', reporter=reporter)
     record(type_name + 'latency', elapsed, reporter=reporter)

@@ -24,10 +24,9 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import sys
-from .telemetry import telemetry_context_manager
 
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
-from librato_python_web.instrumentor.instrument2 import instrument_methods_v2
+from librato_python_web.instrumentor.instrument import instrument_methods
 
 logger = getCustomLogger(__name__)
 
@@ -67,4 +66,4 @@ class BaseInstrumentor(object):
             logger.warn("Disabling %s since it doesn't support python %s.x", self.__class__, major_version)
             return
 
-        instrument_methods_v2(self.wrapped_methods)
+        instrument_methods(self.wrapped_methods)

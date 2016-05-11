@@ -29,7 +29,7 @@ import time
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.instrument2 import get_conditional_wrapper
+from librato_python_web.instrumentor.instrument import get_conditional_wrapper
 from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
