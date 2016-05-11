@@ -24,7 +24,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from librato_python_web.instrumentor.instrument2 import get_complex_wrapper, instrument_methods_v2
+from librato_python_web.instrumentor.instrument2 import get_complex_wrapper
 from librato_python_web.instrumentor.objproxies import ObjectWrapper
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 
@@ -71,7 +71,7 @@ class SqliteInstrumentor(BaseInstrumentor):
         # Instrument our wrapper connection class
         meths = {
                 'librato_python_web.instrumentor.data.sqlite.WrappedCursor.' + m:
-                    get_complex_wrapper('data.sqlite.%s.' % m, state='data.sqlite', disable_if='model')
+                get_complex_wrapper('data.sqlite.%s.' % m, state='data.sqlite', disable_if='model')
 
                 for m in ['execute', 'executemany', 'fetchone', 'fetchmany', 'fetchall']
                 }
@@ -79,4 +79,5 @@ class SqliteInstrumentor(BaseInstrumentor):
         # Instrument connect method
         meths['sqlite3.connect'] = wrapped_connect
 
-        instrument_methods_v2(meths)
+        self.set_wrapped(meths)
+        super(SqliteInstrumentor, self).run()

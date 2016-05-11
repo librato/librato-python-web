@@ -25,7 +25,7 @@
 
 
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.instrument2 import get_complex_wrapper, instrument_methods_v2
+from librato_python_web.instrumentor.instrument2 import get_complex_wrapper
 
 
 class PykafkaInstrumentor(BaseInstrumentor):
@@ -35,7 +35,7 @@ class PykafkaInstrumentor(BaseInstrumentor):
         super(PykafkaInstrumentor, self).__init__()
 
     def run(self):
-        instrument_methods_v2(
+        self.set_wrapped(
             {
                 # Kafka (pykafka)
                 'pykafka.simpleconsumer.SimpleConsumer.consume':
@@ -43,3 +43,4 @@ class PykafkaInstrumentor(BaseInstrumentor):
                 'pykafka.Producer.produce':
                     get_complex_wrapper('messaging.kafka.produce.', state='messaging.kafka', disable_if='model'),
             })
+        super(PykafkaInstrumentor, self).run()

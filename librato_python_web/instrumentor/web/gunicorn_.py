@@ -30,7 +30,7 @@ import time
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.instrument2 import get_conditional_wrapper, instrument_methods_v2
+from librato_python_web.instrumentor.instrument2 import get_conditional_wrapper
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
@@ -78,9 +78,10 @@ class GunicornInstrumentor(BaseInstrumentor):
         super(GunicornInstrumentor, self).__init__()
 
     def run(self):
-        instrument_methods_v2(
+        self.set_wrapped(
             {
                 'gunicorn.arbiter.Arbiter.manage_workers': get_conditional_wrapper(_manage_workers, enable_if=None),
                 'gunicorn.workers.base.Worker.notify': get_conditional_wrapper(_worker_notify, enable_if=None),
             }
         )
+        super(GunicornInstrumentor, self).run()

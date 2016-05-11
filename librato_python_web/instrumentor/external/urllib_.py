@@ -26,7 +26,6 @@ from math import floor
 
 from librato_python_web.instrumentor import context
 from librato_python_web.instrumentor.instrument import _should_be_instrumented
-from librato_python_web.instrumentor.instrument2 import instrument_methods_v2
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.objproxies import ObjectWrapper
 from librato_python_web.instrumentor import telemetry
@@ -112,7 +111,8 @@ class Urllib2Instrumentor(BaseInstrumentor):
         self.major_versions = [2]
 
     def run(self):
-        instrument_methods_v2({'urllib2.OpenerDirector.open': _urllib_open_wrapper})
+        self.set_wrapped({'urllib2.OpenerDirector.open': _urllib_open_wrapper})
+        super(Urllib2Instrumentor, self).run()
 
 
 class UrllibInstrumentor(BaseInstrumentor):
@@ -123,4 +123,5 @@ class UrllibInstrumentor(BaseInstrumentor):
         self.major_versions = [3]
 
     def run(self):
-        instrument_methods_v2({'urllib.request.OpenerDirector.open': _urllib_open_wrapper})
+        self.set_wrapped({'urllib.request.OpenerDirector.open': _urllib_open_wrapper})
+        super(UrllibInstrumentor, self).run()

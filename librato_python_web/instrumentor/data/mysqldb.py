@@ -25,7 +25,7 @@
 
 
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.instrument2 import get_complex_wrapper, instrument_methods_v2
+from librato_python_web.instrumentor.instrument2 import get_complex_wrapper
 
 
 class MysqlInstrumentor(BaseInstrumentor):
@@ -37,7 +37,7 @@ class MysqlInstrumentor(BaseInstrumentor):
         super(MysqlInstrumentor, self).__init__()
 
     def run(self):
-        instrument_methods_v2(
+        self.set_wrapped(
             {
                 'MySQLdb.cursors.Cursor.execute':
                     get_complex_wrapper('data.mysql.execute.', state='data.mysql', disable_if='model'),
@@ -45,3 +45,4 @@ class MysqlInstrumentor(BaseInstrumentor):
                     get_complex_wrapper('data.mysql.callproc.', state='data.mysql', disable_if='model'),
             }
         )
+        super(MysqlInstrumentor, self).run()

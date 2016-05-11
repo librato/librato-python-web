@@ -25,7 +25,7 @@
 
 
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.instrument2 import get_complex_wrapper, instrument_methods_v2
+from librato_python_web.instrumentor.instrument2 import get_complex_wrapper
 
 
 class ElasticsearchInstrumentor(BaseInstrumentor):
@@ -37,7 +37,7 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
         super(ElasticsearchInstrumentor, self).__init__()
 
     def run(self):
-        instrument_methods_v2(
+        self.set_wrapped(
             {
                 'elasticsearch.client.Elasticsearch.create':
                     get_complex_wrapper('data.es.create.', state='data.elasticsearch', disable_if='model'),
@@ -51,3 +51,5 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
                     get_complex_wrapper('data.es.delete.', state='data.elasticsearch', disable_if='model'),
             }
         )
+
+        super(ElasticsearchInstrumentor, self).run()

@@ -29,7 +29,7 @@ import time
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.instrument2 import get_conditional_wrapper, instrument_methods_v2
+from librato_python_web.instrumentor.instrument2 import get_conditional_wrapper
 from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
@@ -92,10 +92,11 @@ class FlaskInstrumentor(BaseInstrumentor):
         super(FlaskInstrumentor, self).__init__()
 
     def run(self):
-        instrument_methods_v2(
+        self.set_wrapped(
             {
                 'flask.app.Flask.__init__': get_conditional_wrapper(_flask_app, enable_if=None),
                 'flask.app.Flask.dispatch_request': get_conditional_wrapper(_flask_dispatch, enable_if=None,
                                                                             state='web'),
                 'flask.app.Flask.__call__': get_conditional_wrapper(_flask_wsgi_call, enable_if=None, state='wsgi'),
             })
+        super(FlaskInstrumentor, self).run()

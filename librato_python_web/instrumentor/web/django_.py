@@ -32,7 +32,7 @@ from librato_python_web.instrumentor.telemetry import generate_record_telemetry
 from librato_python_web.instrumentor.util import prepend_to_tuple, Timing
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.instrument2 import get_conditional_wrapper, get_complex_wrapper, \
-    get_generator_wrapper, instrument_methods_v2
+    get_generator_wrapper
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
@@ -103,12 +103,13 @@ class DjangoCoreInstrumentor(BaseInstrumentor):
         super(DjangoCoreInstrumentor, self).__init__()
 
     def run(self):
-        instrument_methods_v2(
+        self.set_wrapped(
             {
                 'django.core.handlers.wsgi.WSGIHandler.__call__':
                     get_conditional_wrapper(_django_wsgi_call, state='wsgi', enable_if=None),
                 'django.conf.LazySettings.__getattr__': django_inject_middleware,
             })
+        super(DjangoCoreInstrumentor, self).run()
 
 
 class DjangoConfInstrumentor(BaseInstrumentor):
@@ -118,10 +119,11 @@ class DjangoConfInstrumentor(BaseInstrumentor):
         super(DjangoConfInstrumentor, self).__init__()
 
     def run(self):
-        instrument_methods_v2(
+        self.set_wrapped(
             {
                 'django.conf.LazySettings.__getattr__': django_inject_middleware,
             })
+        super(DjangoConfInstrumentor, self).run()
 
 
 class DjangoDbInstrumentor(BaseInstrumentor):
@@ -144,4 +146,5 @@ class DjangoDbInstrumentor(BaseInstrumentor):
             metric = 'model.' + method
             wrappers['django.db.models.query.QuerySet.' + method] = get_complex_wrapper(metric, state='model')
 
-        instrument_methods_v2(wrappers)
+        self.set_wrapped(wrappers)
+        super(DjangoDbInstrumentor, self).run()

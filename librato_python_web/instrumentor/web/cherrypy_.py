@@ -30,8 +30,7 @@ import time
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
-from librato_python_web.instrumentor.instrument2 import get_conditional_wrapper, get_complex_wrapper, \
-     instrument_methods_v2
+from librato_python_web.instrumentor.instrument2 import get_conditional_wrapper, get_complex_wrapper
 from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
@@ -80,10 +79,11 @@ class CherryPyInstrumentor(BaseInstrumentor):
         super(CherryPyInstrumentor, self).__init__()
 
     def run(self):
-        instrument_methods_v2(
+        self.set_wrapped(
             {
                 'cherrypy._cptree.Application.__call__': get_conditional_wrapper(_cherrypy_wsgi_call, enable_if=None,
                                                                                  state='web'),
                 'cherrypy._cprequest.Request.run': get_conditional_wrapper(_cherrypy_respond_wrapper, enable_if=None,
                                                                            state='wsgi'),
             })
+        super(CherryPyInstrumentor, self).run()

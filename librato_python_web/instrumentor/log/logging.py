@@ -23,7 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from librato_python_web.instrumentor.instrument2 import get_increment_wrapper, instrument_methods_v2
+from librato_python_web.instrumentor.instrument2 import get_increment_wrapper
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 
 
@@ -34,9 +34,10 @@ class LoggingInstrumentor(BaseInstrumentor):
         super(LoggingInstrumentor, self).__init__()
 
     def run(self):
-        instrument_methods_v2({
+        self.set_wrapped({
             'logging.Logger.critical': get_increment_wrapper('logging.critical.requests'),
             'logging.Logger.exception': get_increment_wrapper('logging.exception.requests'),
             'logging.Logger.error': get_increment_wrapper('logging.error.requests'),
             'logging.Logger.warning': get_increment_wrapper('logging.warning.requests'),
         })
+        super(LoggingInstrumentor, self).run()

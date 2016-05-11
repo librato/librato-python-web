@@ -37,38 +37,6 @@ from librato_python_web.instrumentor.util import wraps, is_class_available, get_
 logger = getCustomLogger(__name__)
 
 
-def run_instrumentors(instrumentors, libs):
-    """
-    Applies instrumentation to the given libs, using the given instrumentors.
-
-    :param libs: list of libraries to be instrumented
-    :param instrumentors: dictionary of instrumentors, where keys are names and values are instances
-    """
-    for alias in instrumentors:
-        if alias not in libs:
-            logger.info("Skipping %s", alias)
-            continue
-
-        try:
-            logger.info("Instrumenting %s", alias)
-            instrumentor = instrumentors[alias]
-            try:
-                for class_name in instrumentor.required_class_names:
-                    if not is_class_available(class_name):
-                        logger.info('required instrumentor class not available %s', class_name)
-                        break
-                else:
-                    # All required classes were available
-                    logger.info('running instrumentor: %s', instrumentor.__name__)
-                    instrumentor().run()
-            except:
-                # if something goes wrong, keep going, don't destroy the app!
-                logger.exception('problem initializing instrumentor: %s', instrumentor)
-        except:
-            # if something goes wrong, keep going, don't destroy the app!
-            logger.exception('problem initializing instrumentor: %s', alias)
-
-
 def instrument_methods(method_wrappers):
     """
     Instruments the methods as specified by the method_wrappers dict. Key is the method path and value is the function
