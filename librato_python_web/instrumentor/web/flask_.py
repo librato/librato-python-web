@@ -51,7 +51,6 @@ def _after_request(response):
 def _teardown_request(e=None):
     if e:
         telemetry.count('web.errors')
-        telemetry.count('web.status.5xx')
 
 
 def _flask_app(f):
