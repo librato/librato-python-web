@@ -30,7 +30,6 @@ from six.moves import builtins
 
 from . import general
 from . import telemetry
-from . import config
 from .telemetry import StatsdTelemetryReporter
 from .data.psycopg2 import Psycopg2Instrumentor
 from .data.sqlite import SqliteInstrumentor
