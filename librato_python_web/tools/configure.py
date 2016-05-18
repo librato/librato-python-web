@@ -98,11 +98,11 @@ CHART_SPECS = [
                 'composite': divide_(
                     subtract_(
                         multiply_(
-                                sum_(s_("gunicorn.request.duration.mean", function="mean")),
-                                sum_(s_("gunicorn.request.duration.count", function="sum"))),
+                            sum_(s_("gunicorn.request.duration.mean", function="mean")),
+                            sum_(s_("gunicorn.request.duration.count", function="sum"))),
                         multiply_(
-                                sum_(s_("wsgi.response.latency.mean", function="mean")),
-                                sum_(s_("wsgi.response.latency.count", function="sum")))),
+                            sum_(s_("wsgi.response.latency.mean", function="mean")),
+                            sum_(s_("wsgi.response.latency.count", function="sum")))),
                     THROUGHPUT_QUERY),
                 'summary_function': 'average',
                 'color': '#f04950'
@@ -307,16 +307,16 @@ CHART_SPECS = [
 
 def _create_space(api, space_name):
     spaces = api.get_spaces()
-    logger.debug("Spaces: %s" % spaces)
+    logger.debug("Spaces: %s", spaces)
 
     for s in spaces:
         if s.get('name') == space_name:
             _space = s
-            logger.info('Space {} already exists'.format(space_name))
+            logger.info('Space %s already exists', space_name)
             break
     else:
         _space = api.add_space(space_name)
-        logger.info("Added space: {}".format(space_name))
+        logger.info("Added space: %s", space_name)
 
     return _space
 
@@ -327,10 +327,10 @@ def _add_chart(api, _space, name, y_label, chart_type="line", metrics=[], min_=N
     for c in _charts:
         if c.get('name') == name:
             _chart = c
-            logger.info('Chart {} already exists'.format(name))
+            logger.info('Chart %s already exists', name)
             break
     else:
-        logger.info('Adding chart {}'.format(name))
+        logger.info('Adding chart %s', name)
         _chart = api.add_chart(_space_id, name, y_label, chart_type=chart_type, metrics=metrics, min_=min_, max_=max_)
 
     return _chart
@@ -340,7 +340,7 @@ def _add_metrics(api, _space, _chart, _metrics):
     _space_id = _space.get('id')
     _chart_id = _chart.get('id')
     for _metric in _metrics:
-        logger.info('Adding metric {}'.format(_metric))
+        logger.info('Adding metric %s', _metric)
         api.add_metric(_space_id, _chart_id, _metric)
 
 

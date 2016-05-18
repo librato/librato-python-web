@@ -23,6 +23,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+""" Custom logger which lets us avoid a dependency on the standard logging module """
+
 import sys
 import traceback as tb
 from six import print_
@@ -34,54 +36,68 @@ ERROR = 40
 CRITICAL = 50
 
 
-class _globals:
-    _level = WARNING
+class _globals(object):
+    """ Global vars """
+    level = WARNING
 
 
 class CustomLogger(object):
+    """" Custome logger class which mimics the logging module """
 
     def __init__(self, name):
+        """ Constructor """
         self._name = name
 
     def _stdout(self, level, fmt, *args, **kwargs):
+        """ Formats message and writes it to standard output """
         mesg = fmt % args
         print("[{}] {} - {}".format(level, self._name, mesg))
 
     def _stderr(self, level, fmt, *args, **kwargs):
+        """ Formats message and writes it to standard error """
         mesg = fmt % args
         print_("[{}] {} - {}".format(level, self._name, mesg), file=sys.stderr)
 
     def debug(self, fmt, *args, **kwargs):
-        if _globals._level <= DEBUG:
+        """ Logs a debug message """
+        if _globals.level <= DEBUG:
             self._stdout("DEBUG", fmt, *args, **kwargs)
 
     def info(self, fmt, *args, **kwargs):
-        if _globals._level <= INFO:
+        """ Logs an informational message """
+        if _globals.level <= INFO:
             self._stdout("INFO", fmt, *args, **kwargs)
 
     def warning(self, fmt, *args, **kwargs):
-        if _globals._level <= WARNING:
+        """ Logs a warning """
+        if _globals.level <= WARNING:
             self._stdout("WARNING", fmt, *args, **kwargs)
 
     def warn(self, fmt, *args, **kwargs):
+        """ Logs a warning """
         return self.warning(fmt, *args, **kwargs)
 
     def error(self, fmt, *args, **kwargs):
-        if _globals._level <= ERROR:
+        """ Logs an error message """
+        if _globals.level <= ERROR:
             self._stderr("ERROR", fmt, *args, **kwargs)
 
     def exception(self, fmt, *args, **kwargs):
+        """ Logs an exception """
         self._stderr("EXCEPTION", fmt, *args, **kwargs)
         tb.print_exc()
 
     def critical(self, fmt, *args, **kwargs):
-        if _globals._level >= CRITICAL:
+        """ Logs a critical message """
+        if _globals.level >= CRITICAL:
             self._stderr("CRITICAL", fmt, *args, **kwargs)
 
 
 def setDefaultLevel(level):
-    _globals._level = level
+    """ Sets the default level for custom logger instances """
+    _globals.level = level
 
 
 def getCustomLogger(name):
+    """ Factory method """
     return CustomLogger(name)

@@ -30,8 +30,8 @@ from librato_python_web.instrumentor.instrument import get_complex_wrapper
 
 class MysqlInstrumentor(BaseInstrumentor):
     modules = {
-                  'MySQLdb.cursors': ['Cursor']
-              }
+        'MySQLdb.cursors': ['Cursor']
+    }
 
     def __init__(self):
         super(MysqlInstrumentor, self).__init__()

@@ -24,10 +24,13 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+""" Standalone statsd program """
+
 from librato_python_web.statsd.server.statsd_server import run_server
 
 
 def execute():
+    """ Launches statsd """
     run_server()
 
 if __name__ == '__main__':

@@ -116,7 +116,7 @@ class Server(object):
         metric_lines = data.split('\n')
 
         for metric in metric_lines:
-            match = re.match('\A([^:]+):([^|]+)\|(.+)', metric)
+            match = re.match(r'\A([^:]+):([^|]+)\|(.+)', metric)
 
             if match is None:
                 logger.warning("Skipping malformed metric: <%s>", metric)
@@ -219,7 +219,7 @@ class Server(object):
 
             # Clear the counter once the data is sent, if this is a counter as a gauge
             if self.no_aggregate_counters:
-                del (self.counters[context])
+                del self.counters[context]
             stats += 1
 
         return stats
@@ -233,14 +233,14 @@ class Server(object):
 
             if self.expire > 0 and t + self.expire < ts:
                 logger.debug("Expiring gauge %s (age: %s)", context, ts - t)
-                del(self.gauges[context])
+                del self.gauges[context]
                 continue
 
             v = float(v)
             logger.debug("Sending %s => value=%s", context, v)
 
             self._add_to_queue(queue, context[0], v, ts, tags=context[1])
-            del(self.gauges[context])
+            del self.gauges[context]
             stats += 1
 
         return stats
@@ -253,7 +253,7 @@ class Server(object):
             (v, t) = self.timers[context]
             if self.expire > 0 and t + self.expire < ts:
                 logger.debug("Expiring timer %s (age: %s)", context, ts - t)
-                del(self.timers[context])
+                del self.timers[context]
                 continue
 
             if len(v) > 0:
@@ -281,7 +281,7 @@ class Server(object):
                     sum_squares = sum([i**2 for i in v])
                     mean = total / count
 
-                del(self.timers[context])
+                del self.timers[context]
 
                 logger.debug("Sending %s ====> lower=%s, mean=%s, upper=%s, %dpct=%s, count=%s",
                              context, min_, mean, max_, self.pct_threshold, max_threshold, count)

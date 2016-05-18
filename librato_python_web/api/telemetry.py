@@ -23,7 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from contextlib import contextmanager
+""" Telemetry-related functions """
 
 from librato_python_web.instrumentor import telemetry
 
@@ -77,16 +77,3 @@ def event(event_type, dictionary=None):
     :param dictionary: additional values for event
     """
     telemetry.event(event_type, dictionary)
-
-
-def default_instrumentation(type_name='resource'):
-    return telemetry.default_instrumentation()
-
-
-def increment_count(type_name='resource'):
-    @contextmanager
-    def wrapper_func(*args, **keywords):
-        count(type_name + 'requests')
-        yield
-
-    return wrapper_func

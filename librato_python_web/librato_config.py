@@ -23,11 +23,13 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+""" Utility to configure Librato turnkey integrations """
 
 from librato_python_web.tools.configure import execute as configure
 
 
 def execute():
+    """ Wrapper to actual configure method"""
     configure()
 
 if __name__ == '__main__':

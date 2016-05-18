@@ -22,17 +22,15 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import functools
-import inspect
-import time
-import sys
 
+""" Core instrumentation module """
+
+import time
 import six
 
-from librato_python_web.instrumentor.objproxies import ObjectWrapper
 from librato_python_web.instrumentor import context
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
-from librato_python_web.instrumentor.util import wraps, is_class_available, get_class_by_name, wrap_method
+from librato_python_web.instrumentor.util import get_class_by_name
 from librato_python_web.instrumentor.util import Timing
 from librato_python_web.instrumentor.telemetry import count, record
 
@@ -168,6 +166,7 @@ def _get_delegating_wrapper(original_method, wrapper_method):
 
 
 def instrument_methods(method_wrappers):
+    """ Replaces module or pure-python class methods based on the provided dict """
     for qualified_method_name, method_wrapper in six.iteritems(method_wrappers):
         (fully_qualified_class_name, method_name) = qualified_method_name.rsplit('.', 1)
         try:

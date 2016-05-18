@@ -28,7 +28,7 @@ from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.instrument import _should_be_instrumented
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.util import get_parameter, Timing
+from librato_python_web.instrumentor.util import Timing
 
 
 def _session_send_wrapper(func, *args, **keywords):

@@ -23,6 +23,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+""" Base instrumentor class """
+
 import sys
 
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
@@ -32,7 +34,9 @@ logger = getCustomLogger(__name__)
 
 
 class BaseInstrumentor(object):
-    def __init__(self, wrapped=None, state=None):
+    """ Base instrumentor class """
+    def __init__(self, wrapped=None):
+        """ constructor """
         self.wrapped_methods = wrapped
 
         # Subclasses should override major_versions to specify supported Python versions.
@@ -40,18 +44,19 @@ class BaseInstrumentor(object):
         self.major_versions = None
 
     def set_wrapped(self, wrapped):
+        """ Sets the methods to instrument and the corresponding wrappers """
         self.wrapped_methods = wrapped if wrapped is not None else {}
 
     def can_run(self):
-        # Confirm that required modules and attributes exist
+        """ Confirm that required modules and attributes exist """
         if hasattr(self, 'modules'):
-            for name in self.modules:
+            for name in getattr(self, 'modules'):
                 if name not in sys.modules:
                     logger.info("Skipping for now - required module %s not loaded yet", name)
                     return False
                 mod_ = sys.modules[name]
 
-                for attr_ in self.modules[name]:
+                for attr_ in getattr(self, 'modules')[name]:
                     if hasattr(mod_, attr_):
                         logger.info("Found required attribute %s in %s", attr_, name)
                     else:
@@ -61,6 +66,7 @@ class BaseInstrumentor(object):
         return True
 
     def run(self):
+        """ Instruments methods """
         major_version = sys.version_info[0]
         if self.major_versions and major_version not in self.major_versions:
             logger.warn("Disabling %s since it doesn't support python %s.x", self.__class__, major_version)

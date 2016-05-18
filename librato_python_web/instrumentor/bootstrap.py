@@ -24,7 +24,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-# Top-level module names and the corresponding proxies
+""" Bootstraps our custom loader, which lazily instruments modules as they are imported """
+
 import os
 from six.moves import builtins
 
@@ -68,7 +69,8 @@ _instrumentors = {
 _web_fxes = ['django', 'flask', 'cherrypy']
 
 
-class _globals:
+class _globals(object):
+    """ Global vars """
     bootstrapped = False
     targeted_modules = {}    # Lets the custom loader find the instrumentor for a targeted module
     instrumented_modules = set()
@@ -76,6 +78,7 @@ class _globals:
 
 
 def init(config_path=None):
+    """ Reads configuration and installs the custom loader """
     try:
         if _globals.bootstrapped:
             return
@@ -142,6 +145,7 @@ def set_instrumentors():
 
 
 def set_reporter():
+    """ Installs the telemetry reporter """
     if general.get_option('statsd.enabled', False):
         logger.debug("Using Statsd reporter")
         statsd_port = general.get_option('statsd.port', 8142)
@@ -151,14 +155,13 @@ def set_reporter():
 
 
 def set_importer():
+    """ Installs the module loader """
     _globals.builtin_importer = builtins.__import__
     builtins.__import__ = import2    # Substitute built-in import function with our own
 
 
 def import2(*args, **kwargs):
     """ Our import function which instruments the modules we care about """
-    modname = args[0]
-
     mod_ = _globals.builtin_importer(*args, **kwargs)
     name = mod_.__name__
 

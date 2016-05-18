@@ -1,16 +1,13 @@
-from contextlib import contextmanager
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 
-from librato_python_web.instrumentor import context
 from librato_python_web.statsd.client import statsd_client
-from librato_python_web.instrumentor.util import AliasGenerator, Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
 
 
 # noinspection PyClassHasNoInit
-class _global:
+class _global(object):
     reporters = {}
 
 
@@ -77,34 +74,32 @@ def event(event_type, dictionary=None, reporter='web'):
 
 
 def record_telemetry(type_name, elapsed, reporter='web'):
+    """ Records a gauge value """
     count(type_name + 'requests', reporter=reporter)
     record(type_name + 'latency', elapsed, reporter=reporter)
 
 
 def generate_record_telemetry(type_name, reporter='web'):
+    """ Used by the generator wrapper """
     return lambda elapsed: record_telemetry(type_name, elapsed, reporter)
 
 
-def increment_count(type_name='resource', reporter='web'):
-    @contextmanager
-    def wrapper_func(*args, **keywords):
-        count(type_name + 'requests', reporter=reporter)
-        yield
-
-    return wrapper_func
-
-
 class TelemetryReporter(object):
+    """ Base class for telemetry reporters """
     def __init__(self):
+        """ Constructor """
         super(TelemetryReporter, self).__init__()
 
     def count(self, metric, incr=1):
+        """ Default count method does nothing """
         pass
 
     def record(self, metric, value):
+        """ Default record method does nothing """
         pass
 
     def event(self, type_name, dictionary=None):
+        """ Default event method does nothing """
         pass
 
 
@@ -150,6 +145,7 @@ class TestTelemetryReporter(TelemetryReporter):
 
 
 class StdoutTelemetryReporter(TelemetryReporter):
+    """ Reports to standard output """
     def __init__(self):
         super(StdoutTelemetryReporter, self).__init__()
 
@@ -164,6 +160,7 @@ class StdoutTelemetryReporter(TelemetryReporter):
 
 
 class StatsdTelemetryReporter(TelemetryReporter):
+    """ Statsd-based telemetry reporter """
     def __init__(self, port=8142, prefix=None):
         super(StatsdTelemetryReporter, self).__init__()
         self.client = statsd_client.Client(port=port, prefix=prefix)

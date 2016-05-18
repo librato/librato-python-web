@@ -25,8 +25,8 @@
 
 
 """
-The API supports the notion of a thread-based context stack. Implemented as a thread local variable, the stack
-enables the aggregation and reporting of telemetry for different dimenions of activity.
+The API supports the notion of a thread-based context stack. Implemented as a thread local variable,
+the stack enables the aggregation and reporting of telemetry for different dimenions of activity.
 
 For example, a SQL query might be measured in the context of:
 *	    a SQL statement (e.g., "SELECT u.name from users as u where id=?")
@@ -43,18 +43,20 @@ Auto-instrumentation is currently determined using hard-coded configuration.
 
 Metrics are accumulated individually and as an intersection of the context.
 """
-from contextlib import contextmanager
 
 from librato_python_web.instrumentor import context
 
 
 def push_state(name):
+    """ Pushes a new state on the context stack """
     context.push_state(name)
 
 
 def pop_state(name):
+    """ Pops state from the context stack """
     return context.pop_state(name)
 
 
 def has_state(name):
+    """ Checks if given state is present in the context stack """
     return context.has_state(name)

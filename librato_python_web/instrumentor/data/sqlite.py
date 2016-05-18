@@ -70,11 +70,11 @@ class SqliteInstrumentor(BaseInstrumentor):
     def run(self):
         # Instrument our wrapper connection class
         meths = {
-                'librato_python_web.instrumentor.data.sqlite.WrappedCursor.' + m:
+            'librato_python_web.instrumentor.data.sqlite.WrappedCursor.' + m:
                 get_complex_wrapper('data.sqlite.%s.' % m, state='data.sqlite', disable_if='model')
 
-                for m in ['execute', 'executemany', 'fetchone', 'fetchmany', 'fetchall']
-                }
+            for m in ['execute', 'executemany', 'fetchone', 'fetchmany', 'fetchall']
+        }
 
         # Instrument connect method
         meths['sqlite3.connect'] = wrapped_connect

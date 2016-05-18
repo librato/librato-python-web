@@ -24,10 +24,13 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+""" Utility to run a python program with instrumentation """
+
 from librato_python_web.tools.launch import main as launch
 
 
 def execute():
+    """ Wraps real launch method """
     launch()
 
 if __name__ == '__main__':

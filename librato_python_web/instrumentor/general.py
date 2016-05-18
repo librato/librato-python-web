@@ -23,6 +23,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+""" Utility methods module """
+
 import json
 import six
 
@@ -31,7 +33,8 @@ from librato_python_web.instrumentor.custom_logging import getCustomLogger
 logger = getCustomLogger(__name__)
 
 
-class _config:
+class _config(object):
+    """ Globals """
     instrument = False
 
 
@@ -71,28 +74,13 @@ def configure(config_dict_or_filename):
     # TODO: cache.max_keys
 
 
-def define_metric(metric, metadata_dict):
-    """
-    TBD Defines a new metric for the application.
-
-    Provides metadata required for the system as key-value pairs in metadata_dict. Metadata could include, for example,
-    metric type, display name, aggregation function.
-
-    The metadata is reported to the back-end.
-
-    :param metric: the given metric name to define
-    :type metric: basestring
-    :param metadata_dict: the given metric's definition as a dict
-    :type metadata_dict: dict
-    """
-    logger.warn("TODO: implement general.define_metric()")
-
-
 def set_option(param, value):
+    """ Sets the value of a configuration option """
     setattr(_config, param, value)
 
 
 def get_option(param, default_value=None):
+    """ Gets the value of a configuration option """
     try:
         return getattr(_config, param)
     except AttributeError:

@@ -23,6 +23,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+""" General utility methods """
+
 from librato_python_web.instrumentor import general
 
 
@@ -30,8 +32,8 @@ def configure(config_dict_or_filename):
     """
     TBD Configures the instrumentation using key value pairs.
 
-    The config_dict_or_filename is either a dict or a string filename. If it is a dict, it provides the key-value pairs
-    directly. If it is a st, it identifies a path to a JSON file containing key-value pairs.
+    The config_dict_or_filename is either a dict or a string filename. If it is a dict, it provides the
+    key-value pairs directly. If it is a st, it identifies a path to a JSON file containing key-value pairs.
 
     Valid configuration parameters include:
     * autoInstrument: Boolean value that enables instrumentation if True (default False)
@@ -47,8 +49,8 @@ def define_metric(metric, metadata_dict):
     """
     TBD Defines a new metric for the application.
 
-    Provides metadata required for the system as key-value pairs in metadata_dict. Metadata could include, for example,
-    metric type, display name, aggregation function.
+    Provides metadata required for the system as key-value pairs in metadata_dict. Metadata could include,
+    for example, metric type, display name, aggregation function.
 
     The metadata is reported to the back-end.
 

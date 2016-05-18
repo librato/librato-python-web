@@ -44,18 +44,18 @@ Auto-instrumentation is currently determined using hard-coded configuration.
 Metrics are accumulated individually and as an intersection of the context.
 """
 from collections import defaultdict
-from contextlib import contextmanager
 
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
 
 
-class _globals:
+class _globals(object):
     context = None
 
 
 def _get_context():
+    """ Internal method to get the per-thread context stack """
     if not _globals.context:
         threading = __import__('threading')
         _globals.context = threading.local()
@@ -85,6 +85,7 @@ def _get_state():
 
 
 def push_state(name):
+    """ Pushes a state to the context stack """
     if name:
         logger.debug('pushing state %s', name)
         _get_state()[name] += 1
@@ -94,6 +95,7 @@ def push_state(name):
 
 
 def pop_state(name):
+    """ Pops a state from the context stack """
     if name:
         logger.debug('popping state %s', name)
         count = _get_state().get(name)
@@ -116,4 +118,5 @@ def pop_state(name):
 
 
 def has_state(name):
+    """ Checks if state is present in the context stack """
     return _get_state().get(name, 0) > 0

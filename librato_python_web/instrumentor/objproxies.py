@@ -97,8 +97,8 @@ class AbstractProxy(object):
         exec_("def __%s__(self, ob): return %s(self.__subject__, ob)" % (name, name))
 
     for name, op in [
-        ('lt', '<'), ('gt', '>'), ('le', '<='), ('ge', '>='),
-        ('eq', '=='), ('ne', '!=')
+            ('lt', '<'), ('gt', '>'), ('le', '<='), ('ge', '>='),
+            ('eq', '=='), ('ne', '!=')
     ]:
         exec_("def __%s__(self, ob): return self.__subject__ %s ob" % (name, op))
 
@@ -106,9 +106,9 @@ class AbstractProxy(object):
         exec_("def __%s__(self): return %s self.__subject__" % (name, op))
 
     for name, op in [
-        ('or', '|'),  ('and', '&'), ('xor', '^'), ('lshift', '<<'), ('rshift', '>>'),
-        ('add', '+'), ('sub', '-'), ('mul', '*'), ('div', '/'), ('mod', '%'),
-        ('truediv', '/'), ('floordiv', '//')
+            ('or', '|'), ('and', '&'), ('xor', '^'), ('lshift', '<<'), ('rshift', '>>'),
+            ('add', '+'), ('sub', '-'), ('mul', '*'), ('div', '/'), ('mod', '%'),
+            ('truediv', '/'), ('floordiv', '//')
     ]:
         exec_((
             "def __%(name)s__(self, ob):\n"
@@ -170,8 +170,8 @@ class AbstractWrapper(AbstractProxy):
 
     def __setattr__(self, attr, val, osa=object.__setattr__):
         if (
-            attr == '__subject__' or
-            hasattr(type(self), attr) and not attr.startswith('__')
+                attr == '__subject__' or
+                hasattr(type(self), attr) and not attr.startswith('__')
         ):
             osa(self, attr, val)
         else:
@@ -179,8 +179,8 @@ class AbstractWrapper(AbstractProxy):
 
     def __delattr__(self, attr, oda=object.__delattr__):
         if (
-            attr == '__subject__' or
-            hasattr(type(self), attr) and not attr.startswith('__')
+                attr == '__subject__' or
+                hasattr(type(self), attr) and not attr.startswith('__')
         ):
             oda(self, attr)
         else:
