@@ -95,7 +95,7 @@ def _django_wsgi_call(original_method, *args, **keywords):
     try:
         return original_method(*args, **keywords)
     finally:
-        elapsed, net_elapsed = Timing.pop_timer()
+        elapsed, _ = Timing.pop_timer()
         telemetry.record('wsgi.response.latency', elapsed)
 
 

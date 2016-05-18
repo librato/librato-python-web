@@ -157,7 +157,6 @@ def set_importer():
 
 def import2(*args, **kwargs):
     """ Our import function which instruments the modules we care about """
-    modname = args[0]
 
     mod_ = _globals.builtin_importer(*args, **kwargs)
     name = mod_.__name__

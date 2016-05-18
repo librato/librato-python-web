@@ -337,8 +337,6 @@ class Server(object):
 
         logger.debug("StatsD Server listening on '%s' UDP port %d", hostname, port)
 
-        import signal
-
         def signal_handler(signal, frame):
             logger.debug("Stopping server...")
             self.stop()

@@ -100,8 +100,6 @@ def _urllib_open_wrapper(func, *args, **keywords):
     # Return a wrapped object so we can time subsequent read, readline etc calls
     return _response_wrapper(scheme, a)
 
-    return decorator
-
 
 class Urllib2Instrumentor(BaseInstrumentor):
     """ Python2 urllib2 """
@@ -109,6 +107,7 @@ class Urllib2Instrumentor(BaseInstrumentor):
 
     def __init__(self):
         self.major_versions = [2]
+        super(Urllib2Instrumentor, self).__init__()
 
     def run(self):
         self.set_wrapped({'urllib2.OpenerDirector.open': _urllib_open_wrapper})
@@ -121,6 +120,7 @@ class UrllibInstrumentor(BaseInstrumentor):
 
     def __init__(self):
         self.major_versions = [3]
+        super(UrllibInstrumentor, self).__init__()
 
     def run(self):
         self.set_wrapped({'urllib.request.OpenerDirector.open': _urllib_open_wrapper})

@@ -78,13 +78,13 @@ class Psycopg2Instrumentor(BaseInstrumentor):
         """ Instruments our cursor wrapper class and psycopg2.connect """
 
         # Generate a list of methods in the cursor wrapper
-        meth_names = [n for (n,_) in inspect.getmembers(WrappedCursor) if '_' not in n]
+        meth_names = [n for (n, _) in inspect.getmembers(WrappedCursor) if '_' not in n]
 
         meths = {
-                'librato_python_web.instrumentor.data.psycopg2.WrappedCursor.' + m:
+            'librato_python_web.instrumentor.data.psycopg2.WrappedCursor.' + m:
                 get_complex_wrapper('data.psycopg2.%s.' % m, state='data.psycopg2', disable_if='model')
-                for m in meth_names
-                }
+            for m in meth_names
+       }
 
         # Instrument connect method
         meths['psycopg2.connect'] = wrapped_connect
