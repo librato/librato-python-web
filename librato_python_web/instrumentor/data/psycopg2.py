@@ -23,6 +23,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import inspect
+
 from librato_python_web.instrumentor.instrument import get_complex_wrapper
 from librato_python_web.instrumentor.objproxies import ObjectWrapper
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
@@ -73,12 +75,15 @@ class Psycopg2Instrumentor(BaseInstrumentor):
         super(Psycopg2Instrumentor, self).__init__()
 
     def run(self):
-        # Instrument our wrapper connection class
+        """ Instruments our cursor wrapper class and psycopg2.connect """
+
+        # Generate a list of methods in the cursor wrapper
+        meth_names = [n for (n,_) in inspect.getmembers(WrappedCursor) if '_' not in n]
+
         meths = {
                 'librato_python_web.instrumentor.data.psycopg2.WrappedCursor.' + m:
                 get_complex_wrapper('data.psycopg2.%s.' % m, state='data.psycopg2', disable_if='model')
-
-                for m in ['callproc', 'execute', 'executemany', 'fetchone', 'fetchmany', 'fetchall', 'nextset']
+                for m in meth_names
                 }
 
         # Instrument connect method

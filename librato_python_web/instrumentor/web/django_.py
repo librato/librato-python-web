@@ -78,11 +78,14 @@ def django_inject_middleware(original_method, *args, **keywords):
         logger.info('injecting AgentMiddleware into django')
         django_inject_middleware.injected_middleware = True
 
-        settings = args[0]
-        a = original_method(settings, 'MIDDLEWARE_CLASSES')
-        a = prepend_to_tuple(a, 'librato_python_web.instrumentor.web.django_.AgentMiddleware')
-        settings._wrapped.MIDDLEWARE_CLASSES = a
-        logger.info('new middleware stack: %s', str(a))
+        try:
+            settings = args[0]
+            a = original_method(settings, 'MIDDLEWARE_CLASSES')
+            a = prepend_to_tuple(a, 'librato_python_web.instrumentor.web.django_.AgentMiddleware')
+            settings._wrapped.MIDDLEWARE_CLASSES = a
+            logger.info('new middleware stack: %s', str(a))
+        except:
+            logger.exception("Error injecting django middleware")
 
     return original_method(*args, **keywords)
 

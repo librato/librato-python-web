@@ -39,13 +39,6 @@ logger = logging.getLogger(__name__)
 
 
 class LoggingTest(unittest.TestCase):
-    expected_counts = {
-        'logging.exception.requests': 1,
-        'logging.error.requests': 2,    # Exception counts as an error as well
-        'logging.warning.requests': 1,
-        'logging.critical.requests': 2,
-    }
-
     def setUp(self):
         self.reporter = TestTelemetryReporter()
         telemetry.set_reporter(self.reporter)
@@ -77,7 +70,14 @@ class LoggingTest(unittest.TestCase):
             except:
                 logger.exception("Dummy exception:")
 
-            self.assertEqual(self.reporter.counts, self.expected_counts)
+            expected_counts = {
+                'logging.exception.requests': 1,
+                'logging.error.requests': 2,    # Exception counts as an error as well
+                'logging.warning.requests': 1,
+                'logging.critical.requests': 2,
+            }
+
+            self.assertEqual(self.reporter.counts, expected_counts)
             self.assertFalse(self.reporter.records)
         except Exception as e:
             logger.exception("test_web_state")
