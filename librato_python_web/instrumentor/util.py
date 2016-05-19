@@ -24,11 +24,9 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import base64
 from collections import OrderedDict
 import functools
 import hashlib
-import importlib
 import re
 import time
 

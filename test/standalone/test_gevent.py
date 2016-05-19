@@ -1,6 +1,5 @@
 
 from librato_python_web.instrumentor import bootstrap
-
 bootstrap.init()
 
 import gevent

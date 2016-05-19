@@ -44,7 +44,6 @@ Auto-instrumentation is currently determined using hard-coded configuration.
 Metrics are accumulated individually and as an intersection of the context.
 """
 from collections import defaultdict
-from contextlib import contextmanager
 
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 

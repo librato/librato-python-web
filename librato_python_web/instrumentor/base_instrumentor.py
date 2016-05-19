@@ -24,37 +24,23 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import sys
-from .telemetry import telemetry_context_manager
 
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
-from librato_python_web.instrumentor.instrument import instrument_methods, contextmanager_wrapper_factory, \
-    override_classes
+from librato_python_web.instrumentor.instrument import instrument_methods
 
 logger = getCustomLogger(__name__)
 
 
-def default_context_wrapper_factory(metric_name, state, mapping=None, enable_if='web', disable_if=None):
-    """
-    Use this default wrapper to record latency and count metrics for a code block or function
-    """
-    return contextmanager_wrapper_factory(telemetry_context_manager(metric_name), mapping, state, enable_if,
-                                          disable_if)
-
-
 class BaseInstrumentor(object):
     def __init__(self, wrapped=None, state=None):
-        self.wrapped = wrapped
-        self.overridden_classes = {}
+        self.wrapped_methods = wrapped
 
         # Subclasses should override major_versions to specify supported Python versions.
         # Default is all versions.
         self.major_versions = None
 
-    def set_overridden(self, overridden_classes):
-        self.overridden_classes = overridden_classes if overridden_classes is not None else {}
-
     def set_wrapped(self, wrapped):
-        self.wrapped = wrapped if wrapped is not None else {}
+        self.wrapped_methods = wrapped if wrapped is not None else {}
 
     def can_run(self):
         # Confirm that required modules and attributes exist
@@ -80,6 +66,4 @@ class BaseInstrumentor(object):
             logger.warn("Disabling %s since it doesn't support python %s.x", self.__class__, major_version)
             return
 
-        # instrument static resources
-        override_classes(self.overridden_classes, self.wrapped)
-        instrument_methods(self.wrapped)
+        instrument_methods(self.wrapped_methods)

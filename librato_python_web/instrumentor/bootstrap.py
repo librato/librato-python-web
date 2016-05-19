@@ -30,22 +30,20 @@ from six.moves import builtins
 
 from . import general
 from . import telemetry
-from . import config
 from .telemetry import StatsdTelemetryReporter
-# from .data.psycopg2 import Psycopg2Instrumentor
+from .data.psycopg2 import Psycopg2Instrumentor
 from .data.sqlite import SqliteInstrumentor
 from .data.elasticsearch import ElasticsearchInstrumentor
 from .data.mysqldb import MysqlInstrumentor
 from . import custom_logging
 from .external.requests_ import RequestsInstrumentor
-from .external.urllib2_ import Urllib2Instrumentor
+from .external.urllib_ import Urllib2Instrumentor, UrllibInstrumentor
 from .log.logging import LoggingInstrumentor
 from .messaging.pykafka import PykafkaInstrumentor
 from .web.django_ import DjangoCoreInstrumentor, DjangoConfInstrumentor, DjangoDbInstrumentor
 from .web.flask_ import FlaskInstrumentor
 from .web.cherrypy_ import CherryPyInstrumentor
 from .web.gunicorn_ import GunicornInstrumentor
-from .instrument import run_instrumentors, instrument_methods
 
 logger = custom_logging.getCustomLogger(__name__)
 
@@ -59,9 +57,10 @@ _instrumentors = {
     'logging': [LoggingInstrumentor],
     'mysql': [MysqlInstrumentor],
     'sqlite': [SqliteInstrumentor],
-    # 'psycopg2': [Psycopg2Instrumentor],
+    'psycopg2': [Psycopg2Instrumentor],
     'pykafka': [PykafkaInstrumentor],
     'requests': [RequestsInstrumentor],
+    'urllib': [UrllibInstrumentor],
     'urllib2': [Urllib2Instrumentor],
     'cherrypy': [CherryPyInstrumentor],
     'gunicorn': [GunicornInstrumentor],
@@ -110,7 +109,7 @@ def init(config_path=None):
 
         set_instrumentors()
         set_importer()
-        set_reporter()	 # TBD: This binds the reporter to the baked-in UDP module and needs further review
+        set_reporter()    # TBD: This binds the reporter to the baked-in UDP module and needs further review
     except:
         logger.exception("Error initializing instrumentation")
 
@@ -158,7 +157,6 @@ def set_importer():
 
 def import2(*args, **kwargs):
     """ Our import function which instruments the modules we care about """
-    modname = args[0]
 
     mod_ = _globals.builtin_importer(*args, **kwargs)
     name = mod_.__name__

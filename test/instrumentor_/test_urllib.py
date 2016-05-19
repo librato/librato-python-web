@@ -23,43 +23,52 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-"""
-Mechanism for declaring application configuration properties from an agent.
-"""
 
-from librato_python_web.instrumentor import config
+import unittest
+import six
 
+from externaltest_base import BaseExternalTest
+from librato_python_web.instrumentor.external.urllib_ import UrllibInstrumentor, Urllib2Instrumentor
 
-def set_reporter(reporter):
-    """
-    Sets the reporter for configuration information.
-
-    Defaults to StdoutConfigReporter.
-
-    :param reporter: the reporter instance
-    """
-    config.set_reporter(reporter)
+UrllibInstrumentor().run()
+Urllib2Instrumentor().run()
 
 
-def declare(property_name, property_value):
-    """
-    Expresses a property name and value for this component.
+class Urllib2Test(BaseExternalTest, unittest.TestCase):
+    expected_web_state_counts = {
+        'external.http.requests': 1,
+        'external.http.status.2xx': 1,
+        'external.file.requests': 1,
+        'external.ftp.requests': 1,
+    }
+    expected_web_state_gauges = [
+        'external.http.response.latency',
+        'external.file.response.latency',
+        'external.ftp.response.latency',
+    ]
 
-    Example
-        config.declare('flask.fw_versions', fw_version)
-        config.declare('db.connectionpool.min', 10)
-        config.declare('db.connectionpool.max', 50)
+    def make_requests(self):
+        # HTTP
+        r = six.moves.urllib.request.urlopen("http://www.python.org")
 
-    :param property_name: the property name to report
-    :param property_value: the value of the property (may be a dict containing nested properties)
-    """
-    config.declare(property_name, property_value)
+        self.assertEqual(r.getcode(), 200)
+
+        data = r.read(100)
+        self.assertEqual(len(data), 100)
+
+        data = r.readline()
+        self.assertGreater(len(data), 1)
+
+        self.iterate_lines(r, 1000, 10000)
+
+        # File
+        r = six.moves.urllib.request.urlopen("file:///etc/hosts")
+        self.iterate_lines(r, 1, 10)
+
+        # FTP
+        r = six.moves.urllib.request.urlopen("ftp://speedtest.tele2.net/")
+        self.iterate_lines(r, 10, 100)
 
 
-def publish():
-    """
-    Signals that the configuration is ready to be pushed.
-
-    This operation is not guaranteed to be synchronous.
-    """
-    config.publish()
+if __name__ == '__main__':
+    unittest.main()

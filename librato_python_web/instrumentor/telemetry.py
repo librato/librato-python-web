@@ -1,9 +1,7 @@
 from contextlib import contextmanager
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 
-from librato_python_web.instrumentor import context
 from librato_python_web.statsd.client import statsd_client
-from librato_python_web.instrumentor.util import AliasGenerator, Timing
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
@@ -29,7 +27,6 @@ def set_reporter(reporter, name='web'):
 def count(metric, incr=1, reporter='web'):
     """
     Increment the count for the given metric by the given increment.
-
     Example
         telemetry.count('requests')
         telemetry.count('bytesReceived', len(request.content))
@@ -75,24 +72,6 @@ def event(event_type, dictionary=None, reporter='web'):
     :param dictionary: additional values for event
     """
     _global.reporters[reporter].event(event_type, dictionary)
-
-
-def telemetry_context_manager(type_name='resource', reporter='web'):
-    """
-    Records count and latency metrics for wrapped block
-
-    :param type_name: prefixes used to generate metric names
-    """
-    @contextmanager
-    def decorator(*args, **keywords):
-        Timing.push_timer()
-        try:
-            yield
-        finally:
-            elapsed, _ = Timing.pop_timer()
-            record_telemetry(type_name, elapsed, reporter)
-
-    return decorator
 
 
 def record_telemetry(type_name, elapsed, reporter='web'):

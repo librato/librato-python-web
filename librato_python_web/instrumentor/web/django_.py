@@ -22,16 +22,17 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import time
 from math import floor
 
-from librato_python_web.instrumentor.instrument import instrument_methods, function_wrapper_factory, \
-    generator_wrapper_factory
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import generate_record_telemetry
-from librato_python_web.instrumentor.util import prepend_to_tuple, Timing, wraps, unwrap_method
-from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, default_context_wrapper_factory
+from librato_python_web.instrumentor.util import prepend_to_tuple, Timing
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.instrument import get_conditional_wrapper, get_complex_wrapper, \
+    get_generator_wrapper
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
@@ -71,91 +72,82 @@ class AgentMiddleware(object):
             telemetry.count('web.errors')
 
 
-def django_inject_middleware(original_method):
-    @wraps(original_method)
-    def decorator(*args, **keywords):
+def django_inject_middleware(original_method, *args, **keywords):
+    if not hasattr(django_inject_middleware, 'injected_middleware'):
+        # Do this the very first time only
         logger.info('injecting AgentMiddleware into django')
-        settings = args[0]
-        a = original_method(settings, 'MIDDLEWARE_CLASSES')
-        a = prepend_to_tuple(a, 'librato_python_web.instrumentor.web.django_.AgentMiddleware')
-        settings._wrapped.MIDDLEWARE_CLASSES = a
-        logger.info('new middleware stack: %s', str(a))
-        a = original_method(*args, **keywords)
-        unwrap_method(decorator)
-        return a
+        django_inject_middleware.injected_middleware = True
 
-    return decorator
-
-
-def _django_wsgi_call(original_method):
-    def decorator(*args, **keywords):
-        Timing.push_timer()
         try:
-            return original_method(*args, **keywords)
-        finally:
-            elapsed, net_elapsed = Timing.pop_timer()
-            telemetry.record('wsgi.response.latency', elapsed)
+            settings = args[0]
+            a = original_method(settings, 'MIDDLEWARE_CLASSES')
+            a = prepend_to_tuple(a, 'librato_python_web.instrumentor.web.django_.AgentMiddleware')
+            settings._wrapped.MIDDLEWARE_CLASSES = a
+            logger.info('new middleware stack: %s', str(a))
+        except:
+            logger.exception("Error injecting django middleware")
 
-    return decorator
+    return original_method(*args, **keywords)
+
+
+def _django_wsgi_call(original_method, *args, **keywords):
+    Timing.push_timer()
+    try:
+        return original_method(*args, **keywords)
+    finally:
+        elapsed, _ = Timing.pop_timer()
+        telemetry.record('wsgi.response.latency', elapsed)
 
 
 class DjangoCoreInstrumentor(BaseInstrumentor):
     modules = {'django.core.handlers.wsgi': ['WSGIHandler']}
-    _wrapped = {
-        'django.core.handlers.wsgi.WSGIHandler.__call__':
-            function_wrapper_factory(_django_wsgi_call, state='wsgi', enable_if=None),
-    }
 
     def __init__(self):
         super(DjangoCoreInstrumentor, self).__init__()
 
     def run(self):
-        try:
-            instrument_methods(self._wrapped)
-            logger.debug('django core instrumentation complete')
-        except:
-            logger.exception('problem with django core instrumentation')
-            raise
+        self.set_wrapped(
+            {
+                'django.core.handlers.wsgi.WSGIHandler.__call__':
+                    get_conditional_wrapper(_django_wsgi_call, state='wsgi', enable_if=None),
+                'django.conf.LazySettings.__getattr__': django_inject_middleware,
+            })
+        super(DjangoCoreInstrumentor, self).run()
 
 
 class DjangoConfInstrumentor(BaseInstrumentor):
     modules = {'django.conf': ['LazySettings']}
-    _wrapped = {
-        'django.conf.LazySettings.__getattr__': django_inject_middleware,
-    }
 
     def __init__(self):
         super(DjangoConfInstrumentor, self).__init__()
 
     def run(self):
-        try:
-            instrument_methods(self._wrapped)
-            logger.debug('django conf instrumentation complete')
-        except:
-            logger.exception('problem with django conf instrumentation')
-            raise
+        self.set_wrapped(
+            {
+                'django.conf.LazySettings.__getattr__': django_inject_middleware,
+            })
+        super(DjangoConfInstrumentor, self).run()
 
 
 class DjangoDbInstrumentor(BaseInstrumentor):
     modules = {'django.db.models.query': ['QuerySet']}
-    _wrapped = {
-        'django.db.models.query.QuerySet.iterator':
-            generator_wrapper_factory(generate_record_telemetry('model.iterator.'), state='model'),
-    }
-    _query_set_methods = 'aggregate, count, bulk_create, create, get, get_or_create, latest, first, last, in_bulk,' \
-                         'iterator, update_or_create, delete, update, exists'
 
     def __init__(self):
         super(DjangoDbInstrumentor, self).__init__()
-        for method in [m.strip() for m in self._query_set_methods.split(',')]:
-            self._wrapped['django.db.models.query.QuerySet.%s' % method] = default_context_wrapper_factory(
-                'model.%s.' % method,
-                state='model')
 
     def run(self):
-        try:
-            instrument_methods(self._wrapped)
-            logger.debug('django db instrumentation complete')
-        except:
-            logger.exception('problem with django db instrumentation')
-            raise
+        wrappers = {
+            'django.db.models.query.QuerySet.iterator':
+                get_generator_wrapper(generate_record_telemetry('model.iterator.'), state='model'),
+        }
+
+        _query_set_methods = ['aggregate', 'count', 'bulk_create', 'create', 'get', 'get_or_create',
+                              'latest', 'first', 'last', 'in_bulk', 'iterator', 'update_or_create',
+                              'delete', 'update', 'exists']
+
+        for method in _query_set_methods:
+            metric = 'model.' + method
+            wrappers['django.db.models.query.QuerySet.' + method] = get_complex_wrapper(metric, state='model')
+
+        self.set_wrapped(wrappers)
+        super(DjangoDbInstrumentor, self).run()

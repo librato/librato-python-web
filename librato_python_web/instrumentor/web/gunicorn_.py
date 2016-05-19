@@ -29,8 +29,8 @@ from math import floor
 import time
 
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.instrument import function_wrapper_factory
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.instrument import get_conditional_wrapper
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
 
 logger = getCustomLogger(__name__)
@@ -42,51 +42,46 @@ class __globals:
 logger = getCustomLogger(__name__)
 
 
-def _manage_workers(f):
-    def decorator(*args, **keywords):
-        response = f(*args, **keywords)
+def _manage_workers(func, *args, **keywords):
+    response = func(*args, **keywords)
 
-        try:
-            arbiter = args[0]
-            telemetry.record('gunicorn.workers', arbiter._last_logged_active_worker_count, is_timer=False,
-                             reporter='gunicorn')
-        except Exception as e:
-            logger.exception("Instrumentation error while reporting gunicorn.workers")
+    try:
+        arbiter = args[0]
+        telemetry.record('gunicorn.workers', arbiter._last_logged_active_worker_count, is_timer=False,
+                         reporter='gunicorn')
+    except Exception as e:
+        logger.exception("Instrumentation error while reporting gunicorn.workers")
 
-        return response
-
-    return decorator
+    return response
 
 
-def _worker_notify(f):
-    def decorator(*args, **keywords):
-        response = f(*args, **keywords)
+def _worker_notify(func, *args, **keywords):
+    response = func(*args, **keywords)
 
-        # Increment the worker count once per minute since that is our rollup interval
-        try:
-            now = int(time.time())
-            threshold = int(60*floor(now/60))
-            if not __globals.last_reported or __globals.last_reported < threshold:
-                telemetry.count("gunicorn.active_workers", 1, reporter='gunicorn')
-                __globals.last_reported = now
-        except Exception as e:
-            logger.exception("Instrumentation error while reporting gunicorn.active_workers")
+    # Increment the worker count once per minute since that is our rollup interval
+    try:
+        now = int(time.time())
+        threshold = int(60*floor(now/60))
+        if not __globals.last_reported or __globals.last_reported < threshold:
+            telemetry.count("gunicorn.active_workers", 1, reporter='gunicorn')
+            __globals.last_reported = now
+    except Exception as e:
+        logger.exception("Instrumentation error while reporting gunicorn.active_workers")
 
-        return response
-
-    return decorator
+    return response
 
 
 class GunicornInstrumentor(BaseInstrumentor):
     modules = {'gunicorn.arbiter': ['Arbiter'], 'gunicorn.workers.base': ['Worker']}
 
     def __init__(self):
-        super(GunicornInstrumentor, self).__init__(
-            {
-                'gunicorn.arbiter.Arbiter.manage_workers': function_wrapper_factory(_manage_workers, enable_if=None),
-                'gunicorn.workers.base.Worker.notify': function_wrapper_factory(_worker_notify, enable_if=None),
-            }
-        )
+        super(GunicornInstrumentor, self).__init__()
 
     def run(self):
+        self.set_wrapped(
+            {
+                'gunicorn.arbiter.Arbiter.manage_workers': get_conditional_wrapper(_manage_workers, enable_if=None),
+                'gunicorn.workers.base.Worker.notify': get_conditional_wrapper(_worker_notify, enable_if=None),
+            }
+        )
         super(GunicornInstrumentor, self).run()

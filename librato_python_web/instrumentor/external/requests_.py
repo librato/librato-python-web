@@ -24,43 +24,44 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from math import floor
 
-from librato_python_web.instrumentor.instrument import function_wrapper_factory
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.instrument import _should_be_instrumented
 from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
-from librato_python_web.instrumentor.util import get_parameter, Timing, wraps
+from librato_python_web.instrumentor.util import Timing
 
 
-def requests_request_time(f):
-    @wraps(f)
-    def decorator(*args, **keywords):
-        telemetry.count('external.http.requests')
-        Timing.push_timer()
-        try:
-            a = f(*args, **keywords)
-            telemetry.count('external.http.status.%ixx' % floor(a.status_code / 100))
-            return a
-        except:
-            telemetry.count('external.http.errors')
-            raise
-        finally:
-            elapsed, _ = Timing.pop_timer()
-            telemetry.record('external.http.response.latency', elapsed)
+def _session_send_wrapper(func, *args, **keywords):
+    if not _should_be_instrumented(state='external', enable_if='web', disable_if='model'):
+        return func(*args, **keywords)
 
-    return decorator
+    telemetry.count('external.http.requests')
+    Timing.push_timer()
+    try:
+        context.push_state('external')
+        a = func(*args, **keywords)
+        telemetry.count('external.http.status.%ixx' % floor(a.status_code / 100))
+        return a
+    except:
+        telemetry.count('external.http.errors')
+        raise
+    finally:
+        context.pop_state('external')
+        elapsed, _ = Timing.pop_timer()
+        telemetry.record('external.http.response.latency', elapsed)
 
 
 class RequestsInstrumentor(BaseInstrumentor):
     modules = {'requests.sessions': ['Session']}
 
     def __init__(self):
-        super(RequestsInstrumentor, self).__init__(
-            {
-                # External calls are not recorded when in the context of a model operation
-                'requests.sessions.Session.send': function_wrapper_factory(requests_request_time, state='external',
-                                                                           disable_if='model')
-            }
-        )
+        super(RequestsInstrumentor, self).__init__()
 
     def run(self):
+        self.set_wrapped(
+            {
+                # External calls are not recorded when in the context of a model operation
+                'requests.sessions.Session.send': _session_send_wrapper,
+            }
+        )
         super(RequestsInstrumentor, self).run()

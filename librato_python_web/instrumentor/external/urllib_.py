@@ -25,8 +25,9 @@
 from math import floor
 
 from librato_python_web.instrumentor import context
-from librato_python_web.instrumentor.instrument import function_wrapper_factory, _should_be_instrumented
+from librato_python_web.instrumentor.instrument import _should_be_instrumented
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.objproxies import ObjectWrapper
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.util import get_parameter, Timing
 
@@ -49,101 +50,78 @@ def _wrapped_call(metric, func, *args, **keywords):
         telemetry.record(metric, elapsed)
 
 
-class _response_wrapper:
+class _response_wrapper(ObjectWrapper):
     """ Wraps responses returned by urllib2.open """
     """ Note: this needs to be an old-style class for the dynamic method assignments """
     """       for __iter__ and next to work """
-    def __init__(self, scheme, target):
-        self.target = target
+    def __init__(self, scheme, subject):
+        super(_response_wrapper, self).__init__(subject)
         self.metric_name = 'external.{}.response.latency'.format(scheme)
 
-        if hasattr(target, "__iter__"):
-            self.__iter__ = self.iter_
-            self.next = self.next_
-
     def read(self, *args, **keywords):
-        return _wrapped_call(self.metric_name, self.target.read, *args, **keywords)
+        return _wrapped_call(self.metric_name, self.__subject__.read, *args, **keywords)
 
     def readline(self, *args, **keywords):
-        return _wrapped_call(self.metric_name, self.target.readline, *args, **keywords)
+        return _wrapped_call(self.metric_name, self.__subject__.readline, *args, **keywords)
 
     def readlines(self, *args, **keywords):
-        return _wrapped_call(self.metric_name, self.target.readlines, *args, **keywords)
-
-    def info(self):
-        return self.target.info()
-
-    def getcode(self):
-        return self.target.getcode()
-
-    def geturl(self):
-        return self.target.geturl()
-
-    def close(self):
-        return self.target.close()
-
-    def __repr__(self):
-        return self.target.__repr__()
-
-    def iter_(self):
-        return self
-
-    def next_(self):
-        line = self.readline()
-        if not line:
-            raise StopIteration
-        return line
+        return _wrapped_call(self.metric_name, self.__subject__.readlines, *args, **keywords)
 
 
-def _urllib2_open(f):
-    def decorator(*args, **keywords):
-        # The type of the returned instance depends on the url
-        # but is typically urllib.addinfourl for the baked-in protocols
+def _urllib_open_wrapper(func, *args, **keywords):
+    """ Wraps urllib.request.url_open """
 
-        if context.has_state('external'):
-            # Avoid double counting nested calls. All metrics will be reported
-            # relative to the outermost operation
-            return f(*args, **keywords)
+    if not _should_be_instrumented(state='external', enable_if='web', disable_if='model'):
+        return func(*args, **keywords)
 
-        url = get_parameter(1, 'fullurl', *args, **keywords)
+    url = get_parameter(1, 'fullurl', *args, **keywords)
 
-        if hasattr(url, 'get_full_url'):
-            url = url.get_full_url()
+    if hasattr(url, 'get_full_url'):
+        url = url.get_full_url()
 
-        scheme = url.split(':')[0] if ':' in url else 'unknown'
+    scheme = url.split(':')[0] if ':' in url else 'unknown'
 
-        Timing.push_timer()
-        try:
-            context.push_state('external')
-            telemetry.count('external.{}.requests'.format(scheme))
-            a = f(*args, **keywords)
-            if a.getcode():
-                # Not meaningful for ftp etc
-                telemetry.count('external.{}.status.%ixx'.format(scheme) % floor(a.getcode() / 100))
-        except:
-            telemetry.count('external.{}.errors'.format(scheme))
-            raise
-        finally:
-            context.pop_state('external')
-            elapsed, _ = Timing.pop_timer()
-            telemetry.record('external.{}.response.latency'.format(scheme), elapsed)
+    Timing.push_timer()
+    try:
+        context.push_state('external')
+        telemetry.count('external.{}.requests'.format(scheme))
+        a = func(*args, **keywords)
+        if a.getcode():
+            # Not meaningful for ftp etc
+            telemetry.count('external.{}.status.%ixx'.format(scheme) % floor(a.getcode() / 100))
+    except:
+        telemetry.count('external.{}.errors'.format(scheme))
+        raise
+    finally:
+        context.pop_state('external')
+        elapsed, _ = Timing.pop_timer()
+        telemetry.record('external.{}.response.latency'.format(scheme), elapsed)
 
-        # Return a wrapped object so we can time subsequent read, readline etc calls
-        return _response_wrapper(scheme, a)
-
-    return decorator
+    # Return a wrapped object so we can time subsequent read, readline etc calls
+    return _response_wrapper(scheme, a)
 
 
 class Urllib2Instrumentor(BaseInstrumentor):
+    """ Python2 urllib2 """
     modules = {'urllib2': ['OpenerDirector']}
 
     def __init__(self):
-        super(Urllib2Instrumentor, self).__init__(
-            {
-                'urllib2.OpenerDirector.open': function_wrapper_factory(_urllib2_open, disable_if='model')
-            }
-        )
         self.major_versions = [2]
+        super(Urllib2Instrumentor, self).__init__()
 
     def run(self):
+        self.set_wrapped({'urllib2.OpenerDirector.open': _urllib_open_wrapper})
         super(Urllib2Instrumentor, self).run()
+
+
+class UrllibInstrumentor(BaseInstrumentor):
+    """ Python3 urllib """
+    modules = {'urllib.request': ['OpenerDirector']}
+
+    def __init__(self):
+        self.major_versions = [3]
+        super(UrllibInstrumentor, self).__init__()
+
+    def run(self):
+        self.set_wrapped({'urllib.request.OpenerDirector.open': _urllib_open_wrapper})
+        super(UrllibInstrumentor, self).run()

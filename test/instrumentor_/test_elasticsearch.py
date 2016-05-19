@@ -24,49 +24,43 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+from datetime import datetime
 import unittest
-import six
 
-from externaltest_base import BaseExternalTest
-from librato_python_web.instrumentor.external.urllib2_ import Urllib2Instrumentor
+from librato_python_web.instrumentor.data.elasticsearch import ElasticsearchInstrumentor
+from datatest_base import BaseDataTest
 
-Urllib2Instrumentor().run()
+from elasticsearch import Elasticsearch
+
+ElasticsearchInstrumentor().run()
+es = Elasticsearch()
 
 
-class Urllib2Test(BaseExternalTest, unittest.TestCase):
-    expected_web_state_counts = {
-        'external.http.requests': 1,
-        'external.http.status.2xx': 1,
-        'external.file.requests': 1,
-        'external.ftp.requests': 1,
-    }
-    expected_web_state_gauges = [
-        'external.http.response.latency',
-        'external.file.response.latency',
-        'external.ftp.response.latency',
-    ]
+class ElasticsearchTest(BaseDataTest, unittest.TestCase):
+    expected_web_state_counts = {'data.es.get.requests': 1,
+                                 'data.es.index.requests': 1,
+                                 'data.es.search.requests': 1}
+    expected_web_state_gauges = ['data.es.get.latency', 'data.es.index.latency', 'data.es.search.latency']
 
-    def make_requests(self):
-        # HTTP
-        r = six.moves.urllib.request.urlopen("http://www.python.org")
+    def run_queries(self):
+        """
+        Elasticsearch queries
+        """
 
-        self.assertEqual(r.getcode(), 200)
+        doc = {
+            'author': 'kimchy',
+            'text': 'Elasticsearch: cool. bonsai cool.',
+            'timestamp': datetime.now(),
+        }
+        res = es.index(index="test-index", doc_type='tweet', id=1, body=doc)
+        print(res['created'])
 
-        data = r.read(100)
-        self.assertEqual(len(data), 100)
+        res = es.get(index="test-index", doc_type='tweet', id=1)
+        print(res['_source'])
 
-        data = r.readline()
-        self.assertGreater(len(data), 1)
+        es.indices.refresh(index="test-index")
 
-        self.iterate_lines(r, 1000, 10000)
-
-        # File
-        r = six.moves.urllib.request.urlopen("file:///etc/hosts")
-        self.iterate_lines(r, 1, 10)
-
-        # FTP
-        r = six.moves.urllib.request.urlopen("ftp://speedtest.tele2.net/")
-        self.iterate_lines(r, 10, 100)
+        res = es.search(index="test-index", body={"query": {"match_all": {}}})
 
 
 if __name__ == '__main__':

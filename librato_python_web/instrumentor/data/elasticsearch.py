@@ -24,35 +24,32 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor, default_context_wrapper_factory
+from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
+from librato_python_web.instrumentor.instrument import get_complex_wrapper
 
 
 class ElasticsearchInstrumentor(BaseInstrumentor):
     modules = {
-                  'elasticsearch.client': ['Elasticsearch']
-              }
+        'elasticsearch.client': ['Elasticsearch']
+    }
 
     def __init__(self):
         super(ElasticsearchInstrumentor, self).__init__()
+
+    def run(self):
         self.set_wrapped(
             {
                 'elasticsearch.client.Elasticsearch.create':
-                    default_context_wrapper_factory('data.es.create.', mapping={'resource': '2|doc_type'},
-                                                    state='data.elasticsearch', disable_if='model'),
+                    get_complex_wrapper('data.es.create.', state='data.elasticsearch', disable_if='model'),
                 'elasticsearch.client.Elasticsearch.get':
-                    default_context_wrapper_factory('data.es.get.', mapping={'resource': '2|doc_type'},
-                                                    state='data.elasticsearch', disable_if='model'),
+                    get_complex_wrapper('data.es.get.', state='data.elasticsearch', disable_if='model'),
                 'elasticsearch.client.Elasticsearch.index':
-                    default_context_wrapper_factory('data.es.index.', mapping={'resource': '2|doc_type'},
-                                                    state='data.elasticsearch', disable_if='model'),
+                    get_complex_wrapper('data.es.index.', state='data.elasticsearch', disable_if='model'),
                 'elasticsearch.client.Elasticsearch.search':
-                    default_context_wrapper_factory('data.es.search.', mapping={'resource': '2|doc_type'},
-                                                    state='data.elasticsearch', disable_if='model'),
+                    get_complex_wrapper('data.es.search.', state='data.elasticsearch', disable_if='model'),
                 'elasticsearch.client.Elasticsearch.delete':
-                    default_context_wrapper_factory('data.es.delete.', mapping={'resource': '2|doc_type'},
-                                                    state='data.elasticsearch', disable_if='model'),
+                    get_complex_wrapper('data.es.delete.', state='data.elasticsearch', disable_if='model'),
             }
         )
 
-    def run(self):
         super(ElasticsearchInstrumentor, self).run()
