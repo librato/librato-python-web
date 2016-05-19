@@ -84,7 +84,7 @@ class Psycopg2Instrumentor(BaseInstrumentor):
             'librato_python_web.instrumentor.data.psycopg2.WrappedCursor.' + m:
                 get_complex_wrapper('data.psycopg2.%s.' % m, state='data.psycopg2', disable_if='model')
             for m in meth_names
-       }
+           }
 
         # Instrument connect method
         meths['psycopg2.connect'] = wrapped_connect
