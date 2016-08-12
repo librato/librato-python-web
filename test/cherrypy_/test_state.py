@@ -23,20 +23,20 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import bootstrap    # Initialize instrumentation
 
 import json
 import unittest
 import cherrypy
-from cherrypy.test import helper
+from test_helper import TestCaseBase
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 
-import bootstrap    # Initialize instrumentation
 import state_app
 
 
-class StateTestCase(helper.CPWebCase):
+class StateTestCase(TestCaseBase):
     def setup_server():
         cherrypy.tree.mount(state_app.StateApp())
     setup_server = staticmethod(setup_server)
@@ -52,7 +52,10 @@ class StateTestCase(helper.CPWebCase):
         self.getPage('/')
         self.assertStatus(200)
 
+        self.check_tags(self.reporter)
+
         states = json.loads(self.body.decode())
+        print "State = %s" % states
 
         self.assertEqual(len(states), 2)
         self.assertIn('web', states)

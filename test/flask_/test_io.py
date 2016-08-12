@@ -28,6 +28,8 @@ import bootstrap        # Initialize the instrumentation
 import six
 import unittest
 
+from test_helper import TestCaseBase
+
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 
@@ -35,7 +37,7 @@ import bootstrap        # Initialize the instrumentation
 import io_app
 
 
-class IOTestCase(unittest.TestCase):
+class IOTestCase(TestCaseBase):
     def setUp(self):
         io_app.app.config['TESTING'] = True
         self.app = io_app.app.test_client()
@@ -48,6 +50,9 @@ class IOTestCase(unittest.TestCase):
 
     def test_data(self):
         r = self.app.get('/sqlite')
+        self.assertEqual(r.status_code, 200)
+
+        self.check_tags(self.reporter)
 
         expected_gauge_metrics = [
             'app.response.latency',
@@ -55,16 +60,29 @@ class IOTestCase(unittest.TestCase):
             'web.response.latency',
             'data.sqlite.execute.latency'
         ]
-        self.assertEqual(r.status_code, 200)
         six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
-        self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
-                           self.reporter.get_gauge_value('web.response.latency'))
 
-        self.assertEqual(self.reporter.counts,
-                         {'web.status.2xx': 1, 'web.requests': 1, 'data.sqlite.execute.requests': 1})
+        tags = {'handler': 'io_app.sqlite', 'method': 'GET'}
+        for tag in tags:
+            tag_value = tags[tag]
+
+            self.assertGreater(self.reporter.get_gauge('data.sqlite.execute.latency', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('data.sqlite.execute.requests', tag, tag_value), 1)
+
+            self.assertEqual(self.reporter.get_count('web.status.1xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.2xx', tag, tag_value), 1)
+            self.assertEqual(self.reporter.get_count('web.status.3xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.4xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.5xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.requests', tag, tag_value), 1)
+
+        self.assertGreater(self.reporter.get_gauge('wsgi.response.latency', 'status', '200'), 0)
 
     def test_network(self):
         r = self.app.get('/urllib2')
+        self.assertEqual(r.status_code, 200)
+
+        self.check_tags(self.reporter)
 
         expected_gauge_metrics = [
             'app.response.latency',
@@ -72,14 +90,24 @@ class IOTestCase(unittest.TestCase):
             'web.response.latency',
             'external.http.response.latency'
         ]
-        self.assertEqual(r.status_code, 200)
         six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
-        self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
-                           self.reporter.get_gauge_value('web.response.latency'))
 
-        self.assertEqual(self.reporter.counts,
-                         {'web.status.2xx': 1, 'external.http.requests': 1,
-                          'web.requests': 1, 'external.http.status.2xx': 1})
+        tags = {'handler': 'io_app.urllib2_', 'method': 'GET'}
+        for tag in tags:
+            tag_value = tags[tag]
+
+            self.assertGreater(self.reporter.get_gauge('external.http.response.latency', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('external.http.requests', tag, tag_value), 1)
+
+            self.assertEqual(self.reporter.get_count('web.status.1xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.2xx', tag, tag_value), 1)
+            self.assertEqual(self.reporter.get_count('web.status.3xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.4xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.5xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.requests', tag, tag_value), 1)
+
+        self.assertGreater(self.reporter.get_gauge('wsgi.response.latency', 'status', '200'), 0)
+
 
 if __name__ == '__main__':
     unittest.main()

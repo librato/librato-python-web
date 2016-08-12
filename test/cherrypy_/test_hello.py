@@ -29,6 +29,7 @@ import six
 import unittest
 import cherrypy
 from cherrypy.test import helper
+from test_helper import TestCaseBase
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
@@ -36,7 +37,7 @@ from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 import hello_app
 
 
-class HelloTestCase(helper.CPWebCase):
+class HelloTestCase(TestCaseBase):
     def setup_server():
         cherrypy.tree.mount(hello_app.HelloWorld())
     setup_server = staticmethod(setup_server)
@@ -52,22 +53,48 @@ class HelloTestCase(helper.CPWebCase):
         self.getPage('/')
         self.assertStatus(200)
 
+        self.check_tags(self.reporter)
+
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
         six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
-        self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
-                           self.reporter.get_gauge_value('web.response.latency'))
 
-        self.assertEqual(self.reporter.counts, {'web.status.2xx': 1, 'web.requests': 1})
+        tags = {'handler': 'hello_app.HelloWorld.index', 'method': 'GET'}
+        for tag in tags:
+            tag_value = tags[tag]
+
+            self.assertGreater(self.reporter.get_gauge('wsgi.response.latency', tag, tag_value),
+                               self.reporter.get_gauge('web.response.latency', tag, tag_value))
+
+            self.assertEqual(self.reporter.get_count('web.status.1xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.2xx', tag, tag_value), 1)
+            self.assertEqual(self.reporter.get_count('web.status.3xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.4xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.5xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.requests', tag, tag_value), 1)
+
+        self.assertGreater(self.reporter.get_gauge('wsgi.response.latency', 'status', '200'), 0)
 
     def test_twice(self):
         self.getPage('/')
         self.getPage('/')
         self.assertStatus(200)
 
+        self.check_tags(self.reporter)
+
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
         six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
 
-        self.assertEqual(self.reporter.counts, {'web.status.2xx': 2, 'web.requests': 2})
+        tags = {'handler': 'hello_app.HelloWorld.index', 'method': 'GET'}
+        for tag in tags:
+            tag_value = tags[tag]
+            self.assertEqual(self.reporter.get_count('web.status.1xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.2xx', tag, tag_value), 2)
+            self.assertEqual(self.reporter.get_count('web.status.3xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.4xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.5xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.requests', tag, tag_value), 2)
+
+        self.assertGreater(self.reporter.get_gauge('wsgi.response.latency', 'status', '200'), 0)
 
     def test_redirect(self):
         self.getPage('/redirect')
@@ -75,15 +102,41 @@ class HelloTestCase(helper.CPWebCase):
 
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
         six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
-        self.assertEqual(self.reporter.counts, {'web.status.3xx': 1, 'web.requests': 1})
+
+        tags = {'handler': 'hello_app.HelloWorld.redirect', 'method': 'GET'}
+        for tag in tags:
+            tag_value = tags[tag]
+
+            self.assertEqual(self.reporter.get_count('web.status.1xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.2xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.3xx', tag, tag_value), 1)
+            self.assertEqual(self.reporter.get_count('web.status.4xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.5xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.requests', tag, tag_value), 1)
+
+        self.assertGreater(self.reporter.get_gauge('wsgi.response.latency', 'status', '303'), 0)
 
     def test_notfound(self):
         self.getPage('/notfound')
         self.assertStatus(404)
 
+        self.check_tags(self.reporter)
+
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
         six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
-        self.assertEqual(self.reporter.counts, {'web.status.4xx': 1, 'web.requests': 1})
+
+        tags = {'handler': 'hello_app.HelloWorld.notfound', 'method': 'GET'}
+        for tag in tags:
+            tag_value = tags[tag]
+
+            self.assertEqual(self.reporter.get_count('web.status.1xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.2xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.3xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.4xx', tag, tag_value), 1)
+            self.assertEqual(self.reporter.get_count('web.status.5xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.requests', tag, tag_value), 1)
+
+        self.assertGreater(self.reporter.get_gauge('wsgi.response.latency', 'status', '404'), 0)
 
     def test_error(self):
         self.getPage('/error')
@@ -92,7 +145,20 @@ class HelloTestCase(helper.CPWebCase):
         expected_gauge_metrics = ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']
         six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
 
-        self.assertEqual(self.reporter.counts, {'web.status.5xx': 1, 'web.requests': 1})
+        self.check_tags(self.reporter)
+
+        tags = {'handler': 'hello_app.HelloWorld.error', 'method': 'GET'}
+        for tag in tags:
+            tag_value = tags[tag]
+
+            self.assertEqual(self.reporter.get_count('web.status.1xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.2xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.3xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.4xx', tag, tag_value), 0)
+            self.assertEqual(self.reporter.get_count('web.status.5xx', tag, tag_value), 1)
+            self.assertEqual(self.reporter.get_count('web.requests', tag, tag_value), 1)
+
+        self.assertGreater(self.reporter.get_gauge('wsgi.response.latency', 'status', '505'), 0)
 
 
 if __name__ == '__main__':

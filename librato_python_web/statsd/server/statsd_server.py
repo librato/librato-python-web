@@ -37,6 +37,7 @@ import threading
 import time
 import math
 import logging
+import six
 
 from .daemon import Daemon
 
@@ -44,6 +45,7 @@ import librato
 import librato_python_web.tools.agent_config as config
 
 LIBRATO_HOSTNAME = "metrics-api.librato.com"
+STANDARD_TAGS = ['app_id', 'hostname', 'method', 'handler', 'status']
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +70,10 @@ def kill_process(proc_name):
 
 
 class Server(object):
-
     def __init__(self, librato_user, librato_api_token,
                  pct_threshold=90, debug=False, flush_interval=60000,
-                 no_aggregate_counters=False, expire=0, source_prefix='',
+                 no_aggregate_counters=False, expire=0,
+                 tags_filter=None, global_tags={},
                  librato_hostname=LIBRATO_HOSTNAME, prefix=None):
         self.buf = 8192
         self.flush_interval = float(flush_interval/1000)
@@ -80,7 +82,7 @@ class Server(object):
         self.no_aggregate_counters = no_aggregate_counters
         self.debug = debug
         self.expire = expire
-        self.hostname = socket.gethostname()
+        self.tags_filter = tags_filter
 
         parts = librato_hostname.split("://")
         if len(parts) > 2:
@@ -96,6 +98,7 @@ class Server(object):
                                    hostname=librato_hostname,
                                    protocol=protocol,
                                    sanitizer=librato.sanitize_metric_name)
+        self.api.set_tags(global_tags)
 
         self.counters = {}
         self.timers = {}
@@ -103,10 +106,6 @@ class Server(object):
         self.aliases = {}
         self._sock = None
         self.prefix = prefix
-        if source_prefix:
-            self.source = '{}-{}'.format(source_prefix, self.hostname)
-        else:
-            self.source = self.hostname
 
     def process(self, data):
         # the data is a sequence of newline-delimited metrics
@@ -133,9 +132,14 @@ class Server(object):
 
             tags = None
             if rest and rest[-1][0] == '#':
-                tag_string = rest[-1][1:].lower()
+                # tag_string = rest[-1][1:].lower()
+                tag_string = rest[-1][1:]
                 tags = tuple(sorted([tuple(x.split(':')) for x in tag_string.split(',')]))
                 rest.pop()
+
+                if self.tags_filter:
+                    # Filter tags if necessary
+                    tags = tuple([(k, v) for k, v in tags if k in self.tags_filter])
 
             if m_type == 'ms':
                 self.__record_timer(key, value, rest, tags)
@@ -175,9 +179,9 @@ class Server(object):
 
     def __make_context(self, key, tags):
         if tags is None:
-            return key, tuple()
+            return key, ()
 
-        return key, tuple(tags)
+        return key, tags
 
     def on_timer(self):
         """Executes flush(). Ignores any errors to make sure one exception
@@ -268,7 +272,7 @@ class Server(object):
                     max_threshold = max_
                     median = min_
                     total = min_
-                    sum_squares = min_ * min_
+                    stddev = 0
                 else:
                     index = int(math.floor(count/2))
                     if count % 2 == 0:
@@ -278,8 +282,9 @@ class Server(object):
                     index = int((self.pct_threshold / 100.0) * count)
                     max_threshold = v[index - 1]
                     total = sum(v)
-                    sum_squares = sum([i**2 for i in v])
                     mean = total / count
+                    ss = sum([(i-mean)**2 for i in v])
+                    stddev = math.sqrt(ss/(count-1))
 
                 del(self.timers[context])
 
@@ -292,29 +297,25 @@ class Server(object):
                                    tags=context[1])
                 self._add_to_queue(queue, prefix + "count", count, ts, tags=context[1])
                 self._add_gauge_to_queue(queue, prefix + "mean", mean, ts, count=count,
-                                         min_=min_, max_=max_, sum_=total, sum_squares=sum_squares, tags=context[1])
+                                         min_=min_, max_=max_, sum_=total, stddev=stddev, tags=context[1])
                 # we only count this timer as a single stat even though we generated multiple measurements
                 stats += 1
 
         return stats
 
-    def _add_to_queue(self, queue, key, value, timestamp, metric_type='gauge', tags=None):
-        tags_dict = dict(tags) if tags else {}
-        if 'source' not in tags_dict:
-            tags_dict['source'] = self.source
+    def _add_to_queue(self, queue, key, value, timestamp, metric_type='gauge', tags=()):
+        tags_dict = dict(tags)
         metric = '{}.{}'.format(self.prefix, key) if self.prefix else key
-        queue.add(metric, value, metric_type, measure_time=timestamp, source=self.source)
-        logger.debug("%s %s => %s", metric_type, metric, value)
+        queue.add_tagged(metric, value, time=timestamp, tags=tags_dict)
+        logger.debug("%s %s => %s", metric, tags_dict, value)
 
     def _add_gauge_to_queue(self, queue, key, value, timestamp, min_=None, max_=None, count=1,
-                            sum_=None, sum_squares=None, tags=None):
-        tags_dict = dict(tags) if tags else {}
-        if 'source' not in tags_dict:
-            tags_dict['source'] = self.source
+                            sum_=None, stddev=None, tags=()):
+        tags_dict = dict(tags)
         metric = '{}.{}'.format(self.prefix, key) if self.prefix else key
-        queue.add(metric, None, 'gauge', measure_time=timestamp,
-                  source=self.source, count=count, sum=sum_, max=max_, min=min_, sum_squares=sum_squares)
-        logger.debug("gauge %s => %s", metric, value)
+        queue.add_tagged(metric, None, time=timestamp,
+                         tags=tags_dict, count=count, sum=sum_, max=max_, min=min_, stddev=stddev)
+        logger.debug("%s %s => %s", metric, tags_dict, value)
 
     def _set_timer(self):
         self._timer = threading.Timer(self.flush_interval, self.on_timer)
@@ -370,6 +371,13 @@ class ServerDaemon(Daemon):
 
         logger.debug('Solarwinds StatsD Server for Librato account: "%s"', options.user)
 
+        global_tags = {'hostname': socket.gethostname(), 'app_id': options.app_id}
+
+        if options.standard_tags:
+            global_tags = {k: v for k, v in six.iteritems(global_tags) if k in options.standard_tags}
+
+        global_tags.update(options.custom_tags)
+
         server = Server(librato_user=options.user,
                         librato_api_token=options.api_token,
                         pct_threshold=options.pct,
@@ -377,7 +385,8 @@ class ServerDaemon(Daemon):
                         flush_interval=options.flush_interval,
                         no_aggregate_counters=options.no_aggregate_counters,
                         expire=options.expire,
-                        source_prefix=options.app_id,
+                        tags_filter=options.standard_tags,
+                        global_tags=global_tags,
                         librato_hostname=options.metrics_hostname)
 
         server.serve(options.hostname, options.port)
@@ -393,6 +402,14 @@ def run_server():
     if not isvalid:
         logger.error("Invalid Configuration:\n  %s", "\n  ".join(errors))
         return 2
+
+    if options.standard_tags:
+        # Validate tags before we go too far
+        unknowns = [k for k in options.standard_tags if k not in STANDARD_TAGS]
+        if len(unknowns):
+            logger.error("Invalid standard tag(s): %s", unknowns)
+            logger.error("Must be one of %s", STANDARD_TAGS)
+            return 2
 
     daemon = ServerDaemon(options.pidfile)
     if options.daemonize:

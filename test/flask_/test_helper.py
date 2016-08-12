@@ -23,11 +23,28 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import unittest
 
-import os
-from librato_python_web.instrumentor.bootstrap import init, general
 
-os.environ['LIBRATO_INTEGRATION'] = 'django'
-general.set_option('instrumentor.log_level', 30)
+class TestCaseBase(unittest.TestCase):
+    def check_tags(self, reporter):
+        """ Do some generic tag validation """
+        gauge_names = reporter.get_gauge_names()
 
-init()
+        for dict_ in [reporter.md_gauges, reporter.md_counters]:
+            for metric in dict_:
+                # All metrics should include the 'handler' and 'method' tag names
+                self.assertIn('handler', dict_[metric].keys())
+                self.assertIn('method', dict_[metric].keys())
+
+                # Only wsgi metrics should include the 'status' tag
+                if metric.startswith('wsgi.'):
+                    self.assertIn('status', dict_[metric].keys())
+                else:
+                    self.assertNotIn('status', dict_[metric].keys())
+
+        for metric in ['app.response.latency', 'wsgi.response.latency', 'web.response.latency']:
+            # All latencies should be positive
+            for tag in self.reporter.md_gauges[metric].keys():
+                for tag_value in self.reporter.md_gauges[metric][tag].keys():
+                    self.assertGreater(self.reporter.md_gauges[metric][tag][tag_value], 0)

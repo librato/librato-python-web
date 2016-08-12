@@ -25,8 +25,10 @@
 
 """ CherryPy instrumentation """
 
+from importlib import import_module
 import time
 
+from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.instrument import get_conditional_wrapper
@@ -38,9 +40,14 @@ STATE_NAME = 'web'
 logger = getCustomLogger(__name__)
 
 
+class __globals:
+    set_hook = True
+    cherrypy = None
+
+
 def _cherrypy_respond_wrapper(func, *args, **keywords):
+    status_code = None
     try:
-        telemetry.count('web.requests')
         Timing.push_timer()
 
         # call the request function
@@ -48,6 +55,7 @@ def _cherrypy_respond_wrapper(func, *args, **keywords):
 
         if response.status:
             telemetry.count('web.status.%sxx' % response.status[0:1])
+            status_code = response.status
         return response
     except Exception as e:
         telemetry.count('web.errors')
@@ -57,18 +65,51 @@ def _cherrypy_respond_wrapper(func, *args, **keywords):
             elapsed, net_elapsed = Timing.pop_timer()
             telemetry.record('web.response.latency', elapsed)
             telemetry.record('app.response.latency', net_elapsed)
+            telemetry.count('web.requests')
+
+            if status_code:
+                # Do this here since we only want the wsgi metrics tagged with status
+                context.set_tag('status', status_code[0:3])
         except:
             logger.exception('Teardown handler failed')
             raise
 
 
+def on_start_resource():
+    try:
+        handler = __globals.cherrypy.serving.request.handler
+        if hasattr(handler, 'callable'):
+            callable = handler.callable
+            klass = callable.im_class
+            handler = klass.__module__ + '.' + klass.__name__ + '.' + callable.__name__
+            context.set_tag('handler', handler)
+    except:
+        logger.exception('Error setting handler tag value')
+
+
 def _cherrypy_wsgi_call(func, *args, **keywords):
+    if __globals.set_hook:
+        try:
+            # Set a hook to set the handler tag for every request
+            # This is done here since we need to be sure that cherrypy has been imported
+            # Also use the earliest possible hook, since subsequent hooks might wrap the handler instance
+            __globals.set_hook = False
+            __globals.cherrypy = import_module('cherrypy')
+            __globals.cherrypy.request.hooks.attach('on_start_resource', on_start_resource, priority=1)
+        except:
+            logger.exception('Error setting on_start_resource hook')
+
     t = time.time()
     try:
+        try:
+            context.set_tag('method', args[1]['REQUEST_METHOD'])
+        except:
+            pass
         return func(*args, **keywords)
     finally:
         elapsed = time.time() - t
         telemetry.record('wsgi.response.latency', elapsed)
+        context.reset_tags()
 
 
 class CherryPyInstrumentor(BaseInstrumentor):

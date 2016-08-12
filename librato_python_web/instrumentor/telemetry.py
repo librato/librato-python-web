@@ -3,6 +3,7 @@ from collections import defaultdict
 
 from librato_python_web.statsd.client import statsd_client
 from librato_python_web.instrumentor.custom_logging import getCustomLogger
+from librato_python_web.instrumentor.context import get_tags
 
 logger = getCustomLogger(__name__)
 
@@ -112,38 +113,46 @@ class TestTelemetryReporter(TelemetryReporter):
     """
     def __init__(self):
         super(TestTelemetryReporter, self).__init__()
-        self.counts = defaultdict(int)
-        self.records = {}
+
+        # metric_name, tag_name, tag_value -> count
+        self.md_counters = defaultdict(lambda : defaultdict(lambda: defaultdict(int)))
+
+        # metric_name, tag_name, tag_value -> value
+        self.md_gauges = defaultdict(lambda : defaultdict(lambda: defaultdict(float)))
 
     def reset(self):
-        self.counts = defaultdict(int)
-        self.records = {}
+        self.md_counters = defaultdict(lambda : defaultdict(lambda: defaultdict(int)))
+        self.md_gauges = defaultdict(lambda : defaultdict(lambda: defaultdict(float)))
 
     def count(self, metric, incr=1):
-        self.counts[metric] += incr
+        tags = get_tags()
+        for tag in tags:
+            self.md_counters[metric][tag][tags[tag]] += incr
 
-    def get_count(self, metric):
-        return self.counts[metric]
+    def get_count(self, metric, tag_name, tag_value):
+        return self.md_counters[metric][tag_name][tag_value]
 
     def record(self, metric, value, is_timer=True):
-        self.records[metric] = value
+        tags = get_tags()
+        for tag in tags:
+            self.md_gauges[metric][tag][tags[tag]] = value
 
-    def get_record(self, metric):
-        return self.records.get(metric)
+    def get_gauge(self, metric, tag_name, tag_value):
+        return self.md_gauges[metric][tag_name][tag_value]
 
     def event(self, type_name, dictionary=None):
         pass
 
     def get_counter_names(self):
-        return self.counts.keys()
+        return self.md_counters.keys()
 
-    def get_counter_value(self, metric):
+    def get_counter_value_xxx(self, metric):
         return self.counts[metric] if metric in self.counts else None
 
     def get_gauge_names(self):
-        return self.records.keys()
+        return self.md_gauges.keys()
 
-    def get_gauge_value(self, metric):
+    def get_gauge_value_xxx(self, metric):
         return self.records[metric] if metric in self.records else None
 
 
@@ -168,13 +177,13 @@ class StatsdTelemetryReporter(TelemetryReporter):
         self.prefix = prefix
 
     def count(self, metric, incr=1):
-        self.client.increment(metric, incr)
+        self.client.increment(metric, incr, tags=get_tags())
 
     def record(self, metric, value, is_timer=True):
         if is_timer:
-            self.client.timing(metric, value * 1000)
+            self.client.timing(metric, value * 1000, tags=get_tags())
         else:
-            self.client.gauge(metric, value)
+            self.client.gauge(metric, value, tags=get_tags())
 
     def event(self, type_name, dictionary=None):
         # TBD: Not implemented

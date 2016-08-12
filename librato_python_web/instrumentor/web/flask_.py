@@ -24,9 +24,11 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """ Flask instrumentation """
+from importlib import import_module
 from math import floor
 import time
 
+from librato_python_web.instrumentor import context as context
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.base_instrumentor import BaseInstrumentor
 from librato_python_web.instrumentor.instrument import get_conditional_wrapper
@@ -37,12 +39,9 @@ from librato_python_web.instrumentor.custom_logging import getCustomLogger
 logger = getCustomLogger(__name__)
 
 
-def _after_request(response):
-    # We need this since the response object isn't available in main function wrapper below (flask_dispatch).
-    # Might not get called in the event of an application error.
-    if response.status_code:
-        telemetry.count('web.status.%ixx' % floor(response.status_code / 100))
-    return response
+class __globals:
+    # Reference to a flask.globals module which will be imported later
+    flask_globals = None
 
 
 def _teardown_request(e=None):
@@ -54,7 +53,6 @@ def _flask_app(f, *args, **keywords):
     try:
         a = f(*args, **keywords)
         app = args[0]
-        app.after_request(_after_request)
         app.teardown_request(_teardown_request)
         return a
     except Exception as e:
@@ -63,8 +61,39 @@ def _flask_app(f, *args, **keywords):
         pass
 
 
+def _flask_full_dispatch(f, *args, **keywords):
+    # Compute and set the status code tag
+    # This happens late enough that the status code is available
+    rc = f(*args, **keywords)
+    if hasattr(rc, 'status_code'):
+        telemetry.count('web.status.%ixx' % floor(rc.status_code / 100))
+
+        # Set this at the end, since only the wsgi-related metrics need the status tag
+        context.set_tag('status', str(rc.status_code))
+
+    return rc
+
+
 def _flask_dispatch(f, *args, **keywords):
     try:
+        try:
+            if not __globals.flask_globals:
+                # Flask should already have been imported so this won't actually
+                # load anything new
+                __globals.flask_globals = import_module('flask.globals')
+
+            req = __globals.flask_globals._request_ctx_stack.top.request
+            if req.url_rule:
+                # Compute and set the handler tag
+                func = args[0].view_functions[req.url_rule.endpoint]
+                if hasattr(func, 'view_class'):
+                    handler = func.view_class.__module__ + '.' + func.view_class.__name__ + '.' + req.method.lower()
+                else:
+                    handler = func.__module__ + '.' + func.__name__
+                context.set_tag('handler', handler)
+        except:
+            logger.exception("Unexpected exception setting route tag")
+
         telemetry.count('web.requests')
         Timing.push_timer()
 
@@ -78,10 +107,15 @@ def _flask_dispatch(f, *args, **keywords):
 def _flask_wsgi_call(f, *args, **kwargs):
     t = time.time()
     try:
+        try:
+            context.set_tag('method', args[1]['REQUEST_METHOD'])
+        except:
+            pass
         return f(*args, **kwargs)
     finally:
         elapsed = time.time() - t
         telemetry.record('wsgi.response.latency', elapsed)
+        context.reset_tags()
 
 
 class FlaskInstrumentor(BaseInstrumentor):
@@ -94,8 +128,9 @@ class FlaskInstrumentor(BaseInstrumentor):
         self.set_wrapped(
             {
                 'flask.app.Flask.__init__': get_conditional_wrapper(_flask_app, enable_if=None),
-                'flask.app.Flask.dispatch_request': get_conditional_wrapper(_flask_dispatch, enable_if=None,
-                                                                            state='web'),
+                'flask.app.Flask.dispatch_request': get_conditional_wrapper(_flask_dispatch, enable_if=None),
+                'flask.app.Flask.full_dispatch_request': get_conditional_wrapper(_flask_full_dispatch, enable_if=None,
+                                                                                 state='web'),
                 'flask.app.Flask.__call__': get_conditional_wrapper(_flask_wsgi_call, enable_if=None, state='wsgi'),
             })
         super(FlaskInstrumentor, self).run()

@@ -23,19 +23,20 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import bootstrap    # Initialize instrumentaion
+
 import six
 import unittest
 import cherrypy
-from cherrypy.test import helper
+from test_helper import TestCaseBase
 
 from librato_python_web.instrumentor import telemetry
 from librato_python_web.instrumentor.telemetry import TestTelemetryReporter
 
-import bootstrap    # Initialize instrumentaion
 import io_app
 
 
-class IOTestCase(helper.CPWebCase):
+class IOTestCase(TestCaseBase):
     def setup_server():
         cherrypy.tree.mount(io_app.IOApp())
     setup_server = staticmethod(setup_server)
@@ -51,6 +52,8 @@ class IOTestCase(helper.CPWebCase):
         self.getPage('/sqlite')
         self.assertStatus(200)
 
+        self.check_tags(self.reporter)
+
         expected_gauge_metrics = [
             'app.response.latency',
             'wsgi.response.latency',
@@ -58,15 +61,23 @@ class IOTestCase(helper.CPWebCase):
             'data.sqlite.execute.latency'
         ]
         six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
-        self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
-                           self.reporter.get_gauge_value('web.response.latency'))
 
-        self.assertEqual(self.reporter.counts,
-                         {'web.status.2xx': 1, 'web.requests': 1, 'data.sqlite.execute.requests': 1})
+        tags = {'handler': 'io_app.IOApp.sqlite', 'method': 'GET'}
+        for tag in tags:
+            tag_value = tags[tag]
+
+            self.assertGreater(self.reporter.get_gauge('wsgi.response.latency', tag, tag_value),
+                               self.reporter.get_gauge('web.response.latency', tag, tag_value))
+
+            self.assertEqual(self.reporter.get_count('web.status.2xx', tag, tag_value), 1)
+            self.assertEqual(self.reporter.get_count('web.requests', tag, tag_value), 1)
+            self.assertEqual(self.reporter.get_count('data.sqlite.execute.requests', tag, tag_value), 1)
 
     def test_network(self):
         self.getPage('/urllib')
         self.assertStatus(200)
+
+        self.check_tags(self.reporter)
 
         expected_gauge_metrics = [
             'app.response.latency',
@@ -74,13 +85,21 @@ class IOTestCase(helper.CPWebCase):
             'web.response.latency',
             'external.http.response.latency'
         ]
-        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
-        self.assertGreater(self.reporter.get_gauge_value('wsgi.response.latency'),
-                           self.reporter.get_gauge_value('web.response.latency'))
 
-        self.assertEqual(self.reporter.counts,
-                         {'web.status.2xx': 1, 'external.http.requests': 1,
-                          'web.requests': 1, 'external.http.status.2xx': 1})
+        six.assertCountEqual(self, self.reporter.get_gauge_names(), expected_gauge_metrics)
+
+        tags = {'handler': 'io_app.IOApp.urllib', 'method': 'GET'}
+        for tag in tags:
+            tag_value = tags[tag]
+
+            self.assertGreater(self.reporter.get_gauge('wsgi.response.latency', tag, tag_value),
+                               self.reporter.get_gauge('web.response.latency', tag, tag_value))
+
+            self.assertEqual(self.reporter.get_count('web.requests', tag, tag_value), 1)
+            self.assertEqual(self.reporter.get_count('web.status.2xx', tag, tag_value), 1)
+            self.assertEqual(self.reporter.get_count('external.http.requests', tag, tag_value), 1)
+            self.assertEqual(self.reporter.get_count('external.http.status.2xx', tag, tag_value), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

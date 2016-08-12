@@ -83,6 +83,19 @@ def _get_state():
     return ctx.state
 
 
+def _get_tags():
+    """
+    Returns this thread's tag set.
+
+    :return: the tag set
+    :rtype: dict
+    """
+    ctx = _get_context()
+    if not getattr(ctx, 'tags', None):
+        ctx.tags = {}
+    return ctx.tags
+
+
 def push_state(name):
     if name:
         logger.debug('pushing state %s', name)
@@ -116,3 +129,17 @@ def pop_state(name):
 
 def has_state(name):
     return _get_state().get(name, 0) > 0
+
+
+def get_tags():
+    return dict(_get_tags())
+
+
+def set_tag(name, value):
+    if name:
+        logger.debug('setting tag %s=%s', name, value)
+        _get_tags()[name] = value
+
+
+def reset_tags():
+    _get_tags().clear()

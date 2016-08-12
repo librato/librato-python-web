@@ -51,6 +51,8 @@ config_options = [
     'port',
     'app_id',
     'restart',
+    'custom_tags',
+    'standard_tags',
     'stop',
     'integration'
 ]
@@ -73,7 +75,9 @@ defaults = {
     "flush_interval": 60000,
     'no_aggregate_counters': False,
     'metrics_hostname': LIBRATO_HOSTNAME,
-    'integration': 'django'
+    'integration': 'django',
+    'custom_tags': [],
+    'standard_tags': None,
 }
 
 
@@ -83,6 +87,26 @@ class _globals(object):
 
 class config_info(object):
     pass
+
+
+def _parse_standard_tags(options):
+    """ Convert comma-separated string into array data type """
+    if options.standard_tags and not isinstance(options.standard_tags, list):
+        options.standard_tags = options.standard_tags.split(',')
+
+
+def _parse_custom_tags(options):
+    """ Convert list of name=value string into a dict """
+    if isinstance(options.custom_tags, dict):
+        # Might already be a dict, if picked up from the config file
+        return
+
+    tags_list = [arg.split('=') for arg in options.custom_tags]
+    for t in tags_list:
+        if len(t) != 2:
+            raise Exception("Error parsing custom tag %s - no value was specified" % t[0])
+
+    options.custom_tags = dict(tags_list)
 
 
 def load_config(args=sys.argv[1:], use_env=True):
@@ -107,6 +131,10 @@ def load_config(args=sys.argv[1:], use_env=True):
     parser.add_argument('-D', '--daemon', dest='daemonize', action='store_true', help='daemonize')
     parser.add_argument('--pidfile', help='pid file')
     parser.add_argument('--restart', action='store_true', help='restart a running daemon')
+    parser.add_argument('--custom-tag', dest='custom_tags', action='append',
+                        help='a custome tag-value pair in name=value format. This option can be repeated')
+    parser.add_argument('--standard-tags', dest='standard_tags',
+                        help='comma-separated list of standard tag names to emit. Default is all standard tags')
     parser.add_argument('--stop', action='store_true', help='stop a running daemon')
     parser.add_argument('--expire', help='time-to-live for old stats (in secs)', type=int)
     parser.add_argument('--app-id', help='unique id for application')
@@ -134,6 +162,9 @@ def load_config(args=sys.argv[1:], use_env=True):
         if not hasattr(options, key):
             setattr(options, key, defaults.get(key))
 
+    _parse_standard_tags(options)
+    _parse_custom_tags(options)
+
     setattr(options, 'integration', getattr(options, 'integration', 'django').lower())
     return options
 
@@ -148,6 +179,12 @@ def update_config_from_env(options=None):
 
     if "LIBRATO_INSTRUMENTATION_PORT" in os.environ:
         setattr(options, "port", int(os.environ["LIBRATO_INSTRUMENTATION_PORT"]))
+
+    if "LIBRATO_STANDARD_TAGS" in os.environ:
+        setattr(options, "standard_tags", os.environ['LIBRATO_STANDARD_TAGS'])
+
+    if "LIBRATO_CUSTOM_TAGS" in os.environ:
+        setattr(options, "custom_tags", os.environ["LIBRATO_CUSTOM_TAGS"].split(','))
 
     return options
 
